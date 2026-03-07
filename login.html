@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In — Plainspoken Foundry Nine</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f8f9fa;
+            color: #111;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        a { color: inherit; text-decoration: none; }
+
+        /* Nav */
+        .nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 2rem;
+            background: #fff;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 700;
+            font-size: 1rem;
+        }
+        .nav-brand .badge {
+            background: #111;
+            color: #fff;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+        }
+        .nav-back {
+            font-size: 0.875rem;
+            color: #6b7280;
+            transition: color 0.15s;
+        }
+        .nav-back:hover { color: #111; }
+
+        /* Main */
+        .main {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+        .container {
+            width: 100%;
+            max-width: 540px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .header p {
+            color: #6b7280;
+            font-size: 0.95rem;
+        }
+
+        /* Product cards */
+        .products {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        .product-card {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.25rem;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .product-card.active {
+            cursor: pointer;
+        }
+        .product-card.active:hover {
+            border-color: #111;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        }
+        .product-card.disabled {
+            opacity: 0.5;
+            cursor: default;
+        }
+        .product-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            flex-shrink: 0;
+        }
+        .product-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .product-name {
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 0.15rem;
+        }
+        .product-desc {
+            font-size: 0.8rem;
+            color: #6b7280;
+        }
+        .product-badge {
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 0.2rem 0.6rem;
+            border-radius: 999px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .badge-live {
+            background: #ecfdf5;
+            color: #059669;
+        }
+        .badge-soon {
+            background: #f3f4f6;
+            color: #9ca3af;
+        }
+        .product-arrow {
+            color: #9ca3af;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+        .product-card.active .product-arrow { color: #111; }
+
+        /* Colors */
+        .bg-bridgr { background: #111827; color: #fff; }
+        .bg-flowtrack { background: #1e40af; color: #fff; }
+        .bg-qualifi { background: #059669; color: #fff; }
+        .bg-shiftlog { background: #7c3aed; color: #fff; }
+        .bg-maintainr { background: #ea580c; color: #fff; }
+        .bg-reportr { background: #0891b2; color: #fff; }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 1.5rem 2rem;
+            font-size: 0.8rem;
+            color: #9ca3af;
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <a href="/" class="nav-brand">
+            <span class="badge">PF9</span>
+            <span>Plainspoken Foundry Nine</span>
+        </a>
+        <a href="/" class="nav-back">&larr; Back to store</a>
+    </nav>
+
+    <main class="main">
+        <div class="container">
+            <div class="header">
+                <h1>Sign in to your product</h1>
+                <p>Select the application you'd like to access.</p>
+            </div>
+
+            <div class="products">
+                <a href="https://app.plainspokenfoundrynine.com/login" class="product-card active">
+                    <div class="product-icon bg-bridgr">⚙️</div>
+                    <div class="product-info">
+                        <div class="product-name">BRIDGR</div>
+                        <div class="product-desc">Manufacturing Execution System</div>
+                    </div>
+                    <span class="product-badge badge-live">Live</span>
+                    <span class="product-arrow">→</span>
+                </a>
+
+                <div class="product-card disabled">
+                    <div class="product-icon bg-flowtrack">📦</div>
+                    <div class="product-info">
+                        <div class="product-name">FLOWTRACK</div>
+                        <div class="product-desc">Inventory & Material Flow</div>
+                    </div>
+                    <span class="product-badge badge-soon">Coming Soon</span>
+                </div>
+
+                <div class="product-card disabled">
+                    <div class="product-icon bg-qualifi">✅</div>
+                    <div class="product-info">
+                        <div class="product-name">QUALIFI</div>
+                        <div class="product-desc">Quality Management System</div>
+                    </div>
+                    <span class="product-badge badge-soon">Coming Soon</span>
+                </div>
+
+                <div class="product-card disabled">
+                    <div class="product-icon bg-shiftlog">🔄</div>
+                    <div class="product-info">
+                        <div class="product-name">SHIFTLOG</div>
+                        <div class="product-desc">Shift Management & Handoff</div>
+                    </div>
+                    <span class="product-badge badge-soon">Coming Soon</span>
+                </div>
+
+                <div class="product-card disabled">
+                    <div class="product-icon bg-maintainr">🔧</div>
+                    <div class="product-info">
+                        <div class="product-name">MAINTAINR</div>
+                        <div class="product-desc">Predictive Maintenance Platform</div>
+                    </div>
+                    <span class="product-badge badge-soon">Coming Soon</span>
+                </div>
+
+                <div class="product-card disabled">
+                    <div class="product-icon bg-reportr">📊</div>
+                    <div class="product-info">
+                        <div class="product-name">REPORTR</div>
+                        <div class="product-desc">Operations Intelligence & BI</div>
+                    </div>
+                    <span class="product-badge badge-soon">Coming Soon</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        &copy; 2025 Plainspoken Foundry Nine. All rights reserved.
+    </footer>
+</body>
+</html>
