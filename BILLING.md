@@ -14,11 +14,16 @@
 
 | App | Monthly Price | Stripe Price ID |
 |-----|--------------|-----------------|
-| FLOWTRACK | $299/mo | price_1TBvd2FAgoUfnM8VCpCOar6a |
-| QUALIFI | $199/mo | price_1TBvd3FAgoUfnM8VN72kmCLN |
-| SHIFTLOG | $99/mo | price_1TBvd3FAgoUfnM8VF49rWAgh |
-| REPORTR | $149/mo | price_1TBvd4FAgoUfnM8VJ8S2w6KA |
-| INSPECTR | $149/mo | price_1TBvd4FAgoUfnM8Ve7yTxqNU |
+| FLOWTRACK | $99/mo | price_1TBxHMFAgoUfnM8VHdeCIvUs |
+| QUALIFI | $79/mo | price_1TBxHNFAgoUfnM8VMG2ryCbN |
+| SHIFTLOG | $49/mo | price_1TBxHOFAgoUfnM8VfBp0iAkX |
+| REPORTR | $59/mo | price_1TBxHOFAgoUfnM8VbcogJ3ha |
+| INSPECTR | $49/mo | price_1TBxHPFAgoUfnM8VC7A8RARB |
+
+**Bundle Pricing:**
+- Starter: From $49/mo (single app)
+- Professional: $149/mo (any 3 apps)
+- Enterprise: $249/mo (all 5 apps)
 
 **Stripe Keys:**
 - Publishable: `pk_test_51TBvRfFAgoUfnM8VLxN2Fyz...` (in store frontend)
