@@ -232,8 +232,62 @@
         </div>
     </main>
 
+    <div id="success-banner" style="display:none;max-width:540px;margin:0 auto 1rem;padding:1rem 1.25rem;background:#ecfdf5;border:1px solid #059669;border-radius:12px;text-align:center">
+        <p style="color:#059669;font-weight:600;margin:0 0 0.25rem">Subscription Active!</p>
+        <p style="color:#065f46;font-size:0.85rem;margin:0">Check your email for login credentials.</p>
+    </div>
+
+    <div style="text-align:center;margin-bottom:2rem">
+        <button id="manage-btn" style="background:none;border:none;color:#6b7280;font-size:0.8rem;cursor:pointer;text-decoration:underline">Manage Subscription</button>
+    </div>
+
+    <div id="manage-modal" style="display:none;position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.5)">
+        <div style="background:#fff;border-radius:16px;padding:2rem;width:100%;max-width:360px">
+            <h3 style="font-size:1.1rem;font-weight:700;margin:0 0 1rem">Manage Subscription</h3>
+            <input id="manage-email" type="email" placeholder="Your email" style="width:100%;padding:0.6rem 0.75rem;border:1px solid #e5e7eb;border-radius:8px;font-size:0.875rem;margin-bottom:0.75rem;box-sizing:border-box">
+            <p id="manage-error" style="color:#dc2626;font-size:0.8rem;margin:0 0 0.5rem;display:none"></p>
+            <button id="manage-go" style="width:100%;padding:0.6rem;background:#111;color:#fff;border:none;border-radius:8px;font-size:0.875rem;font-weight:600;cursor:pointer">Open Billing Portal</button>
+            <button onclick="document.getElementById('manage-modal').style.display='none'" style="width:100%;padding:0.5rem;background:none;border:none;color:#6b7280;font-size:0.8rem;cursor:pointer;margin-top:0.5rem">Cancel</button>
+        </div>
+    </div>
+
     <footer class="footer">
         &copy; 2025 Plainspoken Foundry Nine. All rights reserved.
     </footer>
+
+    <script>
+    (function(){
+        var API='https://app.plainspokenfoundrynine.com/store-api';
+
+        // Show success banner if redirected from Stripe
+        if(window.location.search.includes('subscribed=')){
+            document.getElementById('success-banner').style.display='block';
+        }
+
+        // Manage subscription
+        document.getElementById('manage-btn').addEventListener('click',function(){
+            document.getElementById('manage-modal').style.display='flex';
+        });
+        document.getElementById('manage-go').addEventListener('click',function(){
+            var email=document.getElementById('manage-email').value.trim();
+            var err=document.getElementById('manage-error');
+            if(!email){err.textContent='Email is required';err.style.display='block';return;}
+            err.style.display='none';
+            this.textContent='Loading...';this.disabled=true;
+            var btn=this;
+            fetch(API+'/create-portal-session',{
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({email:email})
+            }).then(function(r){return r.json()}).then(function(d){
+                if(d.url){window.location.href=d.url;}
+                else{err.textContent=d.error||'No subscription found';err.style.display='block';btn.textContent='Open Billing Portal';btn.disabled=false;}
+            }).catch(function(){
+                err.textContent='Connection error';err.style.display='block';btn.textContent='Open Billing Portal';btn.disabled=false;
+            });
+        });
+    })();
+    </script>
 </body>
 </html>
+
