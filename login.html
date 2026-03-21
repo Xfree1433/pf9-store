@@ -176,6 +176,12 @@
 
     <main class="main">
         <div class="container">
+            <div id="success-banner" style="display:none;margin-bottom:1.5rem;padding:1.25rem 1.5rem;background:#ecfdf5;border:1px solid #059669;border-radius:12px;text-align:center">
+                <p style="color:#059669;font-weight:700;font-size:1.1rem;margin:0 0 0.25rem">🎉 Subscription Active!</p>
+                <p id="success-product" style="color:#065f46;font-size:0.9rem;margin:0 0 0.5rem;font-weight:600"></p>
+                <p style="color:#065f46;font-size:0.85rem;margin:0">Check your email for login credentials. You can now sign in below.</p>
+            </div>
+
             <div class="header">
                 <h1>Sign in to your product</h1>
                 <p>Select the application you'd like to access.</p>
@@ -235,11 +241,6 @@
         </div>
     </main>
 
-    <div id="success-banner" style="display:none;max-width:540px;margin:0 auto 1rem;padding:1rem 1.25rem;background:#ecfdf5;border:1px solid #059669;border-radius:12px;text-align:center">
-        <p style="color:#059669;font-weight:600;margin:0 0 0.25rem">Subscription Active!</p>
-        <p style="color:#065f46;font-size:0.85rem;margin:0">Check your email for login credentials.</p>
-    </div>
-
     <div style="text-align:center;margin-bottom:2rem">
         <button id="manage-btn" style="background:none;border:none;color:#6b7280;font-size:0.8rem;cursor:pointer;text-decoration:underline">Manage Subscription</button>
     </div>
@@ -263,8 +264,22 @@
         var API='https://app.plainspokenfoundrynine.com/store-api';
 
         // Show success banner if redirected from Stripe
-        if(window.location.search.includes('subscribed=')){
+        var params=new URLSearchParams(window.location.search);
+        var subscribed=params.get('subscribed');
+        if(subscribed){
             document.getElementById('success-banner').style.display='block';
+            document.getElementById('success-product').textContent='You are now subscribed to '+subscribed.toUpperCase()+'.';
+            // Highlight only the subscribed app
+            var cards=document.querySelectorAll('.product-card');
+            cards.forEach(function(card){
+                var name=card.querySelector('.product-name').textContent.toLowerCase();
+                if(name===subscribed.toLowerCase()){
+                    card.style.border='2px solid #059669';
+                    card.style.boxShadow='0 0 0 3px rgba(5,150,105,0.15)';
+                } else {
+                    card.style.opacity='0.4';
+                }
+            });
         }
 
         // Manage subscription
