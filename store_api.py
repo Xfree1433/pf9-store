@@ -49,6 +49,12 @@ PRICE_MAP = {
     'INSPECTR':  os.environ.get('STRIPE_INSPECTR_PRICE_ID', ''),
     'LANDLORDR': os.environ.get('STRIPE_LANDLORDR_PRICE_ID', ''),
     'TENANTLINK': os.environ.get('STRIPE_TENANTLINK_PRICE_ID', ''),
+    'PROPERTY_BUNDLE': os.environ.get('STRIPE_PROPERTY_BUNDLE_PRICE_ID', ''),
+}
+
+# Bundle definitions — maps bundle name to list of individual products
+BUNDLE_MAP = {
+    'PROPERTY_BUNDLE': ['LANDLORDR', 'TENANTLINK'],
 }
 
 # Product → App URL mapping
@@ -303,10 +309,14 @@ def _handle_checkout_completed(session):
         )
         conn.commit()
 
-    # Provision account in the app
-    provisioned = _provision_account(product, email, name, company, temp_password)
+    # Provision account in the app (bundles provision multiple apps)
+    products_to_provision = BUNDLE_MAP.get(product, [product])
+    all_provisioned = True
+    for p in products_to_provision:
+        if not _provision_account(p, email, name, company, temp_password):
+            all_provisioned = False
 
-    if provisioned:
+    if all_provisioned:
         with get_db() as conn:
             conn.execute('UPDATE subscriptions SET provisioned = 1 WHERE stripe_subscription_id = ?', (subscription_id,))
             conn.commit()
@@ -395,29 +405,52 @@ def _send_welcome_email(email, name, product, password, provisioned):
         print('[Store API] Email not configured, skipping welcome email')
         return
 
-    app_url = APP_URL_MAP.get(product, STORE_URL)
     first_name = name.split()[0] if name else 'there'
+    bundle_products = BUNDLE_MAP.get(product)
 
     msg = MIMEMultipart('alternative')
-    msg['Subject'] = f'Welcome to {product} — Your account is ready!'
     msg['From']    = SMTP_USER
     msg['To']      = email
 
-    if provisioned:
-        login_section = f"""
-        <tr><td style="padding:8px; font-weight:bold;">Login URL</td><td style="padding:8px;"><a href="{app_url}">{app_url}</a></td></tr>
-        <tr style="background:#f9f9f9"><td style="padding:8px; font-weight:bold;">Email</td><td style="padding:8px;">{email}</td></tr>
-        <tr><td style="padding:8px; font-weight:bold;">Temporary Password</td><td style="padding:8px; font-family:monospace; font-size:16px;">{password}</td></tr>
-        """
+    if bundle_products:
+        # Bundle welcome email — list all apps
+        msg['Subject'] = f'Welcome to your Property Bundle — Your accounts are ready!'
+        login_rows = ''
+        for bp in bundle_products:
+            bp_url = APP_URL_MAP.get(bp, STORE_URL)
+            login_rows += f'<tr><td style="padding:8px; font-weight:bold;">{bp}</td><td style="padding:8px;"><a href="{bp_url}">{bp_url}</a></td></tr>\n'
+        if provisioned:
+            login_section = f"""
+            {login_rows}
+            <tr style="background:#f9f9f9"><td style="padding:8px; font-weight:bold;">Email</td><td style="padding:8px;">{email}</td></tr>
+            <tr><td style="padding:8px; font-weight:bold;">Temporary Password</td><td style="padding:8px; font-family:monospace; font-size:16px;">{password}</td></tr>
+            <tr><td style="padding:8px;" colspan="2" style="font-size:12px; color:#666;">Same login for both apps.</td></tr>
+            """
+        else:
+            login_section = f"""
+            <tr><td style="padding:8px;" colspan="2">Your accounts are being set up. We'll send your login details shortly.</td></tr>
+            """
+        product_label = 'Property Bundle (LANDLORDR + TENANTLINK)'
     else:
-        login_section = f"""
-        <tr><td style="padding:8px;" colspan="2">Your account is being set up. We'll send your login details shortly.</td></tr>
-        """
+        # Single product welcome email
+        msg['Subject'] = f'Welcome to {product} — Your account is ready!'
+        app_url = APP_URL_MAP.get(product, STORE_URL)
+        if provisioned:
+            login_section = f"""
+            <tr><td style="padding:8px; font-weight:bold;">Login URL</td><td style="padding:8px;"><a href="{app_url}">{app_url}</a></td></tr>
+            <tr style="background:#f9f9f9"><td style="padding:8px; font-weight:bold;">Email</td><td style="padding:8px;">{email}</td></tr>
+            <tr><td style="padding:8px; font-weight:bold;">Temporary Password</td><td style="padding:8px; font-family:monospace; font-size:16px;">{password}</td></tr>
+            """
+        else:
+            login_section = f"""
+            <tr><td style="padding:8px;" colspan="2">Your account is being set up. We'll send your login details shortly.</td></tr>
+            """
+        product_label = product
 
     html = f"""
     <div style="font-family: sans-serif; max-width: 600px;">
-        <h2 style="color: #111;">Welcome to {product}, {first_name}!</h2>
-        <p>Your subscription is active and your account has been created.</p>
+        <h2 style="color: #111;">Welcome to {product_label}, {first_name}!</h2>
+        <p>Your subscription is active and your account{'s have' if bundle_products else ' has'} been created.</p>
         <table style="width:100%; border-collapse:collapse; margin: 20px 0;">
             {login_section}
         </table>
