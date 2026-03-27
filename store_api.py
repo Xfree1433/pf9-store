@@ -47,6 +47,8 @@ PRICE_MAP = {
     'SHIFTLOG':  os.environ.get('STRIPE_SHIFTLOG_PRICE_ID', ''),
     'REPORTR':   os.environ.get('STRIPE_REPORTR_PRICE_ID', ''),
     'INSPECTR':  os.environ.get('STRIPE_INSPECTR_PRICE_ID', ''),
+    'LANDLORDR': os.environ.get('STRIPE_LANDLORDR_PRICE_ID', ''),
+    'TENANTLINK': os.environ.get('STRIPE_TENANTLINK_PRICE_ID', ''),
 }
 
 # Product → App URL mapping
@@ -56,6 +58,8 @@ APP_URL_MAP = {
     'SHIFTLOG':  'https://shiftlog.plainspokenfoundrynine.com',
     'REPORTR':   'https://reportr.plainspokenfoundrynine.com',
     'INSPECTR':  'https://inspectr.plainspokenfoundrynine.com',
+    'LANDLORDR': 'https://landlordr.plainspokenfoundrynine.com',
+    'TENANTLINK': 'https://tenantlinkr.plainspokenfoundrynine.com',
 }
 
 # Product → Registration endpoint mapping
@@ -64,6 +68,8 @@ REGISTER_MAP = {
     'REPORTR':   'https://reportr.plainspokenfoundrynine.com/api/auth/register',
     'SHIFTLOG':  'https://shiftlog.plainspokenfoundrynine.com/api/auth/register',
     'INSPECTR':  'https://inspectr.plainspokenfoundrynine.com/api/auth/register',
+    'LANDLORDR': 'https://landlordr.plainspokenfoundrynine.com/api/auth/register',
+    'TENANTLINK': 'https://tenantlinkr.plainspokenfoundrynine.com/api/auth/register',
 }
 
 
