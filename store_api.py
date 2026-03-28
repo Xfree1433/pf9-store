@@ -50,6 +50,7 @@ PRICE_MAP = {
     'LANDLORDR': os.environ.get('STRIPE_LANDLORDR_PRICE_ID', ''),
     'TENANTLINK': os.environ.get('STRIPE_TENANTLINK_PRICE_ID', ''),
     'PROPERTY_BUNDLE': os.environ.get('STRIPE_PROPERTY_BUNDLE_PRICE_ID', ''),
+    'PERMITR':  os.environ.get('STRIPE_PERMITR_PRICE_ID', ''),
 }
 
 # Bundle definitions — maps bundle name to list of individual products
@@ -66,6 +67,7 @@ APP_URL_MAP = {
     'INSPECTR':  'https://inspectr.plainspokenfoundrynine.com',
     'LANDLORDR': 'https://landlordr.plainspokenfoundrynine.com',
     'TENANTLINK': 'https://tenantlinkr.plainspokenfoundrynine.com',
+    'PERMITR':  'https://permitr.plainspokenfoundrynine.com',
 }
 
 # Product → Registration endpoint mapping
@@ -76,6 +78,7 @@ REGISTER_MAP = {
     'INSPECTR':  'https://inspectr.plainspokenfoundrynine.com/api/auth/register',
     'LANDLORDR': 'https://landlordr.plainspokenfoundrynine.com/api/auth/register',
     'TENANTLINK': 'https://tenantlinkr.plainspokenfoundrynine.com/api/auth/register',
+    'PERMITR':  'https://permitr.plainspokenfoundrynine.com/api/auth/register',
 }
 
 
