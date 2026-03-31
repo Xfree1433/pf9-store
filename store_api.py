@@ -53,6 +53,7 @@ PRICE_MAP = {
     'PERMITR':  os.environ.get('STRIPE_PERMITR_PRICE_ID', ''),
     'TASKFLOW': os.environ.get('STRIPE_TASKFLOW_PRICE_ID', ''),
     'OPSIQ':    os.environ.get('STRIPE_OPSIQ_PRICE_ID', ''),
+    'COMPLI':   os.environ.get('STRIPE_COMPLI_PRICE_ID', ''),
 }
 
 # Bundle definitions — maps bundle name to list of individual products
@@ -72,6 +73,7 @@ APP_URL_MAP = {
     'PERMITR':  'https://permitr.plainspokenfoundrynine.com',
     'TASKFLOW': 'https://taskflow.plainspokenfoundrynine.com',
     'OPSIQ':    'https://opsiq.plainspokenfoundrynine.com',
+    'COMPLI':   'https://compli.plainspokenfoundrynine.com',
 }
 
 # Product → Registration endpoint mapping
@@ -85,6 +87,7 @@ REGISTER_MAP = {
     'PERMITR':  'https://permitr.plainspokenfoundrynine.com/api/auth/register',
     'TASKFLOW': 'https://taskflow.plainspokenfoundrynine.com/api/auth/register',
     'OPSIQ':    'https://opsiq.plainspokenfoundrynine.com/api/auth/register',
+    'COMPLI':   'https://compli.plainspokenfoundrynine.com/api/v1/auth/register',
 }
 
 

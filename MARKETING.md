@@ -185,6 +185,39 @@ Link: https://store.plainspokenfoundrynine.com
 
 ---
 
+## COMPLI — Compliance Automation Platform
+
+**Tagline:** Compliance automation for energy & industry — Free to start
+
+**Store Description:**
+
+COMPLI is the only compliance platform that bundles security frameworks (SOC 2, ISO 27001, NIST CSF, HIPAA) with industrial safety standards (OSHA 1910, API RP 754, NERC CIP) in a single workspace.
+
+Built for energy companies, contractors, and SMBs who need to manage compliance across both security and safety domains without paying enterprise prices.
+
+**Key Features:**
+- 7 frameworks, 323 controls with 76 cross-framework mappings
+- Evidence management with file upload and URL linking
+- Audit runs with findings, comments, and coverage tracking
+- Risk register with likelihood x impact scoring
+- Policy management with Markdown editor and versioning
+- Integrations: AWS, GitHub, Okta, webhooks
+- Vendor assessments and automated access reviews
+- Trust center — public compliance page for prospects
+- Auditor portal — scoped read-only access for external auditors
+- SSO / OIDC (Okta, Azure AD, Google, Auth0)
+- PDF exports — audit summaries, evidence packages, gap reports
+- Immutable audit log
+
+**Pricing:**
+- **Free** ($0/mo) — 1 framework, evidence, audits, risks, policies, dashboard
+- **Pro** (Contact us) — 3 frameworks, integrations, trust center, access reviews, PDF exports
+- **Enterprise** (Contact us) — Unlimited frameworks, SSO, auditor portal, priority support
+
+**URL:** https://compli.plainspokenfoundrynine.com
+
+---
+
 ## Email Outreach Template
 
 **Subject:** Quick question about your shop floor tools
