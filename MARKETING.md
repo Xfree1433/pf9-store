@@ -24,6 +24,8 @@ PF9 is a suite of 5 modern web apps designed for small-to-mid manufacturers who 
 
 - **INSPECTR** ($49/mo) — Field inspections. Custom checklists, real-time failure logging, photo capture, inspection reports.
 
+- **OPSIQ** ($79/mo) — AI operations intelligence. Ask plain English questions, get instant reports, KPI tiles, and alerts from your ops data. Natural language queries across procurement, production, quality, workforce, and maintenance.
+
 **Why we're different:**
 
 - No per-user pricing traps — flat monthly rate

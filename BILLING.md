@@ -19,6 +19,9 @@
 | SHIFTLOG | $49/mo | price_1TBxHOFAgoUfnM8VfBp0iAkX |
 | REPORTR | $59/mo | price_1TBxHOFAgoUfnM8VbcogJ3ha |
 | INSPECTR | $49/mo | price_1TBxHPFAgoUfnM8VC7A8RARB |
+| OPSIQ (Starter) | $79/mo | (create in Stripe) |
+| OPSIQ (Growth) | $199/mo | (create in Stripe) |
+| OPSIQ (Operations) | $399/mo | (create in Stripe) |
 
 **Bundle Pricing:**
 - Starter: From $49/mo (single app)
@@ -108,6 +111,7 @@ Each app's `/api/auth/register` endpoint is called after payment:
 | ShiftLog | /api/auth/register | email, name, password, organizationName |
 | Inspectr | /api/auth/register | email, name, password, companyName |
 | Qualifi | (none — client-side only, no backend) | — |
+| OPSIQ | /api/auth/register | email, name, password, organizationName |
 
 ## Server Deployment
 
