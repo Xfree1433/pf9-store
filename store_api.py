@@ -54,6 +54,9 @@ PRICE_MAP = {
     'TASKFLOW': os.environ.get('STRIPE_TASKFLOW_PRICE_ID', ''),
     'OPSIQ':    os.environ.get('STRIPE_OPSIQ_PRICE_ID', ''),
     'COMPLI':   os.environ.get('STRIPE_COMPLI_PRICE_ID', ''),
+    'EXTRACTR': os.environ.get('STRIPE_EXTRACTR_PRICE_ID', ''),
+    'SUPPORTR': os.environ.get('STRIPE_SUPPORTR_PRICE_ID', ''),
+    'MAINTAINR': os.environ.get('STRIPE_MAINTAINR_PRICE_ID', ''),
 }
 
 # Bundle definitions — maps bundle name to list of individual products
@@ -74,6 +77,9 @@ APP_URL_MAP = {
     'TASKFLOW': 'https://taskflow.plainspokenfoundrynine.com',
     'OPSIQ':    'https://opsiq.plainspokenfoundrynine.com',
     'COMPLI':   'https://compli.plainspokenfoundrynine.com',
+    'EXTRACTR': 'https://extractr.plainspokenfoundrynine.com',
+    'SUPPORTR': 'https://supportr.plainspokenfoundrynine.com',
+    'MAINTAINR': 'https://maintainr.plainspokenfoundrynine.com',
 }
 
 # Product → Registration endpoint mapping
@@ -88,6 +94,9 @@ REGISTER_MAP = {
     'TASKFLOW': 'https://taskflow.plainspokenfoundrynine.com/api/auth/register',
     'OPSIQ':    'https://opsiq.plainspokenfoundrynine.com/api/auth/register',
     'COMPLI':   'https://compli.plainspokenfoundrynine.com/api/v1/auth/register',
+    'EXTRACTR': 'https://extractr.plainspokenfoundrynine.com/api/auth/register',
+    'SUPPORTR': 'https://supportr.plainspokenfoundrynine.com/api/auth/register',
+    'MAINTAINR': 'https://maintainr.plainspokenfoundrynine.com/api/auth/register',
 }
 
 
