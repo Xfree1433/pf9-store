@@ -97,6 +97,7 @@ REGISTER_MAP = {
     'EXTRACTR': 'https://extractr.plainspokenfoundrynine.com/api/auth/register',
     'SUPPORTR': 'https://supportr.plainspokenfoundrynine.com/api/auth/register',
     'MAINTAINR': 'https://maintainr.plainspokenfoundrynine.com/api/auth/register',
+    'QUALIFI':   'https://qualifi.plainspokenfoundrynine.com/api/auth/register',
 }
 
 
@@ -344,11 +345,11 @@ def _handle_checkout_completed(session):
 
     # Send welcome email
     try:
-        _send_welcome_email(email, name, product, temp_password, provisioned)
+        _send_welcome_email(email, name, product, temp_password, all_provisioned)
     except Exception as e:
         print(f'[Store API] Welcome email error: {e}')
 
-    print(f'[Store API] Subscription created: {product} for {email} (provisioned={provisioned})')
+    print(f'[Store API] Subscription created: {product} for {email} (provisioned={all_provisioned})')
 
 
 def _handle_subscription_cancelled(sub):
