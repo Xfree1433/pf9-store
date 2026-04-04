@@ -539,7 +539,7 @@
                             <span class="text-sm text-gray-500">Desktop App</span>
                         </div>
                         <div class="flex gap-2">
-                            <a href="/downloads/WealthWatch.zip" class="flex-1 text-center text-sm font-medium py-2 px-4 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors">Download for Windows</a>
+                            <button onclick="openDownloadModal()" class="flex-1 text-center text-sm font-medium py-2 px-4 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors">Download for Windows</button>
                         </div>
                     </div>
                 </div>
@@ -867,8 +867,76 @@
 
     // Close modal on Escape
     document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') closeSubscribe();
+        if (e.key === 'Escape') { closeSubscribe(); closeDownloadModal(); }
     });
+
+    // Download instructions modal
+    function openDownloadModal() {
+        document.getElementById('downloadModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+    function closeDownloadModal() {
+        document.getElementById('downloadModal').classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+    function startDownload() {
+        window.location.href = '/downloads/WealthWatch.zip';
+        var btn = document.getElementById('downloadBtn');
+        btn.textContent = 'Downloading...';
+        setTimeout(function() { btn.textContent = 'Download WealthWatch.zip'; }, 3000);
+    }
     </script>
+
+    <!-- Download Instructions Modal -->
+    <div id="downloadModal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeDownloadModal()"></div>
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-white rounded-2xl shadow-2xl p-8">
+            <button onclick="closeDownloadModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+            <h3 class="text-xl font-bold mb-1">Download WealthWatch</h3>
+            <p class="text-sm text-gray-500 mb-6">Free personal finance app for Windows</p>
+
+            <div class="space-y-4 mb-6">
+                <div class="flex gap-3">
+                    <div class="flex-shrink-0 w-7 h-7 bg-black text-white rounded-full flex items-center justify-center text-sm font-bold">1</div>
+                    <div>
+                        <p class="text-sm font-medium">Download the zip file</p>
+                        <p class="text-xs text-gray-500">Click the button below to download WealthWatch.zip</p>
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    <div class="flex-shrink-0 w-7 h-7 bg-black text-white rounded-full flex items-center justify-center text-sm font-bold">2</div>
+                    <div>
+                        <p class="text-sm font-medium">Extract the folder</p>
+                        <p class="text-xs text-gray-500">Right-click the zip > "Extract All" to a permanent location (e.g., Desktop or Program Files)</p>
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    <div class="flex-shrink-0 w-7 h-7 bg-black text-white rounded-full flex items-center justify-center text-sm font-bold">3</div>
+                    <div>
+                        <p class="text-sm font-medium">Run WealthWatch.exe</p>
+                        <p class="text-xs text-gray-500">Open the extracted folder and double-click WealthWatch.exe. Your browser will open automatically.</p>
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    <div class="flex-shrink-0 w-7 h-7 bg-black text-white rounded-full flex items-center justify-center text-sm font-bold">4</div>
+                    <div>
+                        <p class="text-sm font-medium">Save your PIN</p>
+                        <p class="text-xs text-gray-500">A PIN will be generated on first launch. Write it down — you'll need it each time you open the app.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gray-50 rounded-lg p-3 mb-6">
+                <p class="text-xs text-gray-500"><strong>Tip:</strong> After launching, click "Desktop Shortcut" on the login screen to create a shortcut for easy access. A README.txt file is included in the zip with full instructions.</p>
+            </div>
+
+            <button id="downloadBtn" onclick="startDownload()" class="w-full bg-black text-white font-semibold py-3 rounded-lg hover:bg-gray-800 transition-colors text-sm">
+                Download WealthWatch.zip
+            </button>
+            <p class="text-xs text-gray-400 text-center mt-3">Free — no signup required. Windows 10/11.</p>
+        </div>
+    </div>
 </body>
 </html>
