@@ -27,7 +27,7 @@ except ImportError:
 
 store_bp = Blueprint('store', __name__, url_prefix='/store-api')
 
-DB_PATH = os.environ.get('STORE_DB_PATH', '/opt/bridgr/store_leads.db')
+DB_PATH = os.environ.get('STORE_DB_PATH', '/opt/pf9-store/store_leads.db')
 STORE_URL = 'https://store.plainspokenfoundrynine.com'
 
 # ── Email config ──
@@ -184,7 +184,8 @@ def demo_request():
 @store_bp.route('/leads', methods=['GET'])
 def get_leads():
     secret = request.args.get('secret', '')
-    if secret != os.environ.get('LEADS_SECRET', 'changeme'):
+    expected = os.environ.get('LEADS_SECRET', '')
+    if not expected or secret != expected:
         return _cors_response(jsonify({'error': 'Unauthorized'}), 401)
 
     with get_db() as conn:
@@ -262,6 +263,14 @@ def stripe_webhook():
     elif event['type'] == 'customer.subscription.deleted':
         sub = event['data']['object']
         _handle_subscription_cancelled(sub)
+
+    elif event['type'] == 'customer.subscription.updated':
+        sub = event['data']['object']
+        _handle_subscription_updated(sub)
+
+    elif event['type'] == 'invoice.payment_failed':
+        invoice = event['data']['object']
+        _handle_payment_failed(invoice)
 
     return jsonify({'received': True})
 
@@ -361,6 +370,60 @@ def _handle_subscription_cancelled(sub):
         )
         conn.commit()
     print(f'[Store API] Subscription cancelled: {subscription_id}')
+
+
+def _handle_subscription_updated(sub):
+    subscription_id = sub.get('id', '')
+    status = sub.get('status', '')
+    with get_db() as conn:
+        conn.execute(
+            'UPDATE subscriptions SET status = ? WHERE stripe_subscription_id = ?',
+            (status, subscription_id)
+        )
+        conn.commit()
+    print(f'[Store API] Subscription {subscription_id} status -> {status}')
+
+
+def _handle_payment_failed(invoice):
+    subscription_id = invoice.get('subscription', '')
+    customer_email = invoice.get('customer_email', '') or ''
+    attempt_count = invoice.get('attempt_count', 0)
+    if not subscription_id:
+        return
+    with get_db() as conn:
+        conn.execute(
+            'UPDATE subscriptions SET status = ? WHERE stripe_subscription_id = ?',
+            ('past_due', subscription_id)
+        )
+        conn.commit()
+    print(f'[Store API] Payment failed for {subscription_id} (attempt {attempt_count}, {customer_email})')
+    try:
+        _send_payment_failed_alert(subscription_id, customer_email, attempt_count)
+    except Exception as e:
+        print(f'[Store API] Payment-failed alert error: {e}')
+
+
+def _send_payment_failed_alert(subscription_id, customer_email, attempt_count):
+    if not SMTP_USER or not SMTP_PASSWORD or not NOTIFY_EMAIL:
+        return
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = f'[PF9 Store] Payment failed — {customer_email or subscription_id}'
+    msg['From']    = SMTP_USER
+    msg['To']      = NOTIFY_EMAIL
+    html = f"""
+    <div style="font-family: sans-serif;">
+        <h3>Stripe payment failed</h3>
+        <p><b>Subscription:</b> {subscription_id}</p>
+        <p><b>Customer:</b> {customer_email or '(unknown)'}</p>
+        <p><b>Attempt:</b> {attempt_count}</p>
+        <p>Subscription marked <code>past_due</code> in store DB.</p>
+    </div>
+    """
+    msg.attach(MIMEText(html, 'html'))
+    with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+        server.starttls()
+        server.login(SMTP_USER, SMTP_PASSWORD)
+        server.sendmail(SMTP_USER, NOTIFY_EMAIL, msg.as_string())
 
 
 def _provision_account(product, email, name, company, password):
