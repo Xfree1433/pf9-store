@@ -83,21 +83,23 @@ APP_URL_MAP = {
 }
 
 # Product → Registration endpoint mapping
+# Use loopback addresses — store API runs on the same pf9-apps host as the provisioning targets,
+# so this skips Cloudflare/tunnel overhead and whatever routing weirdness affects public URLs.
 REGISTER_MAP = {
-    'FLOWTRACK': 'https://flowtrack.plainspokenfoundrynine.com/api/auth/register',
-    'REPORTR':   'https://reportr.plainspokenfoundrynine.com/api/auth/register',
-    'SHIFTLOG':  'https://shiftlog.plainspokenfoundrynine.com/api/auth/register',
-    'INSPECTR':  'https://inspectr.plainspokenfoundrynine.com/api/auth/register',
-    'LANDLORDR': 'https://landlordr.plainspokenfoundrynine.com/api/auth/register',
-    'TENANTLINK': 'https://tenantlinkr.plainspokenfoundrynine.com/api/auth/register',
-    'PERMITR':  'https://permitr.plainspokenfoundrynine.com/api/auth/register',
-    'TASKFLOW': 'https://taskflow.plainspokenfoundrynine.com/api/auth/register',
-    'OPSIQ':    'https://opsiq.plainspokenfoundrynine.com/api/auth/register',
-    'COMPLI':   'https://compli.plainspokenfoundrynine.com/api/v1/auth/register',
-    'EXTRACTR': 'https://extractr.plainspokenfoundrynine.com/api/auth/register',
-    'SUPPORTR': 'https://supportr.plainspokenfoundrynine.com/api/auth/register',
-    'MAINTAINR': 'https://maintainr.plainspokenfoundrynine.com/api/auth/register',
-    'QUALIFI':   'https://qualifi.plainspokenfoundrynine.com/api/auth/register',
+    'FLOWTRACK':  'http://127.0.0.1:3001/api/auth/register',
+    'REPORTR':    'http://127.0.0.1:3002/api/auth/register',
+    'SHIFTLOG':   'http://127.0.0.1:3003/api/auth/register',
+    'INSPECTR':   'http://127.0.0.1:3005/api/auth/register',
+    'LANDLORDR':  'http://127.0.0.1:5001/api/auth/register',
+    'TENANTLINK': 'http://127.0.0.1:5002/api/auth/register',
+    'PERMITR':    'http://127.0.0.1:5003/api/auth/register',
+    'TASKFLOW':   'http://127.0.0.1:5004/api/auth/register',
+    'OPSIQ':      'http://127.0.0.1:5050/api/auth/register',
+    'COMPLI':     'http://127.0.0.1:5200/api/v1/auth/register',
+    'EXTRACTR':   'http://127.0.0.1:5300/api/auth/register',
+    'SUPPORTR':   'http://127.0.0.1:5000/api/auth/register',
+    'MAINTAINR':  'http://127.0.0.1:3008/api/auth/register',
+    'QUALIFI':    'http://127.0.0.1:3004/api/auth/register',
 }
 
 
