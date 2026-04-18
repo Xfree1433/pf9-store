@@ -99,7 +99,7 @@ REGISTER_MAP = {
     'EXTRACTR':   'http://127.0.0.1:5300/api/auth/register',
     'SUPPORTR':   'http://127.0.0.1:5000/api/auth/register',
     'MAINTAINR':  'http://127.0.0.1:3008/api/auth/register',
-    'QUALIFI':    'http://127.0.0.1:3004/api/auth/register',
+    'QUALIFI':    'http://127.0.0.1:5400/api/auth/register',
 }
 
 
