@@ -415,24 +415,25 @@
                 </div>
 
                 <!-- OPSIQ -->
-                <div class="product-card bg-white rounded-xl shadow-sm card-hover accent-ai" data-category="ai" data-product="OPSIQ">
+                <div class="product-card bg-white rounded-xl shadow-sm card-hover accent-ai relative" data-category="ai" data-product="OPSIQ">
+                    <span class="absolute top-3 right-3 text-[10px] font-semibold bg-amber-500 text-white px-2 py-0.5 rounded-full uppercase tracking-wider">Coming Soon</span>
                     <div class="p-6">
                         <div class="flex items-start justify-between mb-4">
                             <div class="w-10 h-10 bg-amber-100 text-amber-600 rounded-lg flex items-center justify-center">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
                             </div>
-                            <span class="text-xs font-medium bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full">AI</span>
+                            <span class="text-xs font-medium bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full mr-24">AI</span>
                         </div>
                         <h3 class="text-lg font-bold mb-1">OPSIQ</h3>
                         <p class="text-sm text-gray-500 mb-4">Operations intelligence powered by AI. Predictive analytics, anomaly detection, process optimization, and actionable insights.</p>
-                        <p class="text-xs text-amber-600 bg-amber-50 rounded px-2 py-1 mb-3">Requires your own Anthropic API key for AI queries. Try it free in mock mode first.</p>
+                        <p class="text-xs text-amber-600 bg-amber-50 rounded px-2 py-1 mb-3">Launching soon. Try the live mock-mode preview and join the waitlist to be notified at launch.</p>
                         <div class="flex items-baseline gap-1 mb-5">
                             <span class="text-2xl font-bold">$199</span>
                             <span class="text-sm text-gray-500">/mo</span>
                         </div>
                         <div class="flex gap-2">
-                            <a href="https://opsiq.plainspokenfoundrynine.com" target="_blank" class="flex-1 text-center text-sm font-medium py-2 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Try Demo</a>
-                            <button onclick="openSubscribe('OPSIQ','$199/mo')" class="flex-1 text-center text-sm font-medium py-2 px-4 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors">Subscribe</button>
+                            <a href="https://opsiq.plainspokenfoundrynine.com" target="_blank" class="flex-1 text-center text-sm font-medium py-2 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Preview</a>
+                            <button onclick="openWaitlist('OPSIQ')" class="flex-1 text-center text-sm font-medium py-2 px-4 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors">Join Waitlist</button>
                         </div>
                     </div>
                 </div>
@@ -831,6 +832,30 @@
     function closeSubscribe() {
         document.getElementById('subscribeModal').classList.add('hidden');
         document.body.style.overflow = '';
+    }
+
+    // Waitlist for products that aren't ready to sell yet
+    function openWaitlist(product) {
+        var email = window.prompt('Join the ' + product + ' waitlist — enter your email:');
+        if (!email) return;
+        email = email.trim();
+        if (!email.includes('@')) { alert('Please enter a valid email address.'); return; }
+        fetch(API_URL + '/demo-request', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: email.split('@')[0],
+                email: email,
+                company: '',
+                message: 'Waitlist signup for ' + product,
+                product: product + ' (waitlist)'
+            })
+        }).then(function(r) {
+            if (r.ok) alert('You\u2019re on the ' + product + ' waitlist. We\u2019ll email you at launch.');
+            else alert('Could not reach the server. Please email support@plainspokenfoundrynine.com.');
+        }).catch(function() {
+            alert('Could not reach the server. Please email support@plainspokenfoundrynine.com.');
+        });
     }
 
     // Stripe checkout
