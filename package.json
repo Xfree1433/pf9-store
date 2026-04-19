@@ -1,0 +1,13 @@
+{
+  "name": "pf9-store",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Plainspoken Foundry Nine storefront — static HTML + compiled Tailwind",
+  "scripts": {
+    "build": "tailwindcss -i src/tailwind.css -o dist/tailwind.css --minify",
+    "watch": "tailwindcss -i src/tailwind.css -o dist/tailwind.css --watch"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.17"
+  }
+}
