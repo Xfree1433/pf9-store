@@ -9,14 +9,11 @@ Handles:
 from flask import Blueprint, request, jsonify
 from datetime import datetime
 import sqlite3
-import smtplib
 import os
 import string
 import secrets
 import json
 import requests as http_requests
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 
 try:
     import stripe
@@ -25,17 +22,40 @@ except ImportError:
     stripe = None
     print('[Store API] WARNING: stripe package not installed')
 
+try:
+    import resend
+    resend.api_key = os.environ.get('RESEND_API_KEY', '')
+except ImportError:
+    resend = None
+    print('[Store API] WARNING: resend package not installed')
+
 store_bp = Blueprint('store', __name__, url_prefix='/store-api')
 
 DB_PATH = os.environ.get('STORE_DB_PATH', '/opt/pf9-store/store_leads.db')
 STORE_URL = 'https://store.plainspokenfoundrynine.com'
 
-# ── Email config ──
-SMTP_HOST     = os.environ.get('SMTP_HOST', 'smtp.gmail.com')
-SMTP_PORT     = int(os.environ.get('SMTP_PORT', 587))
-SMTP_USER     = os.environ.get('SMTP_USER', '')
-SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '')
-NOTIFY_EMAIL  = os.environ.get('NOTIFY_EMAIL', '')
+# ── Email config (Resend) ──
+EMAIL_FROM_CUSTOMER = os.environ.get('EMAIL_FROM_CUSTOMER', 'PF9 <welcome@plainspokenfoundrynine.com>')
+EMAIL_FROM_INTERNAL = os.environ.get('EMAIL_FROM_INTERNAL', 'PF9 Alerts <alerts@plainspokenfoundrynine.com>')
+NOTIFY_EMAIL        = os.environ.get('NOTIFY_EMAIL', '')
+
+
+def _send_email(from_addr, to_addr, subject, html):
+    """Send an email via Resend. No-op if resend/key not configured."""
+    if not resend or not os.environ.get('RESEND_API_KEY'):
+        print(f'[Store API] Resend not configured, skipping email to {to_addr}')
+        return False
+    try:
+        resend.Emails.send({
+            "from": from_addr,
+            "to": [to_addr] if isinstance(to_addr, str) else to_addr,
+            "subject": subject,
+            "html": html,
+        })
+        return True
+    except Exception as e:
+        print(f'[Store API] Resend send error: {e}')
+        return False
 
 # ── Stripe config ──
 STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
@@ -406,12 +426,8 @@ def _handle_payment_failed(invoice):
 
 
 def _send_payment_failed_alert(subscription_id, customer_email, attempt_count):
-    if not SMTP_USER or not SMTP_PASSWORD or not NOTIFY_EMAIL:
+    if not NOTIFY_EMAIL:
         return
-    msg = MIMEMultipart('alternative')
-    msg['Subject'] = f'[PF9 Store] Payment failed — {customer_email or subscription_id}'
-    msg['From']    = SMTP_USER
-    msg['To']      = NOTIFY_EMAIL
     html = f"""
     <div style="font-family: sans-serif;">
         <h3>Stripe payment failed</h3>
@@ -421,11 +437,7 @@ def _send_payment_failed_alert(subscription_id, customer_email, attempt_count):
         <p>Subscription marked <code>past_due</code> in store DB.</p>
     </div>
     """
-    msg.attach(MIMEText(html, 'html'))
-    with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
-        server.starttls()
-        server.login(SMTP_USER, SMTP_PASSWORD)
-        server.sendmail(SMTP_USER, NOTIFY_EMAIL, msg.as_string())
+    _send_email(EMAIL_FROM_INTERNAL, NOTIFY_EMAIL, f'[PF9 Store] Payment failed — {customer_email or subscription_id}', html)
 
 
 def _provision_account(product, email, name, company, password):
@@ -455,15 +467,9 @@ def _provision_account(product, email, name, company, password):
 
 # ── Email Helpers ──
 def _send_notification(name, company, email, message, product):
-    if not SMTP_USER or not SMTP_PASSWORD or not NOTIFY_EMAIL:
-        print('[Store API] Email not configured, skipping notification')
+    if not NOTIFY_EMAIL:
+        print('[Store API] NOTIFY_EMAIL not set, skipping notification')
         return
-
-    msg = MIMEMultipart('alternative')
-    msg['Subject'] = f'[PF9 Store] New demo request — {product}'
-    msg['From']    = SMTP_USER
-    msg['To']      = NOTIFY_EMAIL
-
     html = f"""
     <div style="font-family: sans-serif; max-width: 600px;">
         <h2 style="color: #111;">New Demo Request</h2>
@@ -477,31 +483,16 @@ def _send_notification(name, company, email, message, product):
         <p style="color:#888; font-size:12px; margin-top:24px;">Plainspoken Foundry Nine · store.plainspokenfoundrynine.com</p>
     </div>
     """
-    msg.attach(MIMEText(html, 'html'))
-
-    with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
-        server.starttls()
-        server.login(SMTP_USER, SMTP_PASSWORD)
-        server.sendmail(SMTP_USER, NOTIFY_EMAIL, msg.as_string())
-
-    print(f'[Store API] Notification sent for {email}')
+    if _send_email(EMAIL_FROM_INTERNAL, NOTIFY_EMAIL, f'[PF9 Store] New demo request — {product}', html):
+        print(f'[Store API] Notification sent for {email}')
 
 
 def _send_welcome_email(email, name, product, password, provisioned):
-    if not SMTP_USER or not SMTP_PASSWORD:
-        print('[Store API] Email not configured, skipping welcome email')
-        return
-
     first_name = name.split()[0] if name else 'there'
     bundle_products = BUNDLE_MAP.get(product)
 
-    msg = MIMEMultipart('alternative')
-    msg['From']    = SMTP_USER
-    msg['To']      = email
-
     if bundle_products:
-        # Bundle welcome email — list all apps
-        msg['Subject'] = f'Welcome to your Property Bundle — Your accounts are ready!'
+        subject = f'Welcome to your Property Bundle — Your accounts are ready!'
         login_rows = ''
         for bp in bundle_products:
             bp_url = APP_URL_MAP.get(bp, STORE_URL)
@@ -511,16 +502,13 @@ def _send_welcome_email(email, name, product, password, provisioned):
             {login_rows}
             <tr style="background:#f9f9f9"><td style="padding:8px; font-weight:bold;">Email</td><td style="padding:8px;">{email}</td></tr>
             <tr><td style="padding:8px; font-weight:bold;">Temporary Password</td><td style="padding:8px; font-family:monospace; font-size:16px;">{password}</td></tr>
-            <tr><td style="padding:8px;" colspan="2" style="font-size:12px; color:#666;">Same login for both apps.</td></tr>
+            <tr><td style="padding:8px; font-size:12px; color:#666;" colspan="2">Same login for both apps.</td></tr>
             """
         else:
-            login_section = f"""
-            <tr><td style="padding:8px;" colspan="2">Your accounts are being set up. We'll send your login details shortly.</td></tr>
-            """
+            login_section = '<tr><td style="padding:8px;" colspan="2">Your accounts are being set up. We\'ll send your login details shortly.</td></tr>'
         product_label = 'Property Bundle (LANDLORDR + TENANTLINK)'
     else:
-        # Single product welcome email
-        msg['Subject'] = f'Welcome to {product} — Your account is ready!'
+        subject = f'Welcome to {product} — Your account is ready!'
         app_url = APP_URL_MAP.get(product, STORE_URL)
         if provisioned:
             login_section = f"""
@@ -529,9 +517,7 @@ def _send_welcome_email(email, name, product, password, provisioned):
             <tr><td style="padding:8px; font-weight:bold;">Temporary Password</td><td style="padding:8px; font-family:monospace; font-size:16px;">{password}</td></tr>
             """
         else:
-            login_section = f"""
-            <tr><td style="padding:8px;" colspan="2">Your account is being set up. We'll send your login details shortly.</td></tr>
-            """
+            login_section = '<tr><td style="padding:8px;" colspan="2">Your account is being set up. We\'ll send your login details shortly.</td></tr>'
         product_label = product
 
     html = f"""
@@ -545,14 +531,8 @@ def _send_welcome_email(email, name, product, password, provisioned):
         <p style="color:#888; font-size:12px; margin-top:24px;">Plainspoken Foundry Nine · store.plainspokenfoundrynine.com</p>
     </div>
     """
-    msg.attach(MIMEText(html, 'html'))
-
-    with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
-        server.starttls()
-        server.login(SMTP_USER, SMTP_PASSWORD)
-        server.sendmail(SMTP_USER, email, msg.as_string())
-
-    print(f'[Store API] Welcome email sent to {email}')
+    if _send_email(EMAIL_FROM_CUSTOMER, email, subject, html):
+        print(f'[Store API] Welcome email sent to {email}')
 
 
 def _cors_response(response, status=200):
