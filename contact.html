@@ -76,6 +76,40 @@
         .card p { font-size: 0.9rem; color: #6b7280; line-height: 1.6; margin: 0; }
         .card a { color: #111; font-weight: 600; }
         .response { text-align: center; margin-top: 2rem; font-size: 0.85rem; color: #6b7280; }
+        .form-grid { display: grid; gap: 0.75rem; margin-top: 1rem; }
+        .form-grid label { font-size: 0.8rem; font-weight: 600; color: #374151; }
+        .form-grid input, .form-grid select, .form-grid textarea {
+            width: 100%;
+            padding: 0.6rem 0.75rem;
+            font-size: 0.9rem;
+            font-family: inherit;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            background: #fff;
+            color: #111;
+            transition: border-color 0.15s;
+        }
+        .form-grid input:focus, .form-grid select:focus, .form-grid textarea:focus {
+            outline: none;
+            border-color: #111;
+        }
+        .form-grid textarea { resize: vertical; min-height: 80px; }
+        .form-btn {
+            padding: 0.7rem 1rem;
+            background: #111;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .form-btn:hover { background: #374151; }
+        .form-btn:disabled { background: #9ca3af; cursor: not-allowed; }
+        .form-msg { font-size: 0.85rem; margin-top: 0.5rem; }
+        .form-msg.ok { color: #047857; }
+        .form-msg.err { color: #b91c1c; }
         .footer {
             text-align: center;
             padding: 1.5rem 2rem;
@@ -108,8 +142,49 @@
 
             <div class="card">
                 <h3>Sales & Demos</h3>
-                <p>Interested in a product? Want a walkthrough or custom demo?<br>
-                <a href="mailto:support@plainspokenfoundrynine.com">support@plainspokenfoundrynine.com</a></p>
+                <p>Interested in a product? Request a walkthrough or custom demo — we'll reach out within one business day.</p>
+                <form id="demoForm" class="form-grid" novalidate>
+                    <div>
+                        <label for="demoName">Name</label>
+                        <input id="demoName" name="name" type="text" required autocomplete="name">
+                    </div>
+                    <div>
+                        <label for="demoEmail">Email</label>
+                        <input id="demoEmail" name="email" type="email" required autocomplete="email">
+                    </div>
+                    <div>
+                        <label for="demoCompany">Company (optional)</label>
+                        <input id="demoCompany" name="company" type="text" autocomplete="organization">
+                    </div>
+                    <div>
+                        <label for="demoProduct">Which product?</label>
+                        <select id="demoProduct" name="product">
+                            <option value="General">General — not sure yet</option>
+                            <option value="FLOWTRACK">FLOWTRACK</option>
+                            <option value="QUALIFI">QUALIFI</option>
+                            <option value="SHIFTLOG">SHIFTLOG</option>
+                            <option value="REPORTR">REPORTR</option>
+                            <option value="INSPECTR">INSPECTR</option>
+                            <option value="LANDLORDR">LANDLORDR</option>
+                            <option value="TENANTLINKR">TENANTLINKR</option>
+                            <option value="PROPERTY_BUNDLE">Property Bundle</option>
+                            <option value="PERMITR">PERMITR</option>
+                            <option value="TASKFLOW">TASKFLOW</option>
+                            <option value="OPSIQ">OPSIQ</option>
+                            <option value="EXTRACTR">EXTRACTR</option>
+                            <option value="SUPPORTR">SUPPORTR</option>
+                            <option value="MAINTAINR">MAINTAINR</option>
+                            <option value="COMPLI">COMPLI</option>
+                            <option value="WEALTHWATCH">WEALTHWATCH</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="demoMessage">What would you like to see? (optional)</label>
+                        <textarea id="demoMessage" name="message" rows="3" placeholder="Tell us about your use case, team size, or specific questions."></textarea>
+                    </div>
+                    <button id="demoSubmit" class="form-btn" type="submit">Request Demo</button>
+                    <p id="demoMsg" class="form-msg" aria-live="polite"></p>
+                </form>
             </div>
 
             <div class="card">
@@ -127,6 +202,59 @@
             <p class="response">We typically respond within 24 hours on business days.</p>
         </div>
     </main>
+
+    <script>
+        (function () {
+            var API = 'https://app.plainspokenfoundrynine.com/store-api/demo-request';
+            var form = document.getElementById('demoForm');
+            var btn = document.getElementById('demoSubmit');
+            var msg = document.getElementById('demoMsg');
+            if (!form) return;
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                msg.textContent = '';
+                msg.className = 'form-msg';
+                var name = form.name.value.trim();
+                var email = form.email.value.trim();
+                if (!name || !email) {
+                    msg.textContent = 'Name and email are required.';
+                    msg.classList.add('err');
+                    return;
+                }
+                btn.disabled = true;
+                var originalLabel = btn.textContent;
+                btn.textContent = 'Sending...';
+                fetch(API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: name,
+                        email: email,
+                        company: form.company.value.trim(),
+                        product: form.product.value,
+                        message: form.message.value.trim()
+                    })
+                }).then(function (r) {
+                    return r.json().catch(function () { return {}; }).then(function (body) {
+                        if (r.ok && body.success !== false) {
+                            msg.textContent = 'Thanks — we\u2019ll be in touch shortly.';
+                            msg.classList.add('ok');
+                            form.reset();
+                        } else {
+                            msg.textContent = body.error || 'Could not submit. Please email support@plainspokenfoundrynine.com.';
+                            msg.classList.add('err');
+                        }
+                    });
+                }).catch(function () {
+                    msg.textContent = 'Could not reach the server. Please email support@plainspokenfoundrynine.com.';
+                    msg.classList.add('err');
+                }).finally(function () {
+                    btn.disabled = false;
+                    btn.textContent = originalLabel;
+                });
+            });
+        })();
+    </script>
 
     <footer class="footer">
         <div>&copy; 2026 Plainspoken Foundry Nine. All rights reserved.</div>
