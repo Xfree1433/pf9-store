@@ -362,14 +362,14 @@
                     form.reset();
                     if (typeof gtag === 'function') gtag('event', 'calculator_lead_capture', { units: units });
                 } else {
-                    msg.textContent = 'Something went wrong — email mark@plainspokenfoundrynine.com and I will send it directly.';
+                    msg.textContent = 'Something went wrong — email support@plainspokenfoundrynine.com and we'll send it directly.';
                     msg.className = 'text-sm mt-3 text-red-300';
                 }
                 msg.classList.remove('hidden');
                 btn.textContent = 'Email me the PDF';
                 btn.disabled = false;
             }).catch(function() {
-                msg.textContent = 'Connection issue — email mark@plainspokenfoundrynine.com and I will send it directly.';
+                msg.textContent = 'Connection issue — email support@plainspokenfoundrynine.com and we'll send it directly.';
                 msg.className = 'text-sm mt-3 text-red-300';
                 msg.classList.remove('hidden');
                 btn.textContent = 'Email me the PDF';
