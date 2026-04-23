@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Per-Door Pricing Calculator — Buildium vs AppFolio vs DoorLoop vs PF9</title>
+    <meta name="description" content="See exactly what per-unit property management software costs you every month. Compare Buildium, AppFolio, DoorLoop, and PF9 flat pricing at your actual unit count. Free tool, no signup required.">
+    <meta name="keywords" content="buildium pricing calculator, appfolio cost per unit, doorloop pricing, property management software cost calculator, landlord software comparison">
+    <link rel="canonical" href="https://store.plainspokenfoundrynine.com/tools/per-door-calculator.html">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://store.plainspokenfoundrynine.com/tools/per-door-calculator.html">
+    <meta property="og:title" content="Per-Door Pricing Calculator — How much is per-unit pricing actually costing you?">
+    <meta property="og:description" content="Drag a slider, see your real monthly cost across Buildium, AppFolio, DoorLoop, and PF9 flat pricing. Free, no signup.">
+    <meta property="og:site_name" content="Plainspoken Foundry Nine">
+    <meta property="og:image" content="https://store.plainspokenfoundrynine.com/og-image.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Per-Door Pricing Calculator — Buildium vs AppFolio vs DoorLoop">
+    <meta name="twitter:description" content="Find out what per-unit pricing actually costs you each month.">
+    <meta name="twitter:image" content="https://store.plainspokenfoundrynine.com/og-image.png">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <!-- Google Analytics 4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RWJKZXGNPF"></script>
+    <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-RWJKZXGNPF');</script>
+    <link rel="stylesheet" href="/dist/tailwind.css">
+    <style>
+        html { scroll-behavior: smooth; }
+        input[type=range] { -webkit-appearance: none; appearance: none; background: transparent; }
+        input[type=range]::-webkit-slider-runnable-track { height: 6px; background: #e5e7eb; border-radius: 999px; }
+        input[type=range]::-moz-range-track { height: 6px; background: #e5e7eb; border-radius: 999px; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 22px; height: 22px; background: #111; border-radius: 50%; margin-top: -8px; cursor: pointer; border: 3px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+        input[type=range]::-moz-range-thumb { width: 22px; height: 22px; background: #111; border-radius: 50%; cursor: pointer; border: 3px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+        .bar { transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1); }
+        .count-flash { animation: flash 0.3s ease-out; }
+        @keyframes flash { 0% { transform: scale(1.08); } 100% { transform: scale(1); } }
+    </style>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Per-Door Pricing Calculator",
+      "description": "Compare per-unit property management software pricing from Buildium, AppFolio, and DoorLoop against PF9 flat pricing.",
+      "url": "https://store.plainspokenfoundrynine.com/tools/per-door-calculator.html",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+    }
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-900 antialiased">
+
+    <!-- Nav -->
+    <nav class="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <a href="/" class="flex items-center gap-2 text-sm font-bold no-underline text-inherit">
+                    <span class="bg-black text-white px-2 py-0.5 rounded text-xs tracking-wide">PF9</span>
+                    <span class="hidden sm:inline">Plainspoken Foundry Nine</span>
+                </a>
+                <div class="hidden md:flex items-center gap-8 text-sm text-gray-600">
+                    <a href="/#products" class="hover:text-black transition-colors">All Products</a>
+                    <a href="/for-landlords.html" class="hover:text-black transition-colors">For Landlords</a>
+                    <a href="/#pricing" class="hover:text-black transition-colors">Pricing</a>
+                    <a href="/contact.html" class="hover:text-black transition-colors">Contact</a>
+                </div>
+                <a href="/for-landlords.html" class="hidden sm:inline-flex bg-black text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors">See PF9 Flat Pricing</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="bg-white border-b border-gray-200">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 text-center">
+            <div class="inline-flex items-center gap-2 bg-green-50 text-green-700 text-sm font-medium px-3 py-1.5 rounded-full mb-5">
+                <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                Free tool — no signup required
+            </div>
+            <h1 class="text-3xl sm:text-5xl font-bold tracking-tight leading-tight mb-4">
+                How much is per-door pricing<br class="hidden sm:block"> actually costing you?
+            </h1>
+            <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+                Drag the slider. See what Buildium, AppFolio, and DoorLoop charge at your actual unit count — and compare it to PF9's flat price.
+            </p>
+        </div>
+    </section>
+
+    <!-- Calculator -->
+    <section class="py-12 sm:py-16">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+
+            <!-- Slider card -->
+            <div class="bg-white rounded-2xl shadow-sm p-6 sm:p-10 mb-8">
+                <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
+                    <div>
+                        <label for="unitSlider" class="block text-sm font-medium text-gray-600 mb-1">How many rental units do you manage?</label>
+                        <div class="flex items-baseline gap-2">
+                            <span id="unitCount" class="text-5xl sm:text-6xl font-bold tracking-tight">20</span>
+                            <span class="text-lg text-gray-500">units</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button data-preset="5" class="preset-btn text-xs font-medium px-3 py-1.5 border border-gray-200 rounded-full hover:border-gray-400 transition-colors">5</button>
+                        <button data-preset="20" class="preset-btn text-xs font-medium px-3 py-1.5 border border-gray-200 rounded-full hover:border-gray-400 transition-colors">20</button>
+                        <button data-preset="50" class="preset-btn text-xs font-medium px-3 py-1.5 border border-gray-200 rounded-full hover:border-gray-400 transition-colors">50</button>
+                        <button data-preset="100" class="preset-btn text-xs font-medium px-3 py-1.5 border border-gray-200 rounded-full hover:border-gray-400 transition-colors">100</button>
+                        <button data-preset="250" class="preset-btn text-xs font-medium px-3 py-1.5 border border-gray-200 rounded-full hover:border-gray-400 transition-colors">250</button>
+                    </div>
+                </div>
+                <input type="range" id="unitSlider" min="1" max="500" value="20" class="w-full cursor-pointer">
+                <div class="flex justify-between text-xs text-gray-400 mt-2">
+                    <span>1</span>
+                    <span>100</span>
+                    <span>250</span>
+                    <span>500+</span>
+                </div>
+            </div>
+
+            <!-- Results -->
+            <div class="bg-white rounded-2xl shadow-sm p-6 sm:p-10 mb-8">
+                <h2 class="text-xl font-bold mb-6">Monthly cost at <span id="resultUnits">20</span> units</h2>
+                <div id="results" class="space-y-5"></div>
+                <div id="savings" class="mt-8 p-5 bg-green-50 border border-green-200 rounded-xl hidden">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div>
+                            <p class="text-sm font-semibold text-green-800">You could save <span id="savingsMonthly" class="text-lg">$0</span>/month switching to PF9 Property Suite.</p>
+                            <p class="text-xs text-green-700 mt-1">That's <span id="savingsYearly">$0</span>/year vs your most expensive option above.</p>
+                        </div>
+                        <a href="/for-landlords.html" class="inline-flex items-center justify-center bg-black text-white font-semibold px-5 py-2.5 rounded-lg text-sm hover:bg-gray-800 transition-colors whitespace-nowrap">See PF9 Property Suite →</a>
+                    </div>
+                </div>
+                <p class="text-xs text-gray-400 mt-6">Competitor pricing based on public tier pages as of April 2026. Minimums, per-unit fees, and required add-ons vary by tier, region, and promotions. Always verify directly on vendor sites. This calculator uses entry-level tiers only.</p>
+            </div>
+
+            <!-- Lead capture -->
+            <div class="bg-gradient-to-br from-gray-900 to-black text-white rounded-2xl p-6 sm:p-10">
+                <div class="max-w-xl">
+                    <h3 class="text-2xl font-bold mb-3">Want this as a PDF?</h3>
+                    <p class="text-gray-300 text-sm mb-6">We'll email a clean PDF comparison at your unit count you can share with a partner, accountant, or board. Usually within one business day. No sales calls, no spam — one email.</p>
+                    <form id="leadForm" class="flex flex-col sm:flex-row gap-3">
+                        <input type="email" id="leadEmail" name="email" required placeholder="you@example.com" class="flex-1 px-4 py-3 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-white/40">
+                        <button type="submit" id="leadBtn" class="bg-white text-black font-semibold px-6 py-3 rounded-lg text-sm hover:bg-gray-100 transition-colors whitespace-nowrap">Email me the PDF</button>
+                    </form>
+                    <p id="leadMsg" class="text-sm mt-3 hidden"></p>
+                    <p class="text-xs text-gray-400 mt-4">We will only email you the PDF and one follow-up. Unsubscribe anytime.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Methodology -->
+    <section class="py-16 bg-white border-t border-gray-200">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-2xl font-bold mb-6">How we calculated this</h2>
+            <div class="space-y-6 text-sm text-gray-700">
+                <div>
+                    <h3 class="font-semibold mb-1">PF9 Property Suite — $119/mo flat</h3>
+                    <p>LANDLORDR + TENANTLINK bundle. No per-unit fee, no per-user fee. Price does not change from 1 unit to 500.</p>
+                </div>
+                <div>
+                    <h3 class="font-semibold mb-1">Buildium Essential — $58/mo minimum + ~$1.50/unit</h3>
+                    <p>Based on Buildium's published Essential tier. Minimum monthly fee applies until per-unit charges exceed it. Higher tiers (Growth, Premium) cost significantly more and include features not in this comparison.</p>
+                </div>
+                <div>
+                    <h3 class="font-semibold mb-1">AppFolio Core — $1.49/unit with $298/mo minimum</h3>
+                    <p>AppFolio has no tier below $298/mo. Small landlords under 200 units pay the minimum regardless of actual unit count. Larger portfolios pay per unit at $1.49–$3.00 depending on features.</p>
+                </div>
+                <div>
+                    <h3 class="font-semibold mb-1">DoorLoop Starter — $69/mo for first 20 units + ~$3/unit</h3>
+                    <p>DoorLoop's entry tier includes a fixed allotment of units; additional units are billed per-unit. Annual prepayment discounts available.</p>
+                </div>
+                <div class="pt-4 border-t border-gray-200">
+                    <p class="text-xs text-gray-500">This is a simplified comparison using publicly listed entry-tier pricing. Real quotes depend on feature requirements (accounting, marketing, maintenance, 1099s, ACH), contract length, and region. Always get a direct quote before deciding.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="bg-black text-white py-20">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-3xl sm:text-4xl font-bold mb-4">Ready to stop paying per door?</h2>
+            <p class="text-gray-300 mb-8">See the full PF9 Property Suite — live demo, no signup, flat pricing forever.</p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="/for-landlords.html" class="inline-flex items-center justify-center bg-white text-black font-semibold px-8 py-3.5 rounded-lg text-base hover:bg-gray-100 transition-colors">See the Property Suite</a>
+                <a href="https://landlordr.plainspokenfoundrynine.com" target="_blank" class="inline-flex items-center justify-center border-2 border-gray-600 text-white font-semibold px-8 py-3.5 rounded-lg text-base hover:border-gray-400 transition-colors">Try LANDLORDR Demo</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-gray-400">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-gray-800 pt-8">
+                <div class="flex items-center gap-2 text-sm">
+                    <span class="bg-white text-black px-2 py-0.5 rounded text-xs font-bold tracking-wide">PF9</span>
+                    <span>&copy; 2026 Plainspoken Foundry Nine. All rights reserved.</span>
+                </div>
+                <div class="flex gap-6 text-sm">
+                    <a href="/privacy.html" class="hover:text-white transition-colors">Privacy</a>
+                    <a href="/terms.html" class="hover:text-white transition-colors">Terms</a>
+                    <a href="/contact.html" class="hover:text-white transition-colors">Contact</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+    (function(){
+        const API = 'https://app.plainspokenfoundrynine.com/store-api';
+        const slider = document.getElementById('unitSlider');
+        const unitCountEl = document.getElementById('unitCount');
+        const resultUnitsEl = document.getElementById('resultUnits');
+        const resultsEl = document.getElementById('results');
+        const savingsEl = document.getElementById('savings');
+        const savingsMonthlyEl = document.getElementById('savingsMonthly');
+        const savingsYearlyEl = document.getElementById('savingsYearly');
+
+        const providers = [
+            { name: 'PF9 Property Suite', tag: 'Flat rate — no per-unit fee', cost: () => 119, color: 'bg-green-600', textColor: 'text-green-700', isPF9: true },
+            { name: 'Buildium Essential', tag: '$58/mo min + ~$1.50/unit', cost: u => Math.max(58, 58 + Math.max(0, u - 20) * 1.5), color: 'bg-blue-500', textColor: 'text-blue-700' },
+            { name: 'AppFolio Core', tag: '$1.49/unit with $298/mo min', cost: u => Math.max(298, u * 1.49), color: 'bg-purple-500', textColor: 'text-purple-700' },
+            { name: 'DoorLoop Starter', tag: '$69/mo incl. 20 units + $3/extra', cost: u => u <= 20 ? 69 : 69 + (u - 20) * 3, color: 'bg-orange-500', textColor: 'text-orange-700' }
+        ];
+
+        function fmt(n) { return '$' + Math.round(n).toLocaleString('en-US'); }
+
+        function render(units) {
+            unitCountEl.textContent = units;
+            resultUnitsEl.textContent = units;
+            unitCountEl.classList.remove('count-flash');
+            void unitCountEl.offsetWidth;
+            unitCountEl.classList.add('count-flash');
+
+            const rows = providers.map(p => ({ ...p, monthly: p.cost(units) }));
+            const max = Math.max(...rows.map(r => r.monthly));
+
+            resultsEl.innerHTML = rows.map(r => {
+                const pct = max > 0 ? (r.monthly / max) * 100 : 0;
+                const highlight = r.isPF9 ? 'ring-2 ring-green-200 bg-green-50/50' : '';
+                return `
+                    <div class="p-4 rounded-xl ${highlight}">
+                        <div class="flex items-center justify-between mb-2">
+                            <div>
+                                <div class="font-semibold text-sm ${r.isPF9 ? 'text-green-900' : ''}">${r.name}${r.isPF9 ? ' <span class="ml-1 text-[10px] font-bold bg-green-600 text-white px-1.5 py-0.5 rounded">FLAT</span>' : ''}</div>
+                                <div class="text-xs text-gray-500">${r.tag}</div>
+                            </div>
+                            <div class="text-xl font-bold ${r.isPF9 ? 'text-green-700' : ''}">${fmt(r.monthly)}<span class="text-xs font-normal text-gray-400">/mo</span></div>
+                        </div>
+                        <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+                            <div class="bar h-full ${r.color} rounded-full" style="width: ${pct}%"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            const pf9 = rows.find(r => r.isPF9).monthly;
+            const mostExpensive = Math.max(...rows.filter(r => !r.isPF9).map(r => r.monthly));
+            const diff = mostExpensive - pf9;
+            if (diff > 0) {
+                savingsMonthlyEl.textContent = fmt(diff);
+                savingsYearlyEl.textContent = fmt(diff * 12);
+                savingsEl.classList.remove('hidden');
+            } else {
+                savingsEl.classList.add('hidden');
+            }
+        }
+
+        slider.addEventListener('input', () => render(parseInt(slider.value, 10)));
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                slider.value = btn.dataset.preset;
+                render(parseInt(slider.value, 10));
+                if (typeof gtag === 'function') gtag('event', 'calculator_preset', { preset: btn.dataset.preset });
+            });
+        });
+
+        let lastTracked = 0;
+        slider.addEventListener('change', () => {
+            const now = Date.now();
+            if (now - lastTracked > 1500 && typeof gtag === 'function') {
+                gtag('event', 'calculator_adjust', { units: parseInt(slider.value, 10) });
+                lastTracked = now;
+            }
+        });
+
+        render(20);
+
+        // Lead capture
+        const form = document.getElementById('leadForm');
+        const msg = document.getElementById('leadMsg');
+        const btn = document.getElementById('leadBtn');
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const email = document.getElementById('leadEmail').value.trim();
+            if (!email || !email.includes('@')) return;
+            btn.textContent = 'Sending...';
+            btn.disabled = true;
+            const units = parseInt(slider.value, 10);
+            fetch(API + '/demo-request', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: email.split('@')[0],
+                    email: email,
+                    company: '',
+                    message: 'Per-door calculator PDF request at ' + units + ' units.',
+                    product: 'PROPERTY_SUITE (calculator lead)'
+                })
+            }).then(function(r) {
+                if (r.ok) {
+                    msg.textContent = 'Got it. PDF on its way within one business day.';
+                    msg.className = 'text-sm mt-3 text-green-300';
+                    form.reset();
+                    if (typeof gtag === 'function') gtag('event', 'calculator_lead_capture', { units: units });
+                } else {
+                    msg.textContent = 'Something went wrong — email mark@plainspokenfoundrynine.com and I will send it directly.';
+                    msg.className = 'text-sm mt-3 text-red-300';
+                }
+                msg.classList.remove('hidden');
+                btn.textContent = 'Email me the PDF';
+                btn.disabled = false;
+            }).catch(function() {
+                msg.textContent = 'Connection issue — email mark@plainspokenfoundrynine.com and I will send it directly.';
+                msg.className = 'text-sm mt-3 text-red-300';
+                msg.classList.remove('hidden');
+                btn.textContent = 'Email me the PDF';
+                btn.disabled = false;
+            });
+        });
+    })();
+    </script>
+</body>
+</html>
