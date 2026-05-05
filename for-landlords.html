@@ -353,5 +353,19 @@
         </div>
     </footer>
 
+    <script>
+    document.addEventListener('click', function(e) {
+        var link = e.target.closest('a[href^="mailto:support@plainspokenfoundrynine.com"]');
+        if (!link) return;
+        if (typeof gtag !== 'function') return;
+        var subject = decodeURIComponent((link.href.split('subject=')[1] || '').split('&')[0]);
+        gtag('event', 'demo_intent_click', {
+            product: 'PROPERTY_SUITE',
+            source_page: 'for-landlords',
+            subject: subject
+        });
+    });
+    </script>
+
 </body>
 </html>
