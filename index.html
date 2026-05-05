@@ -863,6 +863,9 @@
         document.getElementById('modalProductPrice').textContent = price;
         document.getElementById('subscribeModal').classList.remove('hidden');
         document.body.style.overflow = 'hidden';
+        if (typeof gtag === 'function') {
+            gtag('event', 'subscribe_modal_open', { product: product, price: price });
+        }
     }
 
     function closeSubscribe() {
@@ -872,10 +875,16 @@
 
     // Waitlist for products that aren't ready to sell yet
     function openWaitlist(product) {
+        if (typeof gtag === 'function') {
+            gtag('event', 'waitlist_open', { product: product });
+        }
         var email = window.prompt('Join the ' + product + ' waitlist — enter your email:');
         if (!email) return;
         email = email.trim();
         if (!email.includes('@')) { alert('Please enter a valid email address.'); return; }
+        if (typeof gtag === 'function') {
+            gtag('event', 'waitlist_submit', { product: product });
+        }
         fetch(API_URL + '/demo-request', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -906,6 +915,10 @@
         var name = document.getElementById('subName').value;
         var company = document.getElementById('subCompany').value;
 
+        if (typeof gtag === 'function') {
+            gtag('event', 'checkout_started', { product: product });
+        }
+
         fetch(API_URL + '/create-checkout-session', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -931,6 +944,19 @@
     // Close modal on Escape
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') { closeSubscribe(); }
+    });
+
+    // Track Book-a-Demo intent — every mailto demo link on a product card
+    document.addEventListener('click', function(e) {
+        var link = e.target.closest('a[href^="mailto:support@plainspokenfoundrynine.com"]');
+        if (!link) return;
+        if (typeof gtag !== 'function') return;
+        var card = link.closest('[data-product], .group, .border');
+        var product = link.getAttribute('data-product')
+            || (card && card.querySelector('h3') && card.querySelector('h3').textContent.trim())
+            || 'unknown';
+        var subject = decodeURIComponent((link.href.split('subject=')[1] || '').split('&')[0]);
+        gtag('event', 'demo_intent_click', { product: product, subject: subject });
     });
     </script>
 
