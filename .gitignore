@@ -1,3 +1,9 @@
+# Secrets and local data
+.env
+.env.*
+!.env.example
+*.db
+
 # Generated marketing assets — track config, not output
 screenshots/
 audio/
