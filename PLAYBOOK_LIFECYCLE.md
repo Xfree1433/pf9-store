@@ -17,7 +17,7 @@
 
 | # | Audience | Trigger | Length | Goal |
 |---|---|---|---|---|
-| L1 | Demo clicker, no subscribe | `demo_clicked` + no `subscription_active` in 24h | 3 emails over 7 days | Book demo or subscribe |
+| L1 | Video viewer, no subscribe | `video_play` + no `subscription_active` in 24h | 3 emails over 7 days | Drive Subscribe |
 | L2 | Cart abandon | `checkout_started` + no `subscription_active` in 1h | 2 emails over 48h | Complete checkout |
 | L3 | New subscriber onboarding | `subscription_active` | 4 emails over 14 days | Activate 1st key action |
 | L4 | Month-1 success | Day 30 post-subscription | 1 email | Keep them, get testimonial |
@@ -29,35 +29,37 @@ All sequences stop immediately on human reply or conversion to next stage.
 
 ---
 
-## L1 — Demo clicker, no subscribe
+## L1 — Video viewer, no subscribe
 
-### L1-E1 — Day 1, 2 hours after demo click
+**Trigger:** `video_play` event fired on the storefront, no `subscription_active` for the same email within 24 hours. (Email is captured if the visitor came in via a paid ad, content download, or outbound sequence — anonymous viewers don't enter L1.)
 
-**Subject:** The 2-minute version of what you just saw
+### L1-E1 — Day 1, 2 hours after video play
+
+**Subject:** The 2-minute version of what you just watched
 
 > Hey {{first_name}},
 >
-> Saw you clicked the live demo for **{{app_name}}**. Quick context in case it helps:
+> Saw you watched the **{{app_name}}** video. Quick context in case it helps:
 >
 > - Flat **${{price}}/mo**. No per-user charge.
-> - Setup takes minutes. No sales call required to subscribe.
+> - Subscribe in 60 seconds. No demo to sit through, no sales call.
 > - 14-day money-back, cancel anytime.
 >
 > If you want to compare against what you're using today or see a second app, the whole catalog is here: https://store.plainspokenfoundrynine.com
 >
-> Want a 20-minute walkthrough instead? Grab a slot: {{calendar_link}}
+> Subscribe link: {{subscribe_link}}
 >
 > — {{founder_first}}
 
 ### L1-E2 — Day 3
 
-**Subject:** one thing most {{app_name}} users miss in the demo
+**Subject:** one thing most {{app_name}} buyers miss in the video
 
 > {{first_name}},
 >
-> Quick follow-up. The thing buyers usually don't notice in the {{app_name}} demo is {{feature}}. It's the part that actually saves the 30 minutes a day most teams are losing.
+> Quick follow-up. The detail buyers usually don't notice in the {{app_name}} video is {{feature}}. It's the part that actually saves the 30 minutes a day most teams are losing.
 >
-> 45-second clip showing it: {{link}}
+> 45-second clip showing it: {{youtube_clip_url}}
 >
 > Subscribe when you're ready: {{subscribe_link}}
 >
@@ -73,7 +75,7 @@ All sequences stop immediately on human reply or conversion to next stage.
 >
 > — {{founder_first}}
 
-**KPIs:** open >50%, click >8%, conversion >4% of entries.
+**KPIs:** open >50%, click >8%, subscribe conversion >4% of entries.
 
 ---
 
