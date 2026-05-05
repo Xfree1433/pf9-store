@@ -1,0 +1,30 @@
+{
+  "default_viewport": { "width": 1440, "height": 900 },
+  "default_wait_ms": 2500,
+  "output_dir": "../screenshots",
+
+  "targets": [
+    { "name": "store-home",  "url": "https://store.plainspokenfoundrynine.com/",            "viewport": { "width": 1440, "height": 900 }, "full_page": true  },
+    { "name": "flowtrack",   "url": "https://flowtrack.plainspokenfoundrynine.com/demo",    "wait_ms": 3500 },
+    { "name": "shiftlog",    "url": "https://shiftlog.plainspokenfoundrynine.com/demo",     "wait_ms": 3500 },
+    { "name": "qualifi",     "url": "https://qualifi.plainspokenfoundrynine.com/demo",      "wait_ms": 3500 },
+    { "name": "reportr",     "url": "https://reportr.plainspokenfoundrynine.com/demo",      "wait_ms": 3500 },
+    { "name": "inspectr",    "url": "https://inspectr.plainspokenfoundrynine.com/demo",     "wait_ms": 3500 },
+    { "name": "opsiq",       "url": "https://opsiq.plainspokenfoundrynine.com/demo",        "wait_ms": 4000 },
+    { "name": "compli",      "url": "https://compli.plainspokenfoundrynine.com/demo",       "wait_ms": 3500 },
+    { "name": "landlordr",   "url": "https://landlordr.plainspokenfoundrynine.com/demo",    "wait_ms": 3500 },
+    { "name": "tenantlinkr", "url": "https://tenantlinkr.plainspokenfoundrynine.com/demo",  "wait_ms": 3500 },
+    { "name": "permitr",     "url": "https://permitr.plainspokenfoundrynine.com/demo",      "wait_ms": 3500 },
+    { "name": "taskflow",    "url": "https://taskflow.plainspokenfoundrynine.com/demo",     "wait_ms": 3500 },
+    { "name": "maintainr",   "url": "https://maintainr.plainspokenfoundrynine.com/demo",    "wait_ms": 3500 },
+    { "name": "extractr",    "url": "https://extractr.plainspokenfoundrynine.com/demo",     "wait_ms": 3500 },
+    { "name": "supportr",    "url": "https://supportr.plainspokenfoundrynine.com/demo",     "wait_ms": 3500 }
+  ],
+
+  "viewport_variants": {
+    "social_square":  { "width": 1080, "height": 1080 },
+    "social_story":   { "width": 1080, "height": 1920 },
+    "linkedin_feed":  { "width": 1200, "height": 627 },
+    "video_1080p":    { "width": 1920, "height": 1080 }
+  }
+}
