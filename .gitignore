@@ -1,7 +1,24 @@
+# Secrets and local data
 .env
 .env.*
 !.env.example
 *.db
+
+# Generated marketing assets — track config, not output
+screenshots/
+audio/
+marketing/
+
+# Python
 __pycache__/
 *.pyc
+.venv/
+venv/
+
+# Node
 node_modules/
+
+# Editor
+.vscode/
+.idea/
+.DS_Store
