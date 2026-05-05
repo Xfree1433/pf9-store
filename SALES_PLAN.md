@@ -84,9 +84,10 @@ Cowork should explicitly **not** target enterprise (1,000+ employee) manufacture
 ## 5. Channel Plan & 90-Day Calendar
 
 ### Phase 1 — Weeks 1–3: Foundation
-- Audit storefront analytics; install missing events (demo click, checkout start, checkout complete) if not present
-- Set up CRM (HubSpot Free tier acceptable) with pipeline stages: MQL → Demo Booked → Demo Done → Trial → Closed-Won/Lost
+- Audit storefront analytics; install missing events (`video_play`, `subscribe_modal_open`, `checkout_started`, `support_email_click`) if not present
+- Set up CRM (HubSpot Free tier acceptable) with pipeline stages: MQL → Video Watched → Trial → Subscribed → Active / Churned
 - Build 3 outbound lists (manufacturing, multi-site ops, property) — 500 contacts each
+- Produce one 60–90-second product video per app, hosted on YouTube, embedded on each product card
 - Repurpose existing MARKETING.md LinkedIn posts into a 4-week drip
 - Rewrite storefront hero headlines per vertical; A/B test against current
 
@@ -106,11 +107,22 @@ Cowork should explicitly **not** target enterprise (1,000+ employee) manufacture
 
 ## 6. Sales Motion
 
-- **Self-serve tier (<$99/mo):** no human in the loop; optimize storefront, let Stripe close it
-- **Demo-led tier ($99–$399/mo):** 20-minute live demo, same-day quote, 7-day follow-up cadence, close or disqualify within 21 days
-- **Bundle deals ($249+/mo):** founder-assisted close for first 20 deals; Cowork shadows and builds playbook from recordings
+**Pure self-serve, video-led.** No live demos, no booking calls. The funnel is:
 
-SLA: demo requests answered within 2 business hours during weeks 4+.
+1. **Education** — visitor lands on storefront or vertical page, watches the per-app YouTube video embedded on the product card
+2. **Conversion** — clicks Subscribe, completes Stripe checkout
+3. **Activation** — onboarding email sequence (`PLAYBOOK_LIFECYCLE.md` L3) drives first key action
+4. **Expansion** — month-3 sequence (L5) prompts bundle upgrade
+
+**No demo-led tier.** Every product, regardless of price, sells through video + storefront + Stripe. Bundle deals ($249+/mo) follow the same path; the bundle CTA is just a different button.
+
+**Human fallback (low priority):** support@plainspokenfoundrynine.com for buyers with questions the video and FAQ don't answer. Not a sales channel — answer once, link to the video, close the loop. SLA: 1 business day.
+
+**Why this works for PF9:**
+- Apps are simple enough that a 90-second video shows value clearly
+- Pricing is published — nothing to negotiate
+- Removes the inbox-triage tax of demo requests
+- Lets one founder/operator support the full SKU range without a sales team
 
 ---
 
@@ -121,14 +133,14 @@ Cowork reports these weekly, same format every time:
 | Metric | 30-day target | 90-day target |
 |---|---|---|
 | Storefront unique visitors | 2,500 | 8,000 |
-| Demo clicks | 150 | 600 |
-| Trials started | 40 | 180 |
+| Video plays (any product) | 400 | 1,800 |
+| Video → Subscribe conversion | 4% | 6% |
+| Subscribe modal opens | 200 | 800 |
 | Paid conversions | 10 | 60 |
 | New MRR | $1,500 | $9,000 |
 | CAC (blended) | <$400 | <$300 |
-| Pipeline created (demo-led) | $5k | $25k |
 
-Weekly report format: one page, traffic → demos → trials → paid → MRR, with the one thing that changed and the one thing being tested next week.
+Weekly report format: one page, traffic → video plays → subscribe modal → paid → MRR, with the one thing that changed and the one thing being tested next week.
 
 ---
 
