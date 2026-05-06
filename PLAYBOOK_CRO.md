@@ -43,18 +43,22 @@ Ship tests in the **Order** column, not ICE-raw order — dependencies matter.
 
 ---
 
-## T2 — Primary-style "Try Demo" button (ship first)
+## T2 — Primary-style "Watch Demo" button (✅ shipped 2026-05-06)
 
-**Hypothesis:** "Try Demo" is the zero-risk entry point, but it reads as secondary next to the solid "Subscribe" button. Making it the visually dominant action raises demo-click rate, which is the top-of-funnel leading indicator for paid conversion.
+**Status:** Shipped to production on 13 of the 15 Watch Demo cards. Carve-outs:
+- **MARKUPR** (waitlist) — Watch Demo stays outline; Join Waitlist (amber) is the only real conversion.
+- **COMPLI** (freemium) — Watch Demo stays outline; Start Free is the primary conversion.
 
-**Variant:**
-- A (control): "Try Demo" gray outline + "Subscribe" solid
-- B: "Try Demo" solid primary + "Subscribe" outline
+**Hypothesis:** "Watch Demo" is the zero-risk entry point, but it reads as secondary next to the solid "Subscribe" button. Making it the visually dominant action raises video-play rate, which is the top-of-funnel leading indicator for paid conversion.
 
-**Metric:** demo-click rate on app cards.
-**Guardrail:** Subscribe-click rate (must not drop >15%).
-**Run time:** 14 days.
-**Why ship first:** single CSS change, highest confidence, clears the measurement baseline for everything else.
+**Variant shipped:** Watch Demo solid black, Subscribe outlined. (No A/B split — shipped as a permanent change since the funnel is video-led; treating this as a baseline shift rather than a test.)
+
+**Watch these metrics for 14 days post-ship:**
+- `video_play` rate on app cards — expect significant lift
+- `subscribe_modal_open` rate — guardrail, must not drop >15%
+- `checkout_started` and Stripe paid-conversion rate — ultimate guardrail
+
+**If guardrail breaches:** revert by swapping the class strings back. The change is reversible in two `replace_all` operations.
 
 ---
 
