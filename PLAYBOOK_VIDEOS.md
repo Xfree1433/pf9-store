@@ -17,12 +17,15 @@
 | PROPERTY_BUNDLE | ✅ Live | https://youtu.be/63TRUxSKeho |
 | EXTRACTR | ✅ Live | https://youtu.be/0rpvA708nFI |
 | COMPLI | ✅ Live | https://youtu.be/Y-gxxXJ-EkQ |
-| REPORTR | ⏳ In production | — |
-| PERMITR | ⏳ In production | — |
-| TASKFLOW | ⏳ In production | — |
-| OPSIQ | ⏳ In production | — |
-| SUPPORTR | ⏳ In production | — |
-| MAINTAINR | ⏳ In production | — |
+| REPORTR | ✅ Live | https://youtu.be/YLrNw3ZMLXc |
+| PERMITR | ✅ Live | https://youtu.be/RzKqlyjprMM |
+| TASKFLOW | ✅ Live | https://youtu.be/O2lUhXMeA34 |
+| SUPPORTR | ✅ Live | https://youtu.be/jVm4NyP_Ssk |
+| MAINTAINR | ✅ Live | https://youtu.be/eHUC-CvuQig |
+| OPSIQ | 🚫 Not planned | Channel root — OPSIQ is on waitlist; no demo video by design |
+| MARKUPR | 🚫 Not planned | Channel root — MARKUPR is on waitlist |
+
+**14 of 14 shipped products now have a demo video on the storefront.** Channel: https://www.youtube.com/@plainspokenfoundrynine
 
 When a new video ships, add the URL to the table above, swap the `href` on the matching `<a data-product="...">Watch Demo</a>` in `index.html`, and append a `VideoObject` entry to the JSON-LD block in `<head>`.
 
