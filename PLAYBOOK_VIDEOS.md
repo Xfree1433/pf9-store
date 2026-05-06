@@ -1,8 +1,30 @@
 # PF9 Per-App Video Production Package
 
-**Purpose:** every script, shot list, voiceover spec, and YouTube metadata block needed to produce the 14 product videos that drive PF9's video-led funnel (`SALES_PLAN.md` §6).
+**Purpose:** every script, shot list, voiceover spec, and YouTube metadata block needed to produce the product videos that drive PF9's video-led funnel (`SALES_PLAN.md` §6).
 
 **Producer:** Cowork Creative agent (`AGENTS.md` Agent 5) or human operator using the same workflow.
+
+## Production status (as of 2026-05-06)
+
+| App | Status | URL |
+|---|---|---|
+| FLOWTRACK | ✅ Live | https://youtu.be/VA_TKydOxuQ |
+| QUALIFI | ✅ Live | https://youtu.be/42TdtdcaUnk |
+| SHIFTLOG | ✅ Live | https://youtu.be/AZA8wj916Sc |
+| INSPECTR | ✅ Live | https://youtu.be/_1SQDCRjhf0 |
+| LANDLORDR | ✅ Live | https://youtu.be/lpA0qVSOyBY |
+| TENANTLINK | ✅ Live | https://youtu.be/w_02sqH1n3s |
+| PROPERTY_BUNDLE | ✅ Live | https://youtu.be/63TRUxSKeho |
+| EXTRACTR | ✅ Live | https://youtu.be/0rpvA708nFI |
+| COMPLI | ✅ Live | https://youtu.be/Y-gxxXJ-EkQ |
+| REPORTR | ⏳ In production | — |
+| PERMITR | ⏳ In production | — |
+| TASKFLOW | ⏳ In production | — |
+| OPSIQ | ⏳ In production | — |
+| SUPPORTR | ⏳ In production | — |
+| MAINTAINR | ⏳ In production | — |
+
+When a new video ships, add the URL to the table above, swap the `href` on the matching `<a data-product="...">Watch Demo</a>` in `index.html`, and append a `VideoObject` entry to the JSON-LD block in `<head>`.
 
 **Production pipeline:**
 1. Run `python tools/capture_screenshots.py --variant video_1080p` to populate `./screenshots/`
