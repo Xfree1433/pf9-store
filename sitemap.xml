@@ -41,6 +41,11 @@
     <priority>0.9</priority>
   </url>
   <url>
+    <loc>https://store.plainspokenfoundrynine.com/tools/per-user-calculator.html</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
     <loc>https://flowtrack.plainspokenfoundrynine.com</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
