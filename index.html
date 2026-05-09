@@ -975,7 +975,7 @@
 
     // Track YouTube Watch-Demo clicks — fires before navigation
     document.addEventListener('click', function(e) {
-        var link = e.target.closest('a[href*="youtube.com"]');
+        var link = e.target.closest('a[href*="youtube.com"], a[href*="youtu.be"]');
         if (!link) return;
         if (typeof gtag !== 'function') return;
         var card = link.closest('[data-product], .group, .border');
