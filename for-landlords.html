@@ -357,7 +357,7 @@
     <script>
     // Track Watch-Demo YouTube clicks
     document.addEventListener('click', function(e) {
-        var link = e.target.closest('a[href*="youtube.com"]');
+        var link = e.target.closest('a[href*="youtube.com"], a[href*="youtu.be"]');
         if (!link) return;
         if (typeof gtag !== 'function') return;
         gtag('event', 'video_play', {
