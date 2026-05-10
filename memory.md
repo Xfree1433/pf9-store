@@ -144,7 +144,7 @@
 
 9. **Trademarks in comparison pages** — every comparison page has a footer disclaimer naming the competitor as their owner's trademark. Don't remove these.
 
-10. **Some sections of `MARKETING.md` reference "Book a 20-min demo"** — that copy bank predates the no-demo pivot. The outbound playbook (`PLAYBOOK_OUTBOUND.md`) was rewritten for video CTAs; MARKETING.md was intentionally left alone since it's a copy bank, not active production copy. If anything from MARKETING.md is being repurposed for live use, rewrite the demo CTAs first.
+10. ~~**Some sections of `MARKETING.md` reference "Book a 20-min demo"**~~ — refreshed 2026-05-10. `MARKETING.md` now matches the video-led, no-demo storefront: Product Hunt listings for both verticals, 7 LinkedIn posts (5 manufacturing + 2 property), 2 Reddit drafts, 2 outbound email templates, COMPLI section. All demo CTAs replaced with YouTube links. References calculators and comparison pages as proof points.
 
 ---
 
