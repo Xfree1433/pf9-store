@@ -45,6 +45,7 @@
 | `PLAYBOOK_LIFECYCLE.md` | 7 email sequences (L1 video-viewer, L2 cart-abandon, L3 onboarding, L4 testimonial, L5 expansion, L6 churn-save, L7 win-back) |
 | `PLAYBOOK_CRO.md` | A/B test backlog. T2 marked shipped; T1, T3–T10 still pending |
 | `PLAYBOOK_VIDEOS.md` | Per-app video scripts + status table (14/14 live + 1 OPSIQ waitlist + 1 MARKUPR waitlist) |
+| `PLAYBOOK_GOOGLE_ADS.md` | Paid-search playbook: campaign architecture, keywords, ad copy, conversion tracking, bidding, kill criteria |
 | `AGENTS.md` | 5 agent system prompts (Orchestrator, SDR, Growth, Lifecycle, Creative). AE Assist agent dropped — no demos to assist with. |
 | `tools/capture_screenshots.py` | Playwright batch screenshot tool |
 | `tools/compose_video.py` | ffmpeg + voiceover composition |
