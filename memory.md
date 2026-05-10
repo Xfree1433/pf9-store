@@ -28,6 +28,7 @@
 - **GA4 events** firing and **confirmed reaching GA4 Realtime** (2026-05-08): `video_play`, `subscribe_modal_open`, `checkout_started`, `support_email_click`, `waitlist_open`, `waitlist_submit`. All 8 custom dimensions registered (`product`, `price`, `source_page`, `destination`, `subject`, `calculator`, `units`, `users`). `video_play` marked as Key Event; remaining 4 events pending GA4 Admin refresh (2–4 hour delay before they're markable).
 - **JSON-LD schema** on every page: Product, FAQPage, BreadcrumbList, VideoObject (14 entries on index)
 - **CRO Test T2 shipped:** Watch Demo is solid black primary, Subscribe is outline secondary, on 13 of 15 cards (carve-outs: MARKUPR waitlist, COMPLI freemium)
+- **Email capture modal** (`assets/email-capture.js`) on 10 conversion surfaces (index, 2 vertical landings, 1 comparisons hub, 6 comparison pages). Desktop exit-intent + mobile 60% scroll trigger, 8-second minimum time on page, 7-day dismissal cooldown, once-per-session via sessionStorage. Captures land in HubSpot with `product='STOREFRONT (email capture)'` (no list assignment by default — add `HUBSPOT_LIST_NEWSLETTER` env var if you want them auto-listed).
 
 ### Backend (`store_api.py` on 139.94.250.128)
 - Flask app with Stripe webhooks for `checkout.session.completed`, `customer.subscription.deleted`, `customer.subscription.updated`, `invoice.payment_failed`

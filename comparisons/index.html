@@ -159,5 +159,7 @@
     document.addEventListener('click', function(e) { var l = e.target.closest('a[href^="mailto:support@plainspokenfoundrynine.com"]'); if (!l || typeof gtag !== 'function') return; var s = decodeURIComponent((l.href.split('subject=')[1] || '').split('&')[0]); gtag('event', 'support_email_click', { source_page: 'comparisons-index', subject: s }); });
     </script>
 
+    <script src="/assets/email-capture.js" defer></script>
+
 </body>
 </html>
