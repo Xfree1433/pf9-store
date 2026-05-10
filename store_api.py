@@ -40,6 +40,93 @@ EMAIL_FROM_INTERNAL = os.environ.get('EMAIL_FROM_INTERNAL', 'PF9 Alerts <alerts@
 NOTIFY_EMAIL        = os.environ.get('NOTIFY_EMAIL', '')
 
 
+# ── HubSpot CRM config ──
+HUBSPOT_TOKEN              = os.environ.get('HUBSPOT_TOKEN', '')
+HUBSPOT_API_BASE           = 'https://api.hubapi.com'
+HUBSPOT_LIST_MANUFACTURING = int(os.environ.get('HUBSPOT_LIST_MANUFACTURING', '12'))
+HUBSPOT_LIST_PROPERTY      = int(os.environ.get('HUBSPOT_LIST_PROPERTY', '13'))
+HUBSPOT_LIST_SUBSCRIBERS   = int(os.environ.get('HUBSPOT_LIST_SUBSCRIBERS', '14'))
+
+_MANUFACTURING_APPS = {'FLOWTRACK', 'QUALIFI', 'SHIFTLOG', 'REPORTR', 'INSPECTR', 'MAINTAINR'}
+_PROPERTY_APPS      = {'LANDLORDR', 'TENANTLINK', 'TENANTLINKR', 'PROPERTY_BUNDLE', 'PERMITR', 'TASKFLOW'}
+
+
+def _hubspot_list_for_product(product):
+    """Map a product key (or calculator-lead tag) to a HubSpot list ID. None if ambiguous."""
+    p = (product or '').upper()
+    if 'MANUFACTURING' in p or any(app in p for app in _MANUFACTURING_APPS):
+        return HUBSPOT_LIST_MANUFACTURING
+    if 'PROPERTY' in p or any(app in p for app in _PROPERTY_APPS):
+        return HUBSPOT_LIST_PROPERTY
+    return None
+
+
+def _hubspot_push_contact(email, name='', company='', list_id=None):
+    """
+    Upsert a contact in HubSpot and optionally add to a static list.
+    Fail-soft: never raises. Logs errors and returns. Callers must
+    not block on this — CRM availability is not a precondition for
+    serving the request.
+    """
+    if not HUBSPOT_TOKEN or not email:
+        return
+
+    email_norm = email.lower().strip()
+    headers = {
+        'Authorization': f'Bearer {HUBSPOT_TOKEN}',
+        'Content-Type': 'application/json',
+    }
+
+    parts = (name or '').strip().split(None, 1)
+    properties = {'email': email_norm}
+    if parts:
+        properties['firstname'] = parts[0]
+    if len(parts) > 1:
+        properties['lastname'] = parts[1]
+    if company:
+        properties['company'] = company
+
+    contact_id = None
+    try:
+        r = http_requests.post(
+            f'{HUBSPOT_API_BASE}/crm/v3/objects/contacts',
+            json={'properties': properties},
+            headers=headers,
+            timeout=10,
+        )
+        if r.status_code == 201:
+            contact_id = r.json().get('id')
+        elif r.status_code == 409:
+            r2 = http_requests.patch(
+                f'{HUBSPOT_API_BASE}/crm/v3/objects/contacts/{email_norm}?idProperty=email',
+                json={'properties': properties},
+                headers=headers,
+                timeout=10,
+            )
+            if r2.status_code == 200:
+                contact_id = r2.json().get('id')
+            else:
+                print(f'[Store API] HubSpot patch failed for {email_norm}: {r2.status_code} {r2.text[:200]}')
+        else:
+            print(f'[Store API] HubSpot create failed for {email_norm}: {r.status_code} {r.text[:200]}')
+    except Exception as e:
+        print(f'[Store API] HubSpot upsert error for {email_norm}: {e}')
+        return
+
+    if contact_id and list_id:
+        try:
+            r = http_requests.put(
+                f'{HUBSPOT_API_BASE}/crm/v3/lists/{list_id}/memberships/add',
+                json=[contact_id],
+                headers=headers,
+                timeout=10,
+            )
+            if r.status_code not in (200, 201, 204):
+                print(f'[Store API] HubSpot list add failed for {email_norm} (list {list_id}): {r.status_code} {r.text[:200]}')
+        except Exception as e:
+            print(f'[Store API] HubSpot list add error for {email_norm}: {e}')
+
+
 def _send_email(from_addr, to_addr, subject, html):
     """Send an email via Resend. No-op if resend/key not configured."""
     if not resend or not os.environ.get('RESEND_API_KEY'):
@@ -199,6 +286,16 @@ def demo_request():
         _send_notification(name, company, email, message, product)
     except Exception as e:
         print(f'[Store API] Email error: {e}')
+
+    try:
+        _hubspot_push_contact(
+            email=email,
+            name=name,
+            company=company,
+            list_id=_hubspot_list_for_product(product),
+        )
+    except Exception as e:
+        print(f'[Store API] HubSpot push error: {e}')
 
     return _cors_response(jsonify({'success': True, 'message': 'Demo request received!'}))
 
@@ -379,6 +476,17 @@ def _handle_checkout_completed(session):
         _send_welcome_email(email, name, product, temp_password, all_provisioned)
     except Exception as e:
         print(f'[Store API] Welcome email error: {e}')
+
+    # Push subscriber to HubSpot
+    try:
+        _hubspot_push_contact(
+            email=email,
+            name=name,
+            company=company,
+            list_id=HUBSPOT_LIST_SUBSCRIBERS,
+        )
+    except Exception as e:
+        print(f'[Store API] HubSpot subscriber push error: {e}')
 
     print(f'[Store API] Subscription created: {product} for {email} (provisioned={all_provisioned})')
 
