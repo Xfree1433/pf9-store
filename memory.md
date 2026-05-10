@@ -2,7 +2,7 @@
 
 **Purpose:** durable session state so any future agent (me, another Claude session, or a human) can pick up without re-deriving context.
 
-**Last updated:** 2026-05-07
+**Last updated:** 2026-05-08
 **Active session:** https://claude.ai/code/session_01PDCcag8KXiq7YURGhjqPrn
 
 ---
@@ -25,7 +25,7 @@
 - **2 cost calculators:** `/tools/per-door-calculator.html`, `/tools/per-user-calculator.html`
 - **6 competitor comparison pages** at `/comparisons/` (PR #13 — pending merge as of last update)
 - **Stripe checkout** wired and live
-- **GA4 events** firing: `video_play`, `subscribe_modal_open`, `checkout_started`, `support_email_click`, `waitlist_open`, `waitlist_submit` (network-confirmed; ingestion to GA4 reports unverified due to test-browser 503s)
+- **GA4 events** firing and **confirmed reaching GA4 Realtime** (2026-05-08): `video_play`, `subscribe_modal_open`, `checkout_started`, `support_email_click`, `waitlist_open`, `waitlist_submit`. All 8 custom dimensions registered (`product`, `price`, `source_page`, `destination`, `subject`, `calculator`, `units`, `users`). `video_play` marked as Key Event; remaining 4 events pending GA4 Admin refresh (2–4 hour delay before they're markable).
 - **JSON-LD schema** on every page: Product, FAQPage, BreadcrumbList, VideoObject (14 entries on index)
 - **CRO Test T2 shipped:** Watch Demo is solid black primary, Subscribe is outline secondary, on 13 of 15 cards (carve-outs: MARKUPR waitlist, COMPLI freemium)
 
@@ -89,14 +89,18 @@
 
 ## Open items / waiting on user
 
-### Immediate (blocking nothing else)
-- [ ] **Merge PR #13** (6 comparison pages + hub) — https://github.com/Xfree1433/pf9-store/pull/13
-- [ ] **Verify `video_play` actually reaches GA4** — last network test on user's browser returned 503s on `/g/collect`. Likely an ad-blocker artifact in the test browser; needs verification from a clean device (phone on cellular → GA4 Realtime).
+### Closed since last update
+- [x] **PR #13 merged** (6 comparison pages + hub) — 2026-05-08
+- [x] **PR #14 merged** (this file added) — 2026-05-08
+- [x] **`video_play` confirmed reaching GA4 Realtime** — 2026-05-08. The 503s seen earlier were a local-browser ad-blocker artifact; real visitors land cleanly. Both `video_play` (custom listener) and built-in Enhanced Measurement `click` fire on every Watch Demo click.
+- [x] **GA4 custom dimensions registered** — all 8 (Product, Price, Source page, Destination URL, Subject, Calculator, Units, Users). 24–48h before the standard Events report shows breakdowns.
+- [x] **`video_play` marked as Key Event** — 2026-05-08. Other 4 (`subscribe_modal_open`, `checkout_started`, `support_email_click`, `waitlist_open`) all triggered and confirmed in Realtime; pending GA4 Admin Events tab refresh (2–4h delay) before they appear and can be ☆-marked.
 
-### Blocking nothing but high-leverage
-- [ ] **Submit `sitemap.xml` to Google Search Console** — without this, the 6 new comparison pages won't get indexed quickly. 10-minute setup. User needs to verify the property first; agent can add the verification meta tag once user pastes it.
-- [ ] **Register custom dimensions in GA4 Admin** — `product`, `price`, `source_page`, `destination`, `subject`, `calculator`, `units`, `users`. 5 minutes. Without this, the standard Events report won't surface custom params.
-- [ ] **Mark 5 events as Key Events in GA4** — `video_play`, `subscribe_modal_open`, `checkout_started`, `support_email_click`, `waitlist_open`.
+### Open
+
+#### Blocking nothing but high-leverage
+- [ ] **Mark remaining 4 events as Key Events** (~10s click each, after GA4 Admin Events list refreshes 2–4h post-trigger): `subscribe_modal_open`, `checkout_started`, `support_email_click`, `waitlist_open`.
+- [ ] **Submit `sitemap.xml` to Google Search Console** — without this, the 6 comparison pages won't get indexed quickly. 10-minute setup. User needs to verify the property first; agent can add the verification meta tag once user pastes it.
 
 ### Blocking the Lifecycle agent
 - [ ] **Pick a CRM** (HubSpot Free recommended). Once chosen, agent writes a ~30-line integration in `store_api.py` that pushes leads/subscribers from the calculators and Stripe webhooks.
@@ -121,7 +125,7 @@
 
 ## Known issues / gotchas
 
-1. **GA4 standard Events report has 24–48h latency** and won't show custom event parameters until the corresponding Custom Dimensions are registered in Admin. **Verify firing in DebugView or Realtime, not the standard report.**
+1. **GA4 standard Events report has 24–48h latency** and won't show custom event parameters until the corresponding Custom Dimensions are registered in Admin. The Admin → Events list itself has its own 2–4h refresh delay before newly-fired events show up to be ☆-marked. **Verify firing in DebugView or Realtime, not the standard report.**
 
 2. **Test-browser 503s on `/g/collect`** are likely an ad-blocker / privacy-extension artifact. Real visitors won't have this. Don't chase the 503 unless DebugView from a clean device also fails.
 
@@ -174,7 +178,8 @@
 
 | # | Title | Status |
 |---|---|---|
-| 13 | Add 6 competitor comparison pages + hub | **Open — waiting on merge** |
+| 14 | Add memory.md — project state for future sessions | Merged 2026-05-08 |
+| 13 | Add 6 competitor comparison pages + hub | Merged 2026-05-08 |
 | 12 | Fix video_play event selector — match youtu.be URLs too | Merged 2026-05-07 |
 | 11 | Add per-user pricing calculator (CRO Test T10) + cleanup | Merged 2026-05-07 |
 | 10 | Add for-manufacturers.html — vertical landing page (CRO Test T9) | Merged 2026-05-07 |
