@@ -23,7 +23,7 @@
 - **14 product cards** linking to specific YouTube videos
 - **2 vertical landing pages:** `/for-landlords.html`, `/for-manufacturers.html`
 - **2 cost calculators:** `/tools/per-door-calculator.html`, `/tools/per-user-calculator.html`
-- **6 competitor comparison pages** at `/comparisons/` (PR #13 — pending merge as of last update)
+- **6 competitor comparison pages** at `/comparisons/` (Buildium, AppFolio, DoorLoop, MRPeasy, Katana, Fishbowl vs PF9 — plus a hub index)
 - **Stripe checkout** wired and live
 - **GA4 events** firing and **confirmed reaching GA4 Realtime** (2026-05-08): `video_play`, `subscribe_modal_open`, `checkout_started`, `support_email_click`, `waitlist_open`, `waitlist_submit`. All 8 custom dimensions registered (`product`, `price`, `source_page`, `destination`, `subject`, `calculator`, `units`, `users`). `video_play` marked as Key Event; remaining 4 events pending GA4 Admin refresh (2–4 hour delay before they're markable).
 - **JSON-LD schema** on every page: Product, FAQPage, BreadcrumbList, VideoObject (14 entries on index)
