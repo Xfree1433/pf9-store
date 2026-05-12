@@ -136,6 +136,11 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://store.plainspokenfoundrynine.com/refer/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://flowtrack.plainspokenfoundrynine.com</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
