@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shift Handoff Template — PF9 (Print-Ready)</title>
+    <meta name="description" content="Printable shift handoff template. Print or save as PDF.">
+    <meta name="robots" content="noindex">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: system-ui, -apple-system, "Segoe UI", Helvetica, sans-serif; font-size: 11pt; color: #111; background: #f5f5f5; padding: 1.5rem; }
+        .page { max-width: 8.5in; margin: 0 auto; background: white; padding: 0.6in; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        h1 { font-size: 18pt; margin-bottom: 0.1rem; font-weight: 700; }
+        .subtitle { font-size: 9pt; color: #666; margin-bottom: 1rem; border-bottom: 2px solid #111; padding-bottom: 0.5rem; }
+        h2 { font-size: 11pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.9rem; margin-bottom: 0.4rem; border-bottom: 1px solid #ccc; padding-bottom: 0.2rem; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem 1rem; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.4rem 1rem; }
+        .field { padding: 0.2rem 0; border-bottom: 1px solid #333; min-height: 1.5rem; font-size: 10pt; }
+        .field-label { font-size: 8pt; color: #666; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.05rem; display: block; }
+        .lines { border-bottom: 1px solid #999; min-height: 1.4rem; }
+        .lines + .lines { margin-top: 0.3rem; }
+        .checkbox-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.2rem 0; font-size: 10pt; }
+        .checkbox { width: 14px; height: 14px; border: 1.5px solid #333; flex-shrink: 0; }
+        .signature-block { margin-top: 1rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        .signature { border-top: 1px solid #333; padding-top: 0.2rem; font-size: 8pt; color: #666; text-transform: uppercase; letter-spacing: 0.05em; min-height: 2rem; }
+        .footer-brand { margin-top: 1.5rem; padding-top: 0.5rem; border-top: 1px solid #ccc; font-size: 8pt; color: #999; text-align: center; }
+        .footer-brand a { color: #666; text-decoration: none; }
+        .print-bar { max-width: 8.5in; margin: 0 auto 1rem; display: flex; justify-content: space-between; align-items: center; }
+        .print-btn { background: #111; color: white; padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-size: 9pt; font-weight: 600; }
+        @media print { body { padding: 0; background: white; } .page { box-shadow: none; max-width: none; padding: 0.5in; } .print-bar { display: none; } @page { margin: 0.4in; size: letter; } }
+    </style>
+</head>
+<body>
+    <div class="print-bar">
+        <a href="/lead-magnets/shift-handoff-template.html" style="font-size: 9pt; color: #666; text-decoration: none;">&larr; Back to PF9</a>
+        <button class="print-btn" onclick="window.print()">Print / Save as PDF</button>
+    </div>
+    <div class="page">
+        <h1>SHIFT HANDOFF</h1>
+        <div class="subtitle">End-of-shift handoff sheet — outgoing supervisor completes, incoming supervisor acknowledges</div>
+
+        <div class="grid-3">
+            <div><span class="field-label">Date</span><div class="field"></div></div>
+            <div><span class="field-label">Shift</span><div class="field"></div></div>
+            <div><span class="field-label">Line / Area</span><div class="field"></div></div>
+            <div><span class="field-label">Outgoing supervisor</span><div class="field"></div></div>
+            <div><span class="field-label">Incoming supervisor</span><div class="field"></div></div>
+            <div><span class="field-label">Crew count</span><div class="field"></div></div>
+        </div>
+
+        <h2>Production Summary</h2>
+        <div class="grid-3">
+            <div><span class="field-label">Units produced</span><div class="field"></div></div>
+            <div><span class="field-label">Units scrapped</span><div class="field"></div></div>
+            <div><span class="field-label">Total downtime (min)</span><div class="field"></div></div>
+        </div>
+        <div style="margin-top: 0.4rem;"><span class="field-label">Downtime causes</span>
+            <div class="lines"></div><div class="lines"></div>
+        </div>
+
+        <h2>Open Issues / Blockers</h2>
+        <div class="checkbox-row"><div class="checkbox"></div><div style="flex:1;"><div class="lines"></div></div></div>
+        <div class="checkbox-row"><div class="checkbox"></div><div style="flex:1;"><div class="lines"></div></div></div>
+        <div class="checkbox-row"><div class="checkbox"></div><div style="flex:1;"><div class="lines"></div></div></div>
+
+        <h2>Incidents</h2>
+        <div class="grid-2">
+            <div><span class="field-label">What happened</span><div class="lines"></div><div class="lines"></div></div>
+            <div><span class="field-label">Severity (low / med / high)</span><div class="field"></div>
+                <span class="field-label" style="margin-top:0.4rem;">Action taken</span><div class="lines"></div></div>
+        </div>
+
+        <h2>Next-Shift Tasks (Priority Order)</h2>
+        <div class="checkbox-row"><div class="checkbox"></div><span style="font-weight:600; margin-right: 0.5rem;">1.</span><div style="flex:1;"><div class="lines"></div></div></div>
+        <div class="checkbox-row"><div class="checkbox"></div><span style="font-weight:600; margin-right: 0.5rem;">2.</span><div style="flex:1;"><div class="lines"></div></div></div>
+        <div class="checkbox-row"><div class="checkbox"></div><span style="font-weight:600; margin-right: 0.5rem;">3.</span><div style="flex:1;"><div class="lines"></div></div></div>
+        <div class="checkbox-row"><div class="checkbox"></div><span style="font-weight:600; margin-right: 0.5rem;">4.</span><div style="flex:1;"><div class="lines"></div></div></div>
+
+        <h2>Notes</h2>
+        <div class="lines"></div><div class="lines"></div><div class="lines"></div>
+
+        <div class="signature-block">
+            <div><div class="signature">Outgoing supervisor signature / date</div></div>
+            <div><div class="signature">Incoming supervisor signature / date</div></div>
+        </div>
+
+        <div class="footer-brand">PF9 Shift Handoff Template &nbsp;·&nbsp; Free to use &nbsp;·&nbsp; <a href="https://store.plainspokenfoundrynine.com/for-manufacturers.html">store.plainspokenfoundrynine.com</a> &nbsp;·&nbsp; Digital version runs in SHIFTLOG $49/mo</div>
+    </div>
+</body>
+</html>

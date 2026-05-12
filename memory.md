@@ -49,6 +49,8 @@
 | `PLAYBOOK_GOOGLE_ADS.md` | Paid-search playbook: campaign architecture, keywords, ad copy, conversion tracking, bidding, kill criteria |
 | `tools/google-ads/` | Pre-built Google Ads Editor import CSVs (campaigns, ad groups, keywords, ads, negatives) + README. Saves ~2h of manual clicking when launching paid. Campaigns import as Paused with $0 budget — explicit step required to enable. |
 | `glossary/` | 6 SEO glossary pages (MES vs ERP, MRP vs ERP, per-door pricing, per-seat pricing, property pricing models, manufacturing pricing models) + hub. Top-of-funnel SEO targets covering education queries; complement the comparison pages' bottom-of-funnel buyer intent. |
+| `lead-magnets/` | 3 free-template landing pages (shift handoff, NCR/CAPA log, property inspection) + hub. Email-gated downloads landing in HubSpot with product tag `MANUFACTURING_LEAD_MAGNET (...)` or `PROPERTY_LEAD_MAGNET (...)` — automatic list routing via existing `_hubspot_list_for_product` logic. Different intent segment than calculators (template-seekers vs price-comparers). |
+| `templates/` | 3 printable HTML templates served to lead-magnet submitters: shift handoff (1 page), NCR/CAPA log (1 page), property inspection (2 pages). Print-styled CSS, browser-renderable, save-as-PDF friendly. `noindex` meta (gated content). |
 | `AGENTS.md` | 5 agent system prompts (Orchestrator, SDR, Growth, Lifecycle, Creative). AE Assist agent dropped — no demos to assist with. |
 | `tools/capture_screenshots.py` | Playwright batch screenshot tool |
 | `tools/compose_video.py` | ffmpeg + voiceover composition |

@@ -116,6 +116,26 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://store.plainspokenfoundrynine.com/lead-magnets/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://store.plainspokenfoundrynine.com/lead-magnets/shift-handoff-template.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://store.plainspokenfoundrynine.com/lead-magnets/ncr-capa-log-template.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://store.plainspokenfoundrynine.com/lead-magnets/property-inspection-checklist.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://flowtrack.plainspokenfoundrynine.com</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
