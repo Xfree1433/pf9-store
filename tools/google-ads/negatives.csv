@@ -1,0 +1,40 @@
+Keyword,Match type,Scope,Notes
+reviews,Phrase,Account,Review-only intent
+ratings,Phrase,Account,Review-only intent
+comparison chart,Phrase,Account,Aggregator intent
+login,Phrase,Account,Existing-user intent
+sign in,Phrase,Account,Existing-user intent
+support contact,Phrase,Account,Wrong intent
+customer service,Phrase,Account,Wrong intent
+jobs,Phrase,Account,Job-search intent
+careers,Phrase,Account,Job-search intent
+salary,Phrase,Account,Job-search intent
+glassdoor,Phrase,Account,Job-search intent
+linkedin,Phrase,Account,Job-search intent
+crunchbase,Phrase,Account,Investor intent
+wikipedia,Phrase,Account,Educational only
+what is,Phrase,Account,Top-of-funnel research
+how does,Phrase,Account,Top-of-funnel research
+how to use,Phrase,Account,Existing-user intent
+tutorial,Phrase,Account,Existing-user intent
+training,Phrase,Account,Existing-user intent
+certification,Phrase,Account,Educational
+api docs,Phrase,Account,Developer intent
+documentation,Phrase,Account,Developer intent
+integration guide,Phrase,Account,Developer intent
+developer,Phrase,Account,Wrong audience
+github,Phrase,Account,Wrong intent
+open source,Phrase,Account,Wrong intent
+free download,Phrase,Account,Piracy-adjacent
+crack,Phrase,Account,Piracy
+torrent,Phrase,Account,Piracy
+used,Phrase,Account,"Protects against 'used buildium' etc."
+construction,Phrase,Campaign:PF9 - Property Comparisons,Buildium-the-construction-term collision
+contractor,Phrase,Campaign:PF9 - Property Comparisons,Construction-trade collision
+swimming pool,Phrase,Campaign:PF9 - Property Comparisons,Buildium-construction collision
+hot tub,Phrase,Campaign:PF9 - Property Comparisons,Buildium-construction collision
+plumbing,Phrase,Campaign:PF9 - Property Comparisons,Construction-trade collision
+katana sword,Phrase,Campaign:PF9 - Manufacturing Comparisons,Katana-the-sword collision
+fishbowl game,Phrase,Campaign:PF9 - Manufacturing Comparisons,Fishbowl-the-game collision
+fishbowl pet,Phrase,Campaign:PF9 - Manufacturing Comparisons,Fishbowl-the-aquarium collision
+fishbowl goldfish,Phrase,Campaign:PF9 - Manufacturing Comparisons,Fishbowl-the-aquarium collision
