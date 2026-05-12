@@ -81,6 +81,41 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://store.plainspokenfoundrynine.com/glossary/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://store.plainspokenfoundrynine.com/glossary/mes-vs-erp.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://store.plainspokenfoundrynine.com/glossary/mrp-vs-erp.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://store.plainspokenfoundrynine.com/glossary/what-is-per-door-pricing.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://store.plainspokenfoundrynine.com/glossary/what-is-per-seat-pricing-saas.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://store.plainspokenfoundrynine.com/glossary/property-management-software-pricing-models.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://store.plainspokenfoundrynine.com/glossary/manufacturing-software-pricing-models.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://flowtrack.plainspokenfoundrynine.com</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
