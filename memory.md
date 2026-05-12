@@ -2,7 +2,7 @@
 
 **Purpose:** durable session state so any future agent (me, another Claude session, or a human) can pick up without re-deriving context.
 
-**Last updated:** 2026-05-08
+**Last updated:** 2026-05-10
 **Active session:** https://claude.ai/code/session_01PDCcag8KXiq7YURGhjqPrn
 
 ---
@@ -102,34 +102,54 @@
 
 ## Open items / waiting on user
 
-### Closed since last update
-- [x] **PR #13 merged** (6 comparison pages + hub) — 2026-05-08
-- [x] **PR #14 merged** (this file added) — 2026-05-08
-- [x] **`video_play` confirmed reaching GA4 Realtime** — 2026-05-08. The 503s seen earlier were a local-browser ad-blocker artifact; real visitors land cleanly. Both `video_play` (custom listener) and built-in Enhanced Measurement `click` fire on every Watch Demo click.
-- [x] **GA4 custom dimensions registered** — all 8 (Product, Price, Source page, Destination URL, Subject, Calculator, Units, Users). 24–48h before the standard Events report shows breakdowns.
-- [x] **`video_play` marked as Key Event** — 2026-05-08. Other 4 (`subscribe_modal_open`, `checkout_started`, `support_email_click`, `waitlist_open`) all triggered and confirmed in Realtime; pending GA4 Admin Events tab refresh (2–4h delay) before they appear and can be ☆-marked.
+### Closed since last update (2026-05-10)
+- [x] **PRs #13–#26 all merged** — comparison pages, video URL wiring, T2 ship, HubSpot integration, email capture modal, glossary, lead magnets, YouTube/Directories/HARO/Quora/Affiliate/Launch-posts playbooks, Google Ads CSV bundle. memory.md kept in sync throughout.
+- [x] **22 merged feature branches deleted on GitHub** (manual via web UI or shell command). Repo branch list clean.
+- [x] **`video_play` confirmed reaching GA4 Realtime** — 2026-05-08. The 503s seen earlier were a local-browser ad-blocker artifact; real visitors land cleanly.
+- [x] **GA4 custom dimensions registered** — all 8 (Product, Price, Source page, Destination URL, Subject, Calculator, Units, Users).
+- [x] **5 events marked as Key Events** in GA4: `video_play`, `subscribe_modal_open`, `checkout_started`, `form_submit`, `waitlist_submit`, `calculator_lead_capture`. User opted for slightly different set than I initially recommended — their picks are conversion-events vs intermediate funnel-step events. Better choices.
+- [x] **YouTube SEO applied** (PLAYBOOK_YOUTUBE.md sections A–C) — 2026-05-10:
+  - Channel description, links, keywords published
+  - 5 playlists created in correct binge-watch order
+  - All 14 video descriptions + tags updated per playbook template
+- [x] **HubSpot CRM live** — leads from calculators, lead magnets, contact form, modal, Stripe checkout all push into HubSpot. Token rotated post-exposure. Server env vars set on bridgr.service.
+- [x] **Google Search Console** verified, sitemap submitted, 6 priority URLs requested for indexing.
+- [x] **Email capture modal smoke-tested** in production — fires on exit-intent + 60% scroll, lands in HubSpot.
 
 ### Open
 
-#### Blocking nothing but high-leverage
-- [ ] **Mark remaining 4 events as Key Events** (~10s click each, after GA4 Admin Events list refreshes 2–4h post-trigger): `subscribe_modal_open`, `checkout_started`, `support_email_click`, `waitlist_open`.
-- [ ] **Submit `sitemap.xml` to Google Search Console** — without this, the 6 comparison pages won't get indexed quickly. 10-minute setup. User needs to verify the property first; agent can add the verification meta tag once user pastes it.
+#### Scheduled — fire on schedule
+- [ ] **HN Show HN** — Tuesday 8–9am PT. Paste from `PLAYBOOK_LAUNCH_POSTS.md` Section A. Have first-hour reply templates open in a side tab.
+- [ ] **Twitter/X thread** — Wednesday 9am ET. Paste from `PLAYBOOK_LAUNCH_POSTS.md` Section B. If HN blows up Tuesday, delay to ride that wave.
+- [ ] **Indie Hackers post** — Thursday 7am ET. Paste from `PLAYBOOK_LAUNCH_POSTS.md` Section C.
 
-### Blocking the Lifecycle agent
-- [ ] **Pick a CRM** (HubSpot Free recommended). Once chosen, agent writes a ~30-line integration in `store_api.py` that pushes leads/subscribers from the calculators and Stripe webhooks.
+#### YouTube remaining (~85 min one-time)
+- [ ] **End screens on all 14 videos** (~5 min × 14 = 70 min). Subscribe element + best-for-viewer + cross-link per `PLAYBOOK_YOUTUBE.md` Section D pairing.
+- [ ] **Pinned comments on all 14 videos** (~1 min × 14 = 14 min). Template in `PLAYBOOK_YOUTUBE.md` Section E.
 
-### Blocking real revenue (the actual bottleneck)
-- [ ] **Drive traffic.** Site has 3 users / 21 events in last 7 days as of 2026-05-08. Funnel is fully built; nobody's walking in. Channels in `MARKETING.md`:
-  - Outbound (`PLAYBOOK_OUTBOUND.md` is ready — needs sender like Apollo/Smartlead)
-  - LinkedIn organic drip (already drafted in MARKETING.md)
-  - Paid (Google Search + LinkedIn Ads — needs ad accounts and budget)
-  - Product Hunt launch (copy ready in MARKETING.md)
-  - Reddit/community (templates in MARKETING.md, needs founder judgment)
+#### Directories (~75 min spread over the week, 2–3/day)
+- [ ] Tier 1 first: AlternativeTo, SaaSHub, Crunchbase, Product Hunt (other vertical), BetaList
+- [ ] Tier 2 next: Indie Hackers Products, Slant, Software Suggest, SaaSworthy, F6S
+- [ ] Vertical-specific: ThomasNet (manufacturing), BiggerPockets (property — join community 1 week first)
+- [ ] Integration marketplaces: Stripe Partner Directory, QuickBooks App Marketplace
+- [ ] Reusable submission assets at top of `PLAYBOOK_DIRECTORIES.md`
 
-### After traffic + CRM exists
-- [ ] **Set up Cowork Lifecycle agent** per `AGENTS.md` Agent 4. Dry-run for 48 hr in approval queue, then go live with sequence L3 (onboarding) first.
-- [ ] **Set up Cowork Orchestrator agent** per `AGENTS.md` Agent 1. Weekly report Friday EOD.
+#### Recurring inbound (start after HN week, ~30 min/day combined)
+- [ ] **HARO daily scan** — `PLAYBOOK_HARO.md`. Sign up at Help a B2B Writer, Terkel.io, Qwoted. 10 min/morning to scan; 4-hour response goal on relevant queries.
+- [ ] **Quora + Stack Exchange answers** — `PLAYBOOK_QUORA_STACKEXCHANGE.md`. 3–5 substantive answers per week, 15 min each. Build profile credibility before mentioning PF9.
+
+#### When budget exists
+- [ ] **Google Ads launch** at $30/day total. Import the CSV bundle from `tools/google-ads/` into Google Ads Editor. Set conversion tracking via GA4 link first.
+
+#### When traffic + leads exist
+- [ ] **Stand up Cowork Lifecycle agent** per `AGENTS.md` Agent 4. Dry-run 48 hr in approval queue, then go live with L3 (onboarding).
+- [ ] **Stand up Cowork Orchestrator agent** per `AGENTS.md` Agent 1. Weekly report Fridays.
 - [ ] **Add SDR + Creative + Growth agents** per `AGENTS.md` rollout order.
+
+#### When customers exist
+- [ ] **G2 / Capterra review playbook** — deferred until 5+ paying customers willing to leave reviews.
+- [ ] **Customer case study template** — deferred until first willing customer.
+- [ ] **L3 onboarding email rewrite** — defer until real activation data exists.
 
 ### Watch
 - [ ] **T2 metrics for 14 days post-deploy** — `video_play` rate should lift; `subscribe_modal_open` and Stripe paid-conversion are guardrails (must not drop >15%). Decision date pushed from 2026-05-21 to ~2026-05-22 due to PR #12 selector bug that silently broke `video_play` for the first 2 days. Revert procedure in `PLAYBOOK_CRO.md` §T2.
@@ -191,6 +211,18 @@
 
 | # | Title | Status |
 |---|---|---|
+| 26 | Add HARO + Quora/Stack Exchange playbooks | Merged 2026-05-10 |
+| 25 | Add affiliate program (page + operations playbook) | Merged 2026-05-10 |
+| 24 | Add launch posts playbook (HN, Twitter, Indie Hackers drafts) | Merged 2026-05-10 |
+| 23 | Add YouTube SEO + free directory submission playbooks | Merged 2026-05-10 |
+| 22 | Add 3 lead magnets (free templates) + printable templates | Merged 2026-05-10 |
+| 21 | Add SEO glossary (6 pages + hub) and Google Ads import bundle | Merged 2026-05-10 |
+| 20 | Add email capture modal for anonymous video viewers | Merged 2026-05-09 |
+| 19 | Refresh MARKETING.md to match video-led storefront | Merged 2026-05-09 |
+| 18 | Add PLAYBOOK_GOOGLE_ADS.md — paid-search traffic playbook | Merged 2026-05-09 |
+| 17 | Wire HubSpot CRM integration into store_api.py | Merged 2026-05-09 |
+| 16 | Tidy memory.md — drop stale "PR #13 pending" note | Merged 2026-05-09 |
+| 15 | Update memory.md — close analytics open items | Merged 2026-05-09 |
 | 14 | Add memory.md — project state for future sessions | Merged 2026-05-08 |
 | 13 | Add 6 competitor comparison pages + hub | Merged 2026-05-08 |
 | 12 | Fix video_play event selector — match youtu.be URLs too | Merged 2026-05-07 |
