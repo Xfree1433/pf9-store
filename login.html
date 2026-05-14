@@ -169,6 +169,9 @@
             color: #9ca3af;
         }
     </style>
+    <!-- Google Analytics 4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RWJKZXGNPF"></script>
+    <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-RWJKZXGNPF');</script>
 </head>
 <body>
     <nav class="nav">
@@ -315,10 +318,36 @@
     (function(){
         var API='https://app.plainspokenfoundrynine.com/store-api';
 
+        // Product price map for GA4 purchase-event value attribution.
+        // Keep in sync with index.html openSubscribe calls.
+        var PRICE_MAP={
+            FLOWTRACK:99, QUALIFI:79, SHIFTLOG:49, REPORTR:59, INSPECTR:49,
+            LANDLORDR:89, TENANTLINK:49, PROPERTY_BUNDLE:119,
+            PERMITR:299, TASKFLOW:69,
+            EXTRACTR:149, SUPPORTR:79, MAINTAINR:99
+        };
+
         // Show success banner if redirected from Stripe
         var params=new URLSearchParams(window.location.search);
         var subscribed=params.get('subscribed');
+        var sessionId=params.get('session_id');
         if(subscribed){
+            // Fire GA4 purchase event (deduped by session_id via sessionStorage)
+            try {
+                var dedupeKey='pf9_purchase_fired_'+(sessionId||subscribed);
+                if(typeof gtag==='function' && !sessionStorage.getItem(dedupeKey)){
+                    var prodKey=(subscribed||'').toUpperCase();
+                    var price=PRICE_MAP[prodKey]||0;
+                    gtag('event','purchase',{
+                        transaction_id: sessionId||(prodKey+'-'+Date.now()),
+                        value: price,
+                        currency:'USD',
+                        items:[{item_id: prodKey, item_name: prodKey, price: price, quantity:1}]
+                    });
+                    sessionStorage.setItem(dedupeKey,'1');
+                }
+            } catch(e){}
+
             document.getElementById('success-banner').style.display='block';
             document.getElementById('success-product').textContent='You are now subscribed to '+subscribed.toUpperCase()+'.';
             // Highlight only the subscribed app
