@@ -272,6 +272,46 @@ Document the outcome in `memory.md` so future PR descriptions know what worked.
 
 ---
 
+## Section F — HN posting walkthrough (click by click)
+
+No prior Hacker News knowledge assumed. Follow top to bottom on launch day.
+
+### One-time account setup (~2 min, do this any time before launch day)
+- [ ] Go to https://news.ycombinator.com
+- [ ] Top-right: click **login**
+- [ ] No account yet? Under "Create Account," enter a username + password, click **create account**. (No email required. The username is public — pick one you're fine with.)
+- [ ] Confirm you're logged in — your username shows top-right.
+
+### Timing — when to post
+- [ ] **Tuesday or Wednesday, 8:00–9:00am Pacific** (= 11am–12pm Eastern).
+- [ ] NOT Monday, NOT Friday, NOT a holiday. Weekday morning only.
+
+### Posting (~3 min)
+- [ ] Go to https://news.ycombinator.com/submit (or click **submit** in the top bar)
+- [ ] Three fields appear: **title**, **url**, **text**
+- [ ] **title** — paste the title from Section A (the `Show HN: PF9 – ...` line)
+- [ ] **url** — leave EMPTY. (If you fill url, the text box disappears. We want the text box.)
+- [ ] **text** — paste the entire Body block from Section A
+- [ ] Click **submit**
+
+### First 2 hours (the part that decides everything)
+- [ ] You land on your post's page — keep this tab open.
+- [ ] Stay at your computer for 2 hours. Reply to every comment, even short ones — fast replies push the post up.
+- [ ] To reply: under a comment, click **reply** → type → click **add comment**
+- [ ] Keep the "First-hour comment templates" (Section A) open in another tab so you're not writing replies from scratch.
+
+### What to expect
+- [ ] Front page within ~90 min → real traffic wave. Watch GA4 Realtime + HubSpot for new contacts.
+- [ ] No front page within 90 min → that's the outcome. Don't delete, don't repost. You still earned a permanent backlink.
+
+### The one rule that gets you banned
+- [ ] Do NOT ask anyone to upvote, and do NOT upvote from a second account. HN detects this and kills the post. Let it rise on its own.
+
+### After HN (later in the week)
+- [ ] Wednesday/Thursday: Twitter/X thread (Section B), then Indie Hackers (Section C). If HN blows up, delay Twitter to ride the wave (Section D).
+
+---
+
 ## What I (the agent) can help with after launch
 
 - Write follow-up tweets if the thread blows up
