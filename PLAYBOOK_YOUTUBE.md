@@ -243,15 +243,27 @@ YouTube Studio → Content → click video → Editor → **End screen**:
 2. **Best for viewer** element (top-right, full duration — YouTube auto-picks based on watch history)
 3. **Video element** pointing to the next-relevant video in the same vertical (bottom-center, last 10 seconds)
 
-Pair videos for cross-promotion:
+Pair videos for cross-promotion. **All 14 videos are listed — every one has a defined "next video" so no video dead-ends.**
+
+Manufacturing Suite (5):
 - SHIFTLOG → FLOWTRACK (manufacturing flow continuation)
 - FLOWTRACK → QUALIFI
 - QUALIFI → REPORTR
 - REPORTR → INSPECTR
 - INSPECTR → SHIFTLOG (loop)
+
+Property Suite (3):
 - LANDLORDR → TENANTLINK (property flow)
 - TENANTLINK → PROPERTY_BUNDLE
 - PROPERTY_BUNDLE → LANDLORDR (loop)
+
+Operations & Compliance (6):
+- COMPLI → EXTRACTR
+- EXTRACTR → MAINTAINR
+- MAINTAINR → SUPPORTR
+- SUPPORTR → PERMITR
+- PERMITR → TASKFLOW
+- TASKFLOW → COMPLI (loop)
 
 ---
 

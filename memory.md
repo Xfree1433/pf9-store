@@ -2,7 +2,7 @@
 
 **Purpose:** durable session state so any future agent (me, another Claude session, or a human) can pick up without re-deriving context.
 
-**Last updated:** 2026-05-10
+**Last updated:** 2026-05-28
 **Active session:** https://claude.ai/code/session_01PDCcag8KXiq7YURGhjqPrn
 
 ---
@@ -34,7 +34,8 @@
 - Flask app with Stripe webhooks for `checkout.session.completed`, `customer.subscription.deleted`, `customer.subscription.updated`, `invoice.payment_failed`
 - SQLite tables: `subscriptions`, `demo_requests`
 - Resend for transactional email (welcome on subscribe)
-- **No CRM integration yet** (waiting on user to pick HubSpot/Loops/etc.)
+- **HubSpot live** — `_hubspot_push_contact()` upserts contacts into lists 12 (manufacturing), 13 (property), 14 (subscribers). Token in `/opt/bridgr/.env` as `HUBSPOT_TOKEN`. `_send_welcome_email()` fires on `checkout.session.completed` — **do not duplicate with Lifecycle agent L3-E1**.
+- **`purchase` GA4 event wired on `login.html`** — fires on `?subscribed=X` URL param after Stripe redirect. Deduped via sessionStorage key `pf9_purchase_fired_<sessionId>`. PRICE_MAP covers all 13 products.
 
 ### Strategy & playbook docs
 | File | Purpose |
@@ -144,7 +145,7 @@
 - [ ] **Google Ads launch** at $30/day total. Import the CSV bundle from `tools/google-ads/` into Google Ads Editor. Set conversion tracking via GA4 link first.
 
 #### When traffic + leads exist
-- [ ] **Stand up Cowork Lifecycle agent** per `AGENTS.md` Agent 4. Dry-run 48 hr in approval queue, then go live with L3 (onboarding).
+- [ ] **Stand up Cowork Lifecycle agent** — activation guide complete at `PLAYBOOK_LIFECYCLE_ACTIVATION.md`. Use it to configure the Cowork agent in the Cowork UI. 48h dry-run required before live sends. L3 (onboarding) first; L1 after L3 is stable. Threshold: 10+ non-subscriber leads/week before it's worth the config.
 - [ ] **Stand up Cowork Orchestrator agent** per `AGENTS.md` Agent 1. Weekly report Fridays.
 - [ ] **Add SDR + Creative + Growth agents** per `AGENTS.md` rollout order.
 
@@ -213,6 +214,10 @@
 
 | # | Title | Status |
 |---|---|---|
+| 30 | Add PLAYBOOK_LIFECYCLE_ACTIVATION.md — Cowork Lifecycle agent setup guide | Merged 2026-05-28 |
+| 29 | Wire GA4 loader + purchase event on login.html | Merged 2026-05-28 |
+| 28 | Add PLAYBOOK_REACTION_TRIGGERS.md — event-driven founder alerts | Merged 2026-05-28 |
+| 27 | Update AGENTS.md — drop AE Assist, add Creative agent, finalize 5-agent system | Merged 2026-05-28 |
 | 26 | Add HARO + Quora/Stack Exchange playbooks | Merged 2026-05-10 |
 | 25 | Add affiliate program (page + operations playbook) | Merged 2026-05-10 |
 | 24 | Add launch posts playbook (HN, Twitter, Indie Hackers drafts) | Merged 2026-05-10 |
