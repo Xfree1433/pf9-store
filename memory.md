@@ -2,7 +2,7 @@
 
 **Purpose:** durable session state so any future agent (me, another Claude session, or a human) can pick up without re-deriving context.
 
-**Last updated:** 2026-06-03
+**Last updated:** 2026-06-03 (b)
 **Active session:** https://claude.ai/code/session_01PDCcag8KXiq7YURGhjqPrn
 
 ---
@@ -146,8 +146,8 @@
 - [ ] **HARO daily scan** — `PLAYBOOK_HARO.md`. Sign up at Help a B2B Writer, Terkel.io, Qwoted. 10 min/morning to scan; 4-hour response goal on relevant queries.
 - [ ] **Quora + Stack Exchange answers** — `PLAYBOOK_QUORA_STACKEXCHANGE.md`. 3–5 substantive answers per week, 15 min each. Build profile credibility before mentioning PF9.
 
-#### When budget exists
-- [ ] **Google Ads launch** at $30/day total. Import the CSV bundle from `tools/google-ads/` into Google Ads Editor. Set conversion tracking via GA4 link first.
+#### Paid traffic — DECIDED 2026-06-03: property-first test
+- [ ] **Google Ads property test** at **$15/day** (~$456/mo), **Property campaign only** (manufacturing stays paused). Founder committed a test budget (~$300–500/mo) and chose property vertical first. Click-by-click runbook: `PLAYBOOK_GOOGLE_ADS_PROPERTY_TEST.md`. Strategy source of truth: `PLAYBOOK_GOOGLE_ADS.md`. **Conversion tracking (GA4→Ads link + import purchase/checkout_started/subscribe_modal_open) MUST be done before enabling.** Goal is learning (which competitor term converts, real CAC), not immediate ROI. Manufacturing test follows only if property proves out.
 
 #### When traffic + leads exist
 - [ ] **Stand up Cowork Lifecycle agent** — activation guide complete at `PLAYBOOK_LIFECYCLE_ACTIVATION.md`. Use it to configure the Cowork agent in the Cowork UI. 48h dry-run required before live sends. L3 (onboarding) first; L1 after L3 is stable. Threshold: 10+ non-subscriber leads/week before it's worth the config.
