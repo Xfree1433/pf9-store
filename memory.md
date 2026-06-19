@@ -2,7 +2,7 @@
 
 **Purpose:** durable session state so any future agent (me, another Claude session, or a human) can pick up without re-deriving context.
 
-**Last updated:** 2026-05-28
+**Last updated:** 2026-06-03
 **Active session:** https://claude.ai/code/session_01PDCcag8KXiq7YURGhjqPrn
 
 ---
@@ -105,6 +105,11 @@
 
 ## Open items / waiting on user
 
+### Closed since last update (2026-06-03)
+- [x] **End-to-end funnel verified on real device** — 2026-06-03. Phone (not desktop ad-blocker browser) test passed all 5 steps: storefront loads → Watch Demo → YouTube plays → Subscribe modal opens → Stripe live checkout page loads. Funnel is cleared for launch traffic. (Test contact in HubSpot from Step 4 should be deleted as housekeeping.)
+- [x] **HN launch scheduled: Tue 2026-06-09, 8–9am PT.** Twitter/X thread Wed 2026-06-10. Indie Hackers Thu 2026-06-11. Move pushed from prior Tue (5/26 era) to 6/9 to allow prep window.
+- [x] **PR #31 merged** — added click-by-click HN posting walkthrough as `PLAYBOOK_LAUNCH_POSTS.md` §F, completed end-screen pairing for all 14 videos in `PLAYBOOK_YOUTUBE.md` §D (added the missing 6 ops/compliance video loop).
+
 ### Closed since last update (2026-05-10)
 - [x] **PRs #13–#26 all merged** — comparison pages, video URL wiring, T2 ship, HubSpot integration, email capture modal, glossary, lead magnets, YouTube/Directories/HARO/Quora/Affiliate/Launch-posts playbooks, Google Ads CSV bundle. memory.md kept in sync throughout.
 - [x] **22 merged feature branches deleted on GitHub** (manual via web UI or shell command). Repo branch list clean.
@@ -122,9 +127,9 @@
 ### Open
 
 #### Scheduled — fire on schedule
-- [ ] **HN Show HN** — Tuesday 8–9am PT. Paste from `PLAYBOOK_LAUNCH_POSTS.md` Section A. Have first-hour reply templates open in a side tab.
-- [ ] **Twitter/X thread** — Wednesday 9am ET. Paste from `PLAYBOOK_LAUNCH_POSTS.md` Section B. If HN blows up Tuesday, delay to ride that wave.
-- [ ] **Indie Hackers post** — Thursday 7am ET. Paste from `PLAYBOOK_LAUNCH_POSTS.md` Section C.
+- [ ] **HN Show HN — Tue 2026-06-09, 8–9am PT.** Paste from `PLAYBOOK_LAUNCH_POSTS.md` §A. Click-by-click walkthrough in §F. Have first-hour reply templates open in a side tab.
+- [ ] **Twitter/X thread — Wed 2026-06-10, 9am ET.** Paste from `PLAYBOOK_LAUNCH_POSTS.md` §B. If HN blows up Tuesday, delay to ride that wave.
+- [ ] **Indie Hackers post — Thu 2026-06-11, 7am ET.** Paste from `PLAYBOOK_LAUNCH_POSTS.md` §C.
 
 #### YouTube remaining (~85 min one-time)
 - [ ] **End screens on all 14 videos** (~5 min × 14 = 70 min). Subscribe element + best-for-viewer + cross-link per `PLAYBOOK_YOUTUBE.md` Section D pairing.
