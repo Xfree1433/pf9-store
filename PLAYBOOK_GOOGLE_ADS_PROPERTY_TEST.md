@@ -16,11 +16,33 @@ This is the click-by-click execution doc for exactly that. It assumes nothing ab
 
 ---
 
+## ⚠️ Step 0 — Avoid Google's onboarding auto-create trap
+
+**This bit you on 2026-06-20** (~$4 of accidental spend). It's a known Google dark pattern, not a one-off mistake — assume it will try again on any new Google Ads account.
+
+**What Google does:** during account signup, the setup wizard pushes you into a "create your first campaign" flow. If you click through it (even just to reach billing setup), Google will auto-create a live Search campaign with:
+- An auto-generated name like "Property" or "Sales" (no PF9 prefix)
+- One ad group called "Ad group 1" with broad-match keywords (the worst match type)
+- One AI-written ad based on whatever Google scraped from your landing page
+- A "recommended" daily budget (usually $10–$30/day) **already enabled and spending**
+
+It doesn't ask you to confirm before going live. It just goes live.
+
+**What to do:**
+
+1. During account signup, **refuse every "create your campaign" prompt.** Pick "Switch to Expert Mode" if offered, then close any campaign-creation modal. You only want billing set up at this stage, nothing else.
+2. Immediately after the account is created, go to **Campaigns** in the left nav. If you see ANY campaign there (even one named generically like "Property" or "Sales"), it was auto-created — **delete it** before doing anything else. Campaigns → click campaign → menu (⋮) → **Remove**.
+3. Then proceed to Step 1.
+
+**The tell that you got caught by this:** any campaign you didn't import yourself from the CSV bundle, or any campaign with name that doesn't start with `PF9 -`. Don't try to salvage these — they're broad-match LANDLORDR/homepage ads that don't match your competitor-comparison strategy. Delete and re-import.
+
+---
+
 ## Step 1 — Conversion tracking first (~20 min, blocking)
 
 You already have GA4 firing the right events (`purchase`, `checkout_started`, `subscribe_modal_open`). You just need to pipe them into Google Ads.
 
-1. Create a Google Ads account if you don't have one: https://ads.google.com → sign in with the Google account that owns your GA4 property → set up billing but **do not create a campaign yet** (skip/pause the guided flow).
+1. Create a Google Ads account if you don't have one: https://ads.google.com → sign in with the Google account that owns your GA4 property → **switch to Expert Mode** if prompted → set up billing only. **Do not create a campaign** — see Step 0 above for why and how to refuse the prompts. If you already created the account and a "Property"/"Sales" campaign appeared, delete it per Step 0 before continuing.
 2. **Link GA4 → Google Ads:** GA4 → Admin → Product Links → **Google Ads links** → Link → select your Ads account → confirm.
 3. **Import the conversions:** Google Ads → Tools → **Conversions** → New conversion action → **Import** → Google Analytics 4 properties → select and import:
    - `purchase` — set priority **Primary**
@@ -44,8 +66,12 @@ Full detail: `PLAYBOOK_GOOGLE_ADS.md` § Conversion tracking + the pre-launch ch
 4. Everything imports as **Paused** with **$0 budget** — that's the safety gate. Nothing spends yet.
 5. Add the negative keyword list separately: Tools → Shared Library → Negative keyword lists → import `negatives.csv`.
 6. **Post changes** to push to Google Ads.
+7. **Verify in the Google Ads web UI** — go to **Campaigns**. You should see **exactly two** campaigns, both Paused, both $0:
+   - `PF9 - Property Comparisons` (Search type, 3 ad groups: Buildium, AppFolio, DoorLoop)
+   - `PF9 - Manufacturing Comparisons` (Search type, 3 ad groups: MRPeasy, Katana, Fishbowl)
+   If you see a **third campaign** with a different naming pattern (e.g. just "Property", "Sales", "Ad group 1" content), it's a leftover from Google's onboarding auto-create — delete it now per Step 0 before continuing.
 
-Both campaigns (Property + Manufacturing) come in. That's fine — you'll only enable Property.
+Both PF9 campaigns come in. That's fine — you'll only enable Property.
 
 ---
 
