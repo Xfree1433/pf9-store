@@ -2,7 +2,7 @@
 
 **Purpose:** durable session state so any future agent (me, another Claude session, or a human) can pick up without re-deriving context.
 
-**Last updated:** 2026-06-03 (b)
+**Last updated:** 2026-06-20
 **Active session:** https://claude.ai/code/session_01PDCcag8KXiq7YURGhjqPrn
 
 ---
@@ -104,6 +104,10 @@
 ---
 
 ## Open items / waiting on user
+
+### Closed since last update (2026-06-20)
+- [x] **Google Ads ghost-campaign incident** — 2026-06-20. Google's account-onboarding flow auto-created a live "Property" Search campaign at $15/day broad-match without explicit user confirmation during account setup. Drifted ~$46.84 over an extended period before being caught and removed. **Root cause:** Google's setup wizard runs you through a "create your first campaign" flow that enables a campaign unless explicitly refused. **Mitigation:** Step 0 added to `PLAYBOOK_GOOGLE_ADS_PROPERTY_TEST.md` warning to switch to Expert Mode during signup and verify Campaigns page is empty before proceeding; Step 2 post-import verification added. No PF9-named campaigns existed yet — the auto-created campaign was generic LANDLORDR homepage broad-match, not the planned competitor-comparison structure.
+- [x] **Conversion tracking imported and Active in Google Ads** — `purchase` (Primary), `checkout_started` (Secondary), `subscribe_modal_open` (Secondary). Showing "No recent conversions" pending the ~24h GA4→Ads link propagation + first manual test click. Manual test from phone confirmed all events fire in GA4 Realtime.
 
 ### Closed since last update (2026-06-03)
 - [x] **End-to-end funnel verified on real device** — 2026-06-03. Phone (not desktop ad-blocker browser) test passed all 5 steps: storefront loads → Watch Demo → YouTube plays → Subscribe modal opens → Stripe live checkout page loads. Funnel is cleared for launch traffic. (Test contact in HubSpot from Step 4 should be deleted as housekeeping.)
