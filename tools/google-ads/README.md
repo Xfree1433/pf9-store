@@ -2,6 +2,8 @@
 
 Pre-built CSVs that import directly into **Google Ads Editor** to spin up the 2 campaigns + 6 ad groups + 6 ads + 50+ keywords + ~40 negatives described in `PLAYBOOK_GOOGLE_ADS.md`. Saves ~2 hours of manual clicking.
 
+> **Launching the first test?** Follow `../../PLAYBOOK_GOOGLE_ADS_PROPERTY_TEST.md` — the click-by-click runbook for the property-first test (decided 2026-06-03): conversion tracking first, then import, then enable the Property campaign only at $15/day. This README covers the mechanical import; that runbook sequences the whole launch.
+
 ## Files
 
 | File | What it imports | Editor menu |
