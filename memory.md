@@ -2,7 +2,7 @@
 
 **Purpose:** durable session state so any future agent (me, another Claude session, or a human) can pick up without re-deriving context.
 
-**Last updated:** 2026-06-03
+**Last updated:** 2026-06-23
 **Active session:** https://claude.ai/code/session_01PDCcag8KXiq7YURGhjqPrn
 
 ---
@@ -105,10 +105,21 @@
 
 ## Open items / waiting on user
 
+### Closed since last update (2026-06-23)
+- [x] **Etta briefing prepared** — 2026-06-23. Comprehensive PF9 + storefront + marketing-state handoff document drafted for Mark's AI assistant Etta (in MailR). Covers company/products/infrastructure/analytics/current marketing state/priorities/non-goals. Lives in chat transcript; not committed as a repo file (intended for one-shot paste to Etta, not durable repo content).
+- [x] **Google Ads conversion actions cleaned up** — 2026-06-23. Removed duplicate `PURCHASE` action that was double-counting alongside `PF9 Store (web) purchase`. Re-weighted all 5 remaining actions: only `purchase` set to **Primary**; `checkout_started`, `subscribe_modal_open`, `YouTube channel subscriptions`, `YouTube follow-on views` all set to **Secondary**. This prevents 3x conversion inflation and prevents Smart Bidding (when eventually enabled) from optimizing toward gameable mid-funnel signals. Click-through window changed to 90 days (correct for B2B SaaS).
+- [x] **HN launch missed (6/9) — rescheduled to Tue 6/24, 8am PT.** Twitter/X thread Wed 6/25, Indie Hackers Thu 6/26. The 6/9 slot passed with no post due to founder focus on Google Ads setup. Tomorrow is the next slot. **Reminder for next session: HN is a 10–100× bigger free traffic lever than the $15/day Google Ads test — do not let ads monitoring crowd out the HN post tomorrow morning.**
+
+### Closed since last update (2026-06-20)
+- [x] **Google Ads ghost-campaign incident** — 2026-06-20. Google's account-onboarding flow auto-created a live "Property" Search campaign at $15/day broad-match without explicit user confirmation during account setup. Drifted ~$46.84 over an extended period before being caught and removed. **Root cause:** Google's setup wizard pushes new advertisers through a "create your first campaign" flow that enables a campaign unless explicitly refused. **Mitigation:** Step 0 added to `PLAYBOOK_GOOGLE_ADS_PROPERTY_TEST.md` (on PR #34 branch `claude/pf9-google-ads-property-test`) — refuse the onboarding flow, switch to Expert Mode, delete any auto-created campaigns before proceeding. Post-import verification step also added to catch leftovers. **Lesson generalized:** assume any new ad-platform account auto-enables spend; verify Campaigns page is empty before any setup work.
+- [x] **Conversion tracking imported and Active in Google Ads** — 2026-06-20. `purchase` (Primary), `checkout_started` (Secondary), `subscribe_modal_open` (Secondary), all GA4-sourced. Showing "No recent conversions" pending ~24h GA4→Ads link propagation + first manual test click. Manual test from phone confirmed all events fire in GA4 Realtime.
+
 ### Closed since last update (2026-06-03)
-- [x] **End-to-end funnel verified on real device** — 2026-06-03. Phone (not desktop ad-blocker browser) test passed all 5 steps: storefront loads → Watch Demo → YouTube plays → Subscribe modal opens → Stripe live checkout page loads. Funnel is cleared for launch traffic. (Test contact in HubSpot from Step 4 should be deleted as housekeeping.)
-- [x] **HN launch scheduled: Tue 2026-06-09, 8–9am PT.** Twitter/X thread Wed 2026-06-10. Indie Hackers Thu 2026-06-11. Move pushed from prior Tue (5/26 era) to 6/9 to allow prep window.
+- [x] **Paid traffic decision — property-first test at $300–500/mo.** Founder committed test budget on 2026-06-03 and chose property vertical first. `PLAYBOOK_GOOGLE_ADS_PROPERTY_TEST.md` (on PR #34 branch) is the click-by-click runbook; `PLAYBOOK_GOOGLE_ADS.md` remains strategy source of truth. Manufacturing campaign held paused at $0 until property proves out.
+- [x] **End-to-end funnel verified on real device** — 2026-06-03. Phone (not desktop ad-blocker browser) test passed all 5 steps: storefront loads → Watch Demo → YouTube plays → Subscribe modal opens → Stripe live checkout page loads. Funnel cleared for launch traffic. (Test contact in HubSpot from Step 4 should be deleted as housekeeping.)
 - [x] **PR #31 merged** — added click-by-click HN posting walkthrough as `PLAYBOOK_LAUNCH_POSTS.md` §F, completed end-screen pairing for all 14 videos in `PLAYBOOK_YOUTUBE.md` §D (added the missing 6 ops/compliance video loop).
+- [x] **PR #32 merged (2026-06-03)** — logged funnel test pass and original HN launch date.
+- [x] **PostHog instrumentation added by BRIDGR chat (mid-June)** — 34 storefront HTML pages now have PostHog loader + GA4 mirror shim (every existing gtag event auto-flows to PostHog). Full server-side events (signup/login/activation) wired into the major paid apps (FLOWTRACK, SHIFTLOG, MAINTAINR, REPORTR, INSPECTR, LANDLORDR, QUALIFI, PERMITR, EXTRACTR, SUPPORTR, TASKFLOW, TENANTLINKR). Client autocapture on the remaining Flask apps. Region: us.i.posthog.com. Funnel-data ready alongside GA4.
 
 ### Closed since last update (2026-05-10)
 - [x] **PRs #13–#26 all merged** — comparison pages, video URL wiring, T2 ship, HubSpot integration, email capture modal, glossary, lead magnets, YouTube/Directories/HARO/Quora/Affiliate/Launch-posts playbooks, Google Ads CSV bundle. memory.md kept in sync throughout.
@@ -127,9 +138,9 @@
 ### Open
 
 #### Scheduled — fire on schedule
-- [ ] **HN Show HN — Tue 2026-06-09, 8–9am PT.** Paste from `PLAYBOOK_LAUNCH_POSTS.md` §A. Click-by-click walkthrough in §F. Have first-hour reply templates open in a side tab.
-- [ ] **Twitter/X thread — Wed 2026-06-10, 9am ET.** Paste from `PLAYBOOK_LAUNCH_POSTS.md` §B. If HN blows up Tuesday, delay to ride that wave.
-- [ ] **Indie Hackers post — Thu 2026-06-11, 7am ET.** Paste from `PLAYBOOK_LAUNCH_POSTS.md` §C.
+- [ ] **HN Show HN — Tue 2026-06-24, 8–9am PT.** (Rescheduled from 6/9, which slipped.) Paste from `PLAYBOOK_LAUNCH_POSTS.md` §A. Click-by-click walkthrough in §F. Have first-hour reply templates open in a side tab.
+- [ ] **Twitter/X thread — Wed 2026-06-25, 9am ET.** Paste from `PLAYBOOK_LAUNCH_POSTS.md` §B. If HN blows up Tuesday, delay to ride that wave.
+- [ ] **Indie Hackers post — Thu 2026-06-26, 7am ET.** Paste from `PLAYBOOK_LAUNCH_POSTS.md` §C.
 
 #### YouTube remaining (~85 min one-time)
 - [ ] **End screens on all 14 videos** (~5 min × 14 = 70 min). Subscribe element + best-for-viewer + cross-link per `PLAYBOOK_YOUTUBE.md` Section D pairing.
@@ -146,8 +157,8 @@
 - [ ] **HARO daily scan** — `PLAYBOOK_HARO.md`. Sign up at Help a B2B Writer, Terkel.io, Qwoted. 10 min/morning to scan; 4-hour response goal on relevant queries.
 - [ ] **Quora + Stack Exchange answers** — `PLAYBOOK_QUORA_STACKEXCHANGE.md`. 3–5 substantive answers per week, 15 min each. Build profile credibility before mentioning PF9.
 
-#### When budget exists
-- [ ] **Google Ads launch** at $30/day total. Import the CSV bundle from `tools/google-ads/` into Google Ads Editor. Set conversion tracking via GA4 link first.
+#### Google Ads — property-first test in progress (decided 2026-06-03)
+- [ ] **Property campaign at $15/day** (~$456/mo, top of $300–500 budget range). Manufacturing campaign held at $0 until property proves out. Runbook: `PLAYBOOK_GOOGLE_ADS_PROPERTY_TEST.md` (on PR #34 branch — merge that PR to land it on main). Conversion tracking ✅ live and correctly weighted as of 2026-06-23. **Blocker:** CSV import via Google Ads Editor still pending (founder must run from local machine; sandbox can't execute the desktop app). After import, wait for conversion status to flip from "No recent conversions" to "Recording" before enabling Property campaign.
 
 #### When traffic + leads exist
 - [ ] **Stand up Cowork Lifecycle agent** — activation guide complete at `PLAYBOOK_LIFECYCLE_ACTIVATION.md`. Use it to configure the Cowork agent in the Cowork UI. 48h dry-run required before live sends. L3 (onboarding) first; L1 after L3 is stable. Threshold: 10+ non-subscriber leads/week before it's worth the config.
