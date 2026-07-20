@@ -22,6 +22,15 @@
     <!-- Google Analytics 4 -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-RWJKZXGNPF"></script>
     <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-RWJKZXGNPF');</script>
+    <!-- PostHog product analytics (mirrors GA4 events; see POSTHOG_TRACKING_PLAN.md) -->
+    <script>
+    !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug getPageViewId".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+    posthog.init('phc_kqFGBkXKCodfJGJBFdZs3h9Qm43AQaqnyCiETDAwzgmw',{api_host:'https://us.i.posthog.com',defaults:'2025-05-24'});
+    </script>
+    <!-- Mirror every GA4 gtag('event', name, params) into PostHog automatically -->
+    <script>
+    (function(){var _g=window.gtag;window.gtag=function(){try{if(arguments[0]==='event'&&window.posthog&&posthog.capture){posthog.capture(arguments[1],arguments[2]||{});}}catch(e){}if(typeof _g==='function'){return _g.apply(this,arguments);}};})();
+    </script>
     <link rel="stylesheet" href="/dist/tailwind.css">
     <script type="application/ld+json">
     {
@@ -591,6 +600,29 @@
                     </div>
                 </div>
 
+                <!-- FIELDVIEWR -->
+                <div class="product-card bg-white rounded-xl shadow-sm card-hover accent-operations relative" data-category="operations manufacturing" data-product="FIELDVIEWR">
+                    <span class="absolute top-3 right-3 text-[10px] font-semibold bg-amber-500 text-white px-2 py-0.5 rounded-full uppercase tracking-wider">Coming Soon</span>
+                    <div class="p-6">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="w-10 h-10 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                            </div>
+                            <span class="text-xs font-medium bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full mr-24">Operations</span>
+                        </div>
+                        <h3 class="text-lg font-bold mb-1">FIELDVIEWR</h3>
+                        <p class="text-sm text-gray-500 mb-4">SCADA visualization for field operations. Live HMI mimic diagrams, real-time alarms, historian trends, and P&amp;ID schematics &mdash; in the browser, no control-room hardware.</p>
+                        <p class="text-xs text-amber-600 bg-amber-50 rounded px-2 py-1 mb-3">Launching soon. Join the waitlist to be notified at launch and see a live demo.</p>
+                        <div class="flex items-baseline gap-1 mb-5">
+                            <span class="text-2xl font-bold">$299</span>
+                            <span class="text-sm text-gray-500">/mo</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="openWaitlist('FIELDVIEWR')" class="flex-1 text-center text-sm font-medium py-2 px-4 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors">Join Waitlist</button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- COMPLI -->
                 <div class="product-card bg-white rounded-xl shadow-sm card-hover accent-free" data-category="free operations" data-product="COMPLI">
                     <div class="p-6">
@@ -932,6 +964,27 @@
             alert('Could not reach the server. Please email support@plainspokenfoundrynine.com.');
         });
     }
+
+    // On return from Stripe success_url, record the conversion in PostHog (+ GA4).
+    // Requires Stripe success_url to include ?checkout=success&product=<app> (see POSTHOG_TRACKING_PLAN.md).
+    (function() {
+        try {
+            var qs = new URLSearchParams(window.location.search);
+            if (qs.get('checkout') === 'success') {
+                var product = qs.get('product') || 'unknown';
+                var email = qs.get('email');
+                if (email && window.posthog && posthog.identify) {
+                    posthog.identify(email, { email: email, signup_app: product });
+                }
+                if (window.posthog && posthog.capture) {
+                    posthog.capture('subscription_started', { app: product, plan: qs.get('plan') || null, source: 'storefront' });
+                }
+                if (typeof gtag === 'function') {
+                    gtag('event', 'subscription_started', { product: product });
+                }
+            }
+        } catch (e) {}
+    })();
 
     // Stripe checkout
     document.getElementById('subscribeForm').addEventListener('submit', function(e) {
