@@ -147,6 +147,18 @@ def _send_email(from_addr, to_addr, subject, html):
 # ── Stripe config ──
 STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
 
+# Free-trial length applied to every new subscription checkout (card up front,
+# charged only when the trial ends).
+TRIAL_PERIOD_DAYS = int(os.environ.get('TRIAL_PERIOD_DAYS', '30'))
+
+# Shared secret the individual apps present when calling /subscription-status to
+# enforce access. Must match the value each app is configured with. If unset,
+# the status endpoint refuses all requests (fail-closed).
+SUBSCRIPTION_STATUS_SECRET = os.environ.get('SUBSCRIPTION_STATUS_SECRET', '')
+
+# Store-side subscription states that grant access to an app.
+ACTIVE_STATUSES = {'active', 'trialing'}
+
 # Product → Stripe price ID mapping
 PRICE_MAP = {
     'FLOWTRACK': os.environ.get('STRIPE_FLOWTRACK_PRICE_ID', ''),
@@ -244,9 +256,14 @@ def init_db():
                 provisioned             INTEGER DEFAULT 0,
                 temp_password           TEXT,
                 created_at              TEXT NOT NULL,
-                cancelled_at            TEXT
+                cancelled_at            TEXT,
+                trial_end               TEXT
             )
         ''')
+        # Lightweight migration: add trial_end to pre-existing subscriptions tables.
+        cols = {row['name'] for row in conn.execute("PRAGMA table_info(subscriptions)").fetchall()}
+        if 'trial_end' not in cols:
+            conn.execute('ALTER TABLE subscriptions ADD COLUMN trial_end TEXT')
         conn.commit()
 
 
@@ -346,6 +363,10 @@ def create_checkout_session():
             customer_email=email,
             success_url=f'{STORE_URL}/login.html?subscribed={product.lower()}&session_id={{CHECKOUT_SESSION_ID}}',
             cancel_url=f'{STORE_URL}/#products',
+            # 30-day free trial. Card is collected up front (payment_method_collection
+            # defaults to 'always' for trials) but not charged until the trial ends,
+            # at which point Stripe auto-converts to the paid subscription.
+            subscription_data={'trial_period_days': TRIAL_PERIOD_DAYS},
             metadata={
                 'product': product,
                 'name': name,
@@ -356,6 +377,61 @@ def create_checkout_session():
     except Exception as e:
         print(f'[Store API] Stripe error: {e}')
         return _cors_response(jsonify({'error': 'Failed to create checkout session'}), 500)
+
+
+@store_bp.route('/subscription-status', methods=['GET'])
+def subscription_status():
+    """Read-only status lookup the individual apps call to enforce access.
+
+    Auth: caller presents the shared secret via the `X-PF9-Secret` header (or
+    `?secret=` fallback). Fail-closed — no secret configured server-side, or a
+    mismatch, returns 401 and no data.
+
+    Query params: product (store product key, e.g. TASKFLOW), email.
+    Returns: {status, allowed, trial_end, product}. `allowed` is the single
+    boolean the apps gate on; status is included for display/telemetry.
+    """
+    if not SUBSCRIPTION_STATUS_SECRET:
+        return jsonify({'error': 'status endpoint not configured'}), 401
+    provided = request.headers.get('X-PF9-Secret', '') or request.args.get('secret', '')
+    if not secrets.compare_digest(provided, SUBSCRIPTION_STATUS_SECRET):
+        return jsonify({'error': 'unauthorized'}), 401
+
+    product = (request.args.get('product') or '').strip().upper()
+    email   = (request.args.get('email') or '').strip().lower()
+    if not product or not email:
+        return jsonify({'error': 'product and email are required'}), 400
+
+    # A subscription may be held directly (product == requested) or via a bundle
+    # that includes it. Also tolerate the TENANTLINK/TENANTLINKR naming split.
+    candidates = {product}
+    if product == 'TENANTLINKR':
+        candidates.add('TENANTLINK')
+    elif product == 'TENANTLINK':
+        candidates.add('TENANTLINKR')
+    for bundle_name, members in BUNDLE_MAP.items():
+        if product in members or any(c in members for c in list(candidates)):
+            candidates.add(bundle_name)
+
+    placeholders = ','.join('?' for _ in candidates)
+    with get_db() as conn:
+        row = conn.execute(
+            f'''SELECT status, trial_end, product FROM subscriptions
+                WHERE lower(email) = ? AND upper(product) IN ({placeholders})
+                ORDER BY created_at DESC LIMIT 1''',
+            (email, *[c.upper() for c in candidates])
+        ).fetchone()
+
+    if not row:
+        return jsonify({'status': 'none', 'allowed': False, 'trial_end': None, 'product': product})
+
+    status = (row['status'] or '').lower()
+    return jsonify({
+        'status': status,
+        'allowed': status in ACTIVE_STATUSES,
+        'trial_end': row['trial_end'],
+        'product': row['product'],
+    })
 
 
 @store_bp.route('/stripe-webhook', methods=['POST'])
@@ -390,6 +466,10 @@ def stripe_webhook():
     elif event['type'] == 'invoice.payment_failed':
         invoice = event['data']['object']
         _handle_payment_failed(invoice)
+
+    elif event['type'] == 'customer.subscription.trial_will_end':
+        sub = event['data']['object']
+        _handle_trial_will_end(sub)
 
     return jsonify({'received': True})
 
@@ -449,13 +529,26 @@ def _handle_checkout_completed(session):
     # Generate temp password
     temp_password = _generate_password()
 
+    # Pull the real subscription status + trial end from Stripe. A trial checkout
+    # lands as 'trialing' (not 'active'); trial_end is a unix timestamp.
+    sub_status = 'active'
+    trial_end_iso = None
+    try:
+        sub = stripe.Subscription.retrieve(subscription_id)
+        sub_status = sub.get('status', 'active') or 'active'
+        te = sub.get('trial_end')
+        if te:
+            trial_end_iso = datetime.utcfromtimestamp(int(te)).isoformat()
+    except Exception as e:
+        print(f'[Store API] Could not retrieve subscription {subscription_id}: {e}')
+
     # Save subscription
     with get_db() as conn:
         conn.execute(
             '''INSERT INTO subscriptions
-               (stripe_customer_id, stripe_subscription_id, email, name, company, product, temp_password, created_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
-            (customer_id, subscription_id, email, name, company, product, temp_password, datetime.utcnow().isoformat())
+               (stripe_customer_id, stripe_subscription_id, email, name, company, product, status, temp_password, created_at, trial_end)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+            (customer_id, subscription_id, email, name, company, product, sub_status, temp_password, datetime.utcnow().isoformat(), trial_end_iso)
         )
         conn.commit()
 
@@ -505,13 +598,71 @@ def _handle_subscription_cancelled(sub):
 def _handle_subscription_updated(sub):
     subscription_id = sub.get('id', '')
     status = sub.get('status', '')
+    te = sub.get('trial_end')
+    trial_end_iso = datetime.utcfromtimestamp(int(te)).isoformat() if te else None
     with get_db() as conn:
         conn.execute(
-            'UPDATE subscriptions SET status = ? WHERE stripe_subscription_id = ?',
-            (status, subscription_id)
+            'UPDATE subscriptions SET status = ?, trial_end = ? WHERE stripe_subscription_id = ?',
+            (status, trial_end_iso, subscription_id)
         )
         conn.commit()
     print(f'[Store API] Subscription {subscription_id} status -> {status}')
+
+
+def _handle_trial_will_end(sub):
+    """Stripe fires this ~3 days before a trial ends. Remind the customer their
+    card will be charged unless they cancel, and alert us internally."""
+    subscription_id = sub.get('id', '')
+    customer_id = sub.get('customer', '')
+    te = sub.get('trial_end')
+    trial_end_iso = datetime.utcfromtimestamp(int(te)).isoformat() if te else None
+
+    # Look up who this is from our own records (avoids an extra Stripe call).
+    row = None
+    with get_db() as conn:
+        if trial_end_iso:
+            conn.execute(
+                'UPDATE subscriptions SET trial_end = ? WHERE stripe_subscription_id = ?',
+                (trial_end_iso, subscription_id)
+            )
+            conn.commit()
+        row = conn.execute(
+            'SELECT email, name, product FROM subscriptions WHERE stripe_subscription_id = ?',
+            (subscription_id,)
+        ).fetchone()
+
+    print(f'[Store API] Trial ending soon for {subscription_id} (ends {trial_end_iso})')
+    if not row or not row['email']:
+        return
+    try:
+        _send_trial_ending_email(row['email'], row['name'], row['product'], trial_end_iso)
+    except Exception as e:
+        print(f'[Store API] Trial-ending email error: {e}')
+
+
+def _send_trial_ending_email(email, name, product, trial_end_iso):
+    first_name = (name or '').split()[0] if name else 'there'
+    ends_str = ''
+    if trial_end_iso:
+        try:
+            ends_str = datetime.fromisoformat(trial_end_iso).strftime('%B %-d, %Y')
+        except Exception:
+            ends_str = trial_end_iso
+    when = f' on <b>{ends_str}</b>' if ends_str else ' soon'
+    html = f"""
+    <div style="font-family: sans-serif; max-width: 600px;">
+        <h2 style="color: #111;">Your {product} free trial is ending, {first_name}</h2>
+        <p>Your 30-day free trial ends{when}. To keep using {product} without
+        interruption, no action is needed — your subscription will continue and
+        your card on file will be charged automatically.</p>
+        <p>If you'd prefer not to continue, you can cancel any time before then
+        from your billing portal and you won't be charged.</p>
+        <p><a href="{STORE_URL}/login.html">Manage your subscription</a></p>
+        <p style="color:#888; font-size:12px; margin-top:24px;">Plainspoken Foundry Nine · store.plainspokenfoundrynine.com</p>
+    </div>
+    """
+    if _send_email(EMAIL_FROM_CUSTOMER, email, f'Your {product} free trial ends soon', html):
+        print(f'[Store API] Trial-ending email sent to {email}')
 
 
 def _handle_payment_failed(invoice):
