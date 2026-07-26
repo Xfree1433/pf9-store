@@ -2,7 +2,7 @@
 
 **Purpose:** durable session state so any future agent (me, another Claude session, or a human) can pick up without re-deriving context.
 
-**Last updated:** 2026-06-23
+**Last updated:** 2026-07-26
 **Active session:** https://claude.ai/code/session_01PDCcag8KXiq7YURGhjqPrn
 
 ---
@@ -48,6 +48,9 @@
 | `PLAYBOOK_CRO.md` | A/B test backlog. T2 marked shipped; T1, T3–T10 still pending |
 | `PLAYBOOK_VIDEOS.md` | Per-app video scripts + status table (14/14 live + 1 OPSIQ waitlist + 1 MARKUPR waitlist) |
 | `PLAYBOOK_GOOGLE_ADS.md` | Paid-search playbook: campaign architecture, keywords, ad copy, conversion tracking, bidding, kill criteria |
+| `PLAYBOOK_GOOGLE_ADS_PROPERTY_TEST.md` | Click-by-click property-first Google Ads launch runbook ($300–500/mo test). Step 0 warns about Google's onboarding auto-create trap (which cost ~$47). |
+| `PLAYBOOK_REDDIT_ADS.md` | Property-first Reddit Ads spec — lower-risk Google alternative. Reddit Pixel prerequisite, subreddit targeting, 3 founder-voice ad drafts, kill criteria. |
+| `APPEAL_GOOGLE_ADS_2026-06-24.md` | Google Ads suspension appeal package (appeal succeeded 7/5). §5 has the cautious-relaunch strategy + denial fallback. |
 | `tools/google-ads/` | Pre-built Google Ads Editor import CSVs (campaigns, ad groups, keywords, ads, negatives) + README. Saves ~2h of manual clicking when launching paid. Campaigns import as Paused with $0 budget — explicit step required to enable. |
 | `PLAYBOOK_YOUTUBE.md` | YouTube channel SEO playbook: channel description, banner specs, 5 playlists with binge-watch order, per-video metadata templates (titles, tags, chapters, end screens), pinned-comment template, maintenance cadence. ~45 min total to paste everything into YouTube Studio. |
 | `PLAYBOOK_DIRECTORIES.md` | Free SaaS / startup directory submission list with per-directory notes: 15+ directories across general SaaS (AlternativeTo, SaaSHub, Crunchbase, BetaList), vertical-specific (ThomasNet, BiggerPockets), and integration marketplaces (Stripe Partner Directory, QuickBooks App Marketplace). Reusable submission assets at the top. |
@@ -105,6 +108,15 @@
 
 ## Open items / waiting on user
 
+### Closed since last update (2026-07-26)
+- [x] **Google Ads SUSPENDED then REINSTATED.** Account 731-567-9505 suspended **2026-06-24** for "unacceptable business practices" (phishing / public-figure impersonation / other) — a false positive, almost certainly triggered by the competitor-keyword campaign strategy (bidding on "buildium alternative" etc. with comparison landing pages) compounded by the earlier ghost campaign. Filed an appeal (package saved as `APPEAL_GOOGLE_ADS_2026-06-24.md`) after completing SSN identity verification. **Appeal SUCCEEDED — account reactivated 2026-07-05** ("your appeal was successful"). Dashboard banner lagged the email by ~a day (cosmetic cache). **CRITICAL for relaunch:** do NOT re-enable the old competitor-comparison campaign as-is — it's what triggered the suspension. Use the cautious relaunch in `APPEAL_GOOGLE_ADS_2026-06-24.md` §5 (exact-match only, one ad group, competitor names negative-listed initially, $5/day ramp). A second suspension is far harder to appeal.
+- [x] **Reddit Ads spec added** (`PLAYBOOK_REDDIT_ADS.md`, PR #37) — property-first, lower-risk hedge/alternative to Google. Cheaper clicks (~$0.30–1.50 vs $3+), lower suspension risk. Needs the Reddit Pixel installed on the storefront before spending (agent can wire it given a pixel ID). Founder-voice creative, NOT the Google comparison ads.
+- [x] **Connectors now live in-session** — PostHog, HubSpot, Klaviyo, Gmail, Google Calendar/Drive, QuickBooks, Zapier. Enables real-data decisions and direct CRM/analytics/email actions (previously advice-only).
+- [x] **REAL DATA PULLED 2026-07-26 (grounds every marketing decision):**
+  - **PostHog (last 90d):** 34 visitors, 257 pageviews, 52 sessions, **avg session 3m26s, bounce 32.7%**. Traffic ≈ zero, BUT engagement quality is genuinely good — the funnel *holds attention*. Constraint is confirmed as **distribution, not product**. Driving traffic is low-risk because the bucket isn't leaky.
+  - **HubSpot: 0 real inbound leads.** All 30 contacts are `hs_analytics_source: OFFLINE`, imported in two batches (May 10 & 12): 7 test contacts, 2 HubSpot samples, ~13 email-inbox senders/vendors (return@amazon.com, Resend's founder, newsletters), ~8 contacts from the founder's OTHER projects (FESCO/TIVA/Enventure). **Cleanup plan delivered (chat).** ⚠️ Must clean CRM + find the import source BEFORE any email automation (Klaviyo/Resend) goes live — otherwise PF9 emails vendors and other-business contacts, poisoning deliverability.
+- [ ] **HN Show HN STILL NOT POSTED.** Windows missed: original ~5/26, 6/9, and 6/24–26 (consumed by the Google suspension crisis). It remains the single biggest free traffic lever (front page ≈ thousands of visitors vs. 34 in 90 days). **Reschedule to the next Tuesday 8am PT and treat as non-negotiable — independent of Google, costs nothing.**
+
 ### Closed since last update (2026-06-23)
 - [x] **Etta briefing prepared** — 2026-06-23. Comprehensive PF9 + storefront + marketing-state handoff document drafted for Mark's AI assistant Etta (in MailR). Covers company/products/infrastructure/analytics/current marketing state/priorities/non-goals. Lives in chat transcript; not committed as a repo file (intended for one-shot paste to Etta, not durable repo content).
 - [x] **Google Ads conversion actions cleaned up** — 2026-06-23. Removed duplicate `PURCHASE` action that was double-counting alongside `PF9 Store (web) purchase`. Re-weighted all 5 remaining actions: only `purchase` set to **Primary**; `checkout_started`, `subscribe_modal_open`, `YouTube channel subscriptions`, `YouTube follow-on views` all set to **Secondary**. This prevents 3x conversion inflation and prevents Smart Bidding (when eventually enabled) from optimizing toward gameable mid-funnel signals. Click-through window changed to 90 days (correct for B2B SaaS).
@@ -137,10 +149,16 @@
 
 ### Open
 
-#### Scheduled — fire on schedule
-- [ ] **HN Show HN — Tue 2026-06-24, 8–9am PT.** (Rescheduled from 6/9, which slipped.) Paste from `PLAYBOOK_LAUNCH_POSTS.md` §A. Click-by-click walkthrough in §F. Have first-hour reply templates open in a side tab.
-- [ ] **Twitter/X thread — Wed 2026-06-25, 9am ET.** Paste from `PLAYBOOK_LAUNCH_POSTS.md` §B. If HN blows up Tuesday, delay to ride that wave.
-- [ ] **Indie Hackers post — Thu 2026-06-26, 7am ET.** Paste from `PLAYBOOK_LAUNCH_POSTS.md` §C.
+#### Scheduled — fire on schedule (dates slipped repeatedly; pick the NEXT Tuesday and commit)
+- [ ] **HN Show HN — next Tue 8–9am PT.** MISSED 5/26, 6/9, 6/24. Highest-leverage free lever; independent of Google. Paste from `PLAYBOOK_LAUNCH_POSTS.md` §A. Click-by-click in §F. First-hour reply templates open in a side tab.
+- [ ] **Twitter/X thread — next Wed 9am ET.** `PLAYBOOK_LAUNCH_POSTS.md` §B. If HN blows up, delay to ride that wave.
+- [ ] **Indie Hackers post — next Thu 7am ET.** `PLAYBOOK_LAUNCH_POSTS.md` §C.
+
+#### CRM hygiene — DO BEFORE any email automation
+- [ ] **Clean HubSpot: 0 real leads, 30 junk contacts.** Delete 7 test + 2 HubSpot-sample + ~13 inbox-sender/vendor contacts; tag ~8 other-project contacts (FESCO/TIVA/Enventure) into a "DO NOT EMAIL – other projects" list and exclude from all sends. Full plan delivered in chat 2026-07-26. **Find the import source** (Settings → Imports / connected Gmail sync) and disable auto-contact-creation so it stops re-polluting.
+
+#### Reddit Ads (property-first) — spec ready
+- [ ] **Install Reddit Pixel on storefront** (blocking prerequisite; agent can wire it given the pixel ID), then launch per `PLAYBOOK_REDDIT_ADS.md`: 1 property campaign, 3 ad groups (landlords/investors/property managers), $10/day, 3 founder-voice ad drafts ready.
 
 #### YouTube remaining (~85 min one-time)
 - [ ] **End screens on all 14 videos** (~5 min × 14 = 70 min). Subscribe element + best-for-viewer + cross-link per `PLAYBOOK_YOUTUBE.md` Section D pairing.
@@ -158,7 +176,7 @@
 - [ ] **Quora + Stack Exchange answers** — `PLAYBOOK_QUORA_STACKEXCHANGE.md`. 3–5 substantive answers per week, 15 min each. Build profile credibility before mentioning PF9.
 
 #### Google Ads — property-first test in progress (decided 2026-06-03)
-- [ ] **Property campaign at $15/day** (~$456/mo, top of $300–500 budget range). Manufacturing campaign held at $0 until property proves out. Runbook: `PLAYBOOK_GOOGLE_ADS_PROPERTY_TEST.md`. Strategy source of truth: `PLAYBOOK_GOOGLE_ADS.md`. Conversion tracking ✅ live and correctly weighted as of 2026-06-23. **Blocker:** CSV import via Google Ads Editor still pending (founder must run from local machine; sandbox can't execute the desktop app). After import, wait for conversion status to flip from "No recent conversions" to "Recording" before enabling Property campaign.
+- [ ] **Property campaign at $15/day** (~$456/mo, top of $300–500 budget range). Manufacturing campaign held at $0 until property proves out. Runbook: `PLAYBOOK_GOOGLE_ADS_PROPERTY_TEST.md`. Strategy source of truth: `PLAYBOOK_GOOGLE_ADS.md`. Conversion tracking ✅ live and correctly weighted. **Account was suspended 6/24 and reinstated 7/5 — use the CAUTIOUS relaunch (`APPEAL_GOOGLE_ADS_2026-06-24.md` §5): exact-match only, one ad group, competitor names negative-listed, $5/day ramp. Do NOT re-enable the old broad/phrase competitor-comparison campaign — that's what got it suspended.** Blocker before that: CSV import via Google Ads Editor still pending (founder runs from local machine). Given the suspension risk and that HN/Reddit are lower-risk, Google is now the LOWEST-priority channel per visitor.
 
 #### When traffic + leads exist
 - [ ] **Stand up Cowork Lifecycle agent** — activation guide complete at `PLAYBOOK_LIFECYCLE_ACTIVATION.md`. Use it to configure the Cowork agent in the Cowork UI. 48h dry-run required before live sends. L3 (onboarding) first; L1 after L3 is stable. Threshold: 10+ non-subscriber leads/week before it's worth the config.
