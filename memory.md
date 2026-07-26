@@ -2,7 +2,7 @@
 
 **Purpose:** durable session state so any future agent (me, another Claude session, or a human) can pick up without re-deriving context.
 
-**Last updated:** 2026-06-03
+**Last updated:** 2026-06-20
 **Active session:** https://claude.ai/code/session_01PDCcag8KXiq7YURGhjqPrn
 
 ---
@@ -105,6 +105,10 @@
 
 ## Open items / waiting on user
 
+### Closed since last update (2026-06-20)
+- [x] **Google Ads ghost-campaign incident** — 2026-06-20. Google's account-onboarding flow auto-created a live "Property" Search campaign at $15/day broad-match without explicit user confirmation during account setup. Drifted ~$46.84 over an extended period before being caught and removed. **Root cause:** Google's setup wizard runs you through a "create your first campaign" flow that enables a campaign unless explicitly refused. **Mitigation:** Step 0 added to `PLAYBOOK_GOOGLE_ADS_PROPERTY_TEST.md` warning to switch to Expert Mode during signup and verify Campaigns page is empty before proceeding; Step 2 post-import verification added. No PF9-named campaigns existed yet — the auto-created campaign was generic LANDLORDR homepage broad-match, not the planned competitor-comparison structure.
+- [x] **Conversion tracking imported and Active in Google Ads** — `purchase` (Primary), `checkout_started` (Secondary), `subscribe_modal_open` (Secondary). Showing "No recent conversions" pending the ~24h GA4→Ads link propagation + first manual test click. Manual test from phone confirmed all events fire in GA4 Realtime.
+
 ### Closed since last update (2026-06-03)
 - [x] **End-to-end funnel verified on real device** — 2026-06-03. Phone (not desktop ad-blocker browser) test passed all 5 steps: storefront loads → Watch Demo → YouTube plays → Subscribe modal opens → Stripe live checkout page loads. Funnel is cleared for launch traffic. (Test contact in HubSpot from Step 4 should be deleted as housekeeping.)
 - [x] **HN launch scheduled: Tue 2026-06-09, 8–9am PT.** Twitter/X thread Wed 2026-06-10. Indie Hackers Thu 2026-06-11. Move pushed from prior Tue (5/26 era) to 6/9 to allow prep window.
@@ -146,8 +150,8 @@
 - [ ] **HARO daily scan** — `PLAYBOOK_HARO.md`. Sign up at Help a B2B Writer, Terkel.io, Qwoted. 10 min/morning to scan; 4-hour response goal on relevant queries.
 - [ ] **Quora + Stack Exchange answers** — `PLAYBOOK_QUORA_STACKEXCHANGE.md`. 3–5 substantive answers per week, 15 min each. Build profile credibility before mentioning PF9.
 
-#### When budget exists
-- [ ] **Google Ads launch** at $30/day total. Import the CSV bundle from `tools/google-ads/` into Google Ads Editor. Set conversion tracking via GA4 link first.
+#### Paid traffic — DECIDED 2026-06-03: property-first test
+- [ ] **Google Ads property test** at **$15/day** (~$456/mo), **Property campaign only** (manufacturing stays paused). Founder committed a test budget (~$300–500/mo) and chose property vertical first. Click-by-click runbook: `PLAYBOOK_GOOGLE_ADS_PROPERTY_TEST.md`. Strategy source of truth: `PLAYBOOK_GOOGLE_ADS.md`. **Conversion tracking (GA4→Ads link + import purchase/checkout_started/subscribe_modal_open) MUST be done before enabling.** Goal is learning (which competitor term converts, real CAC), not immediate ROI. Manufacturing test follows only if property proves out.
 
 #### When traffic + leads exist
 - [ ] **Stand up Cowork Lifecycle agent** — activation guide complete at `PLAYBOOK_LIFECYCLE_ACTIVATION.md`. Use it to configure the Cowork agent in the Cowork UI. 48h dry-run required before live sends. L3 (onboarding) first; L1 after L3 is stable. Threshold: 10+ non-subscriber leads/week before it's worth the config.
