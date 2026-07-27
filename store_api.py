@@ -12,7 +12,7 @@ import sqlite3
 import os
 import string
 import secrets
-import json
+import html
 import requests as http_requests
 
 try:
@@ -127,7 +127,7 @@ def _hubspot_push_contact(email, name='', company='', list_id=None):
             print(f'[Store API] HubSpot list add error for {email_norm}: {e}')
 
 
-def _send_email(from_addr, to_addr, subject, html):
+def _send_email(from_addr, to_addr, subject, body):
     """Send an email via Resend. No-op if resend/key not configured."""
     if not resend or not os.environ.get('RESEND_API_KEY'):
         print(f'[Store API] Resend not configured, skipping email to {to_addr}')
@@ -137,7 +137,7 @@ def _send_email(from_addr, to_addr, subject, html):
             "from": from_addr,
             "to": [to_addr] if isinstance(to_addr, str) else to_addr,
             "subject": subject,
-            "html": html,
+            "html": body,
         })
         return True
     except Exception as e:
@@ -319,9 +319,9 @@ def demo_request():
 
 @store_bp.route('/leads', methods=['GET'])
 def get_leads():
-    secret = request.args.get('secret', '')
     expected = os.environ.get('LEADS_SECRET', '')
-    if not expected or secret != expected:
+    provided = request.headers.get('X-PF9-Secret', '') or request.args.get('secret', '')
+    if not expected or not secrets.compare_digest(provided, expected):
         return _cors_response(jsonify({'error': 'Unauthorized'}), 401)
 
     with get_db() as conn:
@@ -442,11 +442,15 @@ def stripe_webhook():
     payload = request.data
     sig_header = request.headers.get('Stripe-Signature', '')
 
+    # Fail closed: without a configured signing secret we cannot verify the
+    # event came from Stripe, and this endpoint provisions real accounts. Refuse
+    # rather than trust unsigned JSON.
+    if not STRIPE_WEBHOOK_SECRET:
+        print('[Store API] STRIPE_WEBHOOK_SECRET not configured; refusing webhook')
+        return jsonify({'error': 'Webhook not configured'}), 500
+
     try:
-        if STRIPE_WEBHOOK_SECRET:
-            event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
-        else:
-            event = json.loads(payload)
+        event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
     except (ValueError, stripe.error.SignatureVerificationError) as e:
         print(f'[Store API] Webhook signature error: {e}')
         return jsonify({'error': 'Invalid signature'}), 400
@@ -560,8 +564,10 @@ def _handle_checkout_completed(session):
             all_provisioned = False
 
     if all_provisioned:
+        # Password has been delivered to the app(s) and is about to be emailed to
+        # the customer from the in-memory copy — don't retain it in cleartext.
         with get_db() as conn:
-            conn.execute('UPDATE subscriptions SET provisioned = 1 WHERE stripe_subscription_id = ?', (subscription_id,))
+            conn.execute('UPDATE subscriptions SET provisioned = 1, temp_password = NULL WHERE stripe_subscription_id = ?', (subscription_id,))
             conn.commit()
 
     # Send welcome email
@@ -641,18 +647,19 @@ def _handle_trial_will_end(sub):
 
 
 def _send_trial_ending_email(email, name, product, trial_end_iso):
-    first_name = (name or '').split()[0] if name else 'there'
+    first_name = html.escape((name or '').split()[0]) if name else 'there'
+    e_product = html.escape(product or '')
     ends_str = ''
     if trial_end_iso:
         try:
             ends_str = datetime.fromisoformat(trial_end_iso).strftime('%B %-d, %Y')
         except Exception:
             ends_str = trial_end_iso
-    when = f' on <b>{ends_str}</b>' if ends_str else ' soon'
-    html = f"""
+    when = f' on <b>{html.escape(ends_str)}</b>' if ends_str else ' soon'
+    body = f"""
     <div style="font-family: sans-serif; max-width: 600px;">
-        <h2 style="color: #111;">Your {product} free trial is ending, {first_name}</h2>
-        <p>Your 30-day free trial ends{when}. To keep using {product} without
+        <h2 style="color: #111;">Your {e_product} free trial is ending, {first_name}</h2>
+        <p>Your 30-day free trial ends{when}. To keep using {e_product} without
         interruption, no action is needed — your subscription will continue and
         your card on file will be charged automatically.</p>
         <p>If you'd prefer not to continue, you can cancel any time before then
@@ -661,7 +668,7 @@ def _send_trial_ending_email(email, name, product, trial_end_iso):
         <p style="color:#888; font-size:12px; margin-top:24px;">Plainspoken Foundry Nine · store.plainspokenfoundrynine.com</p>
     </div>
     """
-    if _send_email(EMAIL_FROM_CUSTOMER, email, f'Your {product} free trial ends soon', html):
+    if _send_email(EMAIL_FROM_CUSTOMER, email, f'Your {product} free trial ends soon', body):
         print(f'[Store API] Trial-ending email sent to {email}')
 
 
@@ -687,16 +694,16 @@ def _handle_payment_failed(invoice):
 def _send_payment_failed_alert(subscription_id, customer_email, attempt_count):
     if not NOTIFY_EMAIL:
         return
-    html = f"""
+    body = f"""
     <div style="font-family: sans-serif;">
         <h3>Stripe payment failed</h3>
-        <p><b>Subscription:</b> {subscription_id}</p>
-        <p><b>Customer:</b> {customer_email or '(unknown)'}</p>
+        <p><b>Subscription:</b> {html.escape(subscription_id)}</p>
+        <p><b>Customer:</b> {html.escape(customer_email) if customer_email else '(unknown)'}</p>
         <p><b>Attempt:</b> {attempt_count}</p>
         <p>Subscription marked <code>past_due</code> in store DB.</p>
     </div>
     """
-    _send_email(EMAIL_FROM_INTERNAL, NOTIFY_EMAIL, f'[PF9 Store] Payment failed — {customer_email or subscription_id}', html)
+    _send_email(EMAIL_FROM_INTERNAL, NOTIFY_EMAIL, f'[PF9 Store] Payment failed — {customer_email or subscription_id}', body)
 
 
 def _provision_account(product, email, name, company, password):
@@ -729,25 +736,32 @@ def _send_notification(name, company, email, message, product):
     if not NOTIFY_EMAIL:
         print('[Store API] NOTIFY_EMAIL not set, skipping notification')
         return
-    html = f"""
+    e_name    = html.escape(name)
+    e_company = html.escape(company) if company else '—'
+    e_email   = html.escape(email)
+    e_message = html.escape(message) if message else '—'
+    e_product = html.escape(product)
+    body = f"""
     <div style="font-family: sans-serif; max-width: 600px;">
         <h2 style="color: #111;">New Demo Request</h2>
         <table style="width:100%; border-collapse:collapse;">
-            <tr><td style="padding:8px; font-weight:bold; width:120px;">Product</td><td style="padding:8px;">{product}</td></tr>
-            <tr style="background:#f9f9f9"><td style="padding:8px; font-weight:bold;">Name</td><td style="padding:8px;">{name}</td></tr>
-            <tr><td style="padding:8px; font-weight:bold;">Company</td><td style="padding:8px;">{company or '—'}</td></tr>
-            <tr style="background:#f9f9f9"><td style="padding:8px; font-weight:bold;">Email</td><td style="padding:8px;"><a href="mailto:{email}">{email}</a></td></tr>
-            <tr><td style="padding:8px; font-weight:bold; vertical-align:top;">Message</td><td style="padding:8px;">{message or '—'}</td></tr>
+            <tr><td style="padding:8px; font-weight:bold; width:120px;">Product</td><td style="padding:8px;">{e_product}</td></tr>
+            <tr style="background:#f9f9f9"><td style="padding:8px; font-weight:bold;">Name</td><td style="padding:8px;">{e_name}</td></tr>
+            <tr><td style="padding:8px; font-weight:bold;">Company</td><td style="padding:8px;">{e_company}</td></tr>
+            <tr style="background:#f9f9f9"><td style="padding:8px; font-weight:bold;">Email</td><td style="padding:8px;"><a href="mailto:{e_email}">{e_email}</a></td></tr>
+            <tr><td style="padding:8px; font-weight:bold; vertical-align:top;">Message</td><td style="padding:8px;">{e_message}</td></tr>
         </table>
         <p style="color:#888; font-size:12px; margin-top:24px;">Plainspoken Foundry Nine · store.plainspokenfoundrynine.com</p>
     </div>
     """
-    if _send_email(EMAIL_FROM_INTERNAL, NOTIFY_EMAIL, f'[PF9 Store] New demo request — {product}', html):
+    if _send_email(EMAIL_FROM_INTERNAL, NOTIFY_EMAIL, f'[PF9 Store] New demo request — {product}', body):
         print(f'[Store API] Notification sent for {email}')
 
 
 def _send_welcome_email(email, name, product, password, provisioned):
-    first_name = name.split()[0] if name else 'there'
+    first_name = html.escape(name.split()[0]) if name else 'there'
+    e_email = html.escape(email)
+    e_password = html.escape(password)
     bundle_products = BUNDLE_MAP.get(product)
 
     if bundle_products:
@@ -755,12 +769,12 @@ def _send_welcome_email(email, name, product, password, provisioned):
         login_rows = ''
         for bp in bundle_products:
             bp_url = APP_URL_MAP.get(bp, STORE_URL)
-            login_rows += f'<tr><td style="padding:8px; font-weight:bold;">{bp}</td><td style="padding:8px;"><a href="{bp_url}">{bp_url}</a></td></tr>\n'
+            login_rows += f'<tr><td style="padding:8px; font-weight:bold;">{html.escape(bp)}</td><td style="padding:8px;"><a href="{bp_url}">{bp_url}</a></td></tr>\n'
         if provisioned:
             login_section = f"""
             {login_rows}
-            <tr style="background:#f9f9f9"><td style="padding:8px; font-weight:bold;">Email</td><td style="padding:8px;">{email}</td></tr>
-            <tr><td style="padding:8px; font-weight:bold;">Temporary Password</td><td style="padding:8px; font-family:monospace; font-size:16px;">{password}</td></tr>
+            <tr style="background:#f9f9f9"><td style="padding:8px; font-weight:bold;">Email</td><td style="padding:8px;">{e_email}</td></tr>
+            <tr><td style="padding:8px; font-weight:bold;">Temporary Password</td><td style="padding:8px; font-family:monospace; font-size:16px;">{e_password}</td></tr>
             <tr><td style="padding:8px; font-size:12px; color:#666;" colspan="2">Same login for both apps.</td></tr>
             """
         else:
@@ -772,14 +786,14 @@ def _send_welcome_email(email, name, product, password, provisioned):
         if provisioned:
             login_section = f"""
             <tr><td style="padding:8px; font-weight:bold;">Login URL</td><td style="padding:8px;"><a href="{app_url}">{app_url}</a></td></tr>
-            <tr style="background:#f9f9f9"><td style="padding:8px; font-weight:bold;">Email</td><td style="padding:8px;">{email}</td></tr>
-            <tr><td style="padding:8px; font-weight:bold;">Temporary Password</td><td style="padding:8px; font-family:monospace; font-size:16px;">{password}</td></tr>
+            <tr style="background:#f9f9f9"><td style="padding:8px; font-weight:bold;">Email</td><td style="padding:8px;">{e_email}</td></tr>
+            <tr><td style="padding:8px; font-weight:bold;">Temporary Password</td><td style="padding:8px; font-family:monospace; font-size:16px;">{e_password}</td></tr>
             """
         else:
             login_section = '<tr><td style="padding:8px;" colspan="2">Your account is being set up. We\'ll send your login details shortly.</td></tr>'
-        product_label = product
+        product_label = html.escape(product)
 
-    html = f"""
+    body = f"""
     <div style="font-family: sans-serif; max-width: 600px;">
         <h2 style="color: #111;">Welcome to {product_label}, {first_name}!</h2>
         <p>Your subscription is active and your account{'s have' if bundle_products else ' has'} been created.</p>
@@ -790,7 +804,7 @@ def _send_welcome_email(email, name, product, password, provisioned):
         <p style="color:#888; font-size:12px; margin-top:24px;">Plainspoken Foundry Nine · store.plainspokenfoundrynine.com</p>
     </div>
     """
-    if _send_email(EMAIL_FROM_CUSTOMER, email, subject, html):
+    if _send_email(EMAIL_FROM_CUSTOMER, email, subject, body):
         print(f'[Store API] Welcome email sent to {email}')
 
 
