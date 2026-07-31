@@ -51,6 +51,16 @@ _MANUFACTURING_APPS = {'FLOWTRACK', 'QUALIFI', 'SHIFTLOG', 'REPORTR', 'INSPECTR'
 _PROPERTY_APPS      = {'LANDLORDR', 'TENANTLINK', 'TENANTLINKR', 'PROPERTY_BUNDLE', 'PERMITR', 'TASKFLOW'}
 
 
+# ── Klaviyo lifecycle-email config ──
+# Drives the trial/paid onboarding flows. Klaviyo owns the day-27 pre-charge
+# notice, which is why _handle_trial_will_end no longer emails directly.
+KLAVIYO_API_KEY    = os.environ.get('KLAVIYO_API_KEY', '')
+KLAVIYO_API_BASE   = 'https://a.klaviyo.com/api'
+KLAVIYO_REVISION   = os.environ.get('KLAVIYO_REVISION', '2024-10-15')
+KLAVIYO_LIST_TRIAL = os.environ.get('KLAVIYO_LIST_TRIAL', 'RKeAnZ')
+KLAVIYO_LIST_PAID  = os.environ.get('KLAVIYO_LIST_PAID', 'SfBnvH')
+
+
 def _hubspot_list_for_product(product):
     """Map a product key (or calculator-lead tag) to a HubSpot list ID. None if ambiguous."""
     p = (product or '').upper()
@@ -125,6 +135,84 @@ def _hubspot_push_contact(email, name='', company='', list_id=None):
                 print(f'[Store API] HubSpot list add failed for {email_norm} (list {list_id}): {r.status_code} {r.text[:200]}')
         except Exception as e:
             print(f'[Store API] HubSpot list add error for {email_norm}: {e}')
+
+
+def _klaviyo_headers():
+    return {
+        'Authorization': f'Klaviyo-API-Key {KLAVIYO_API_KEY}',
+        'revision': KLAVIYO_REVISION,
+        'Content-Type': 'application/json',
+        'accept': 'application/json',
+    }
+
+
+def _klaviyo_format_trial_end(trial_end_iso):
+    """Render the billing date the way the day-27 email reads it: 'August 30, 2026'."""
+    if not trial_end_iso:
+        return None
+    try:
+        return datetime.fromisoformat(trial_end_iso).strftime('%B %-d, %Y')
+    except Exception:
+        return None
+
+
+def _klaviyo_sync(email, name='', properties=None, add_list=None, remove_list=None):
+    """
+    Upsert a Klaviyo profile and move it between lifecycle lists.
+
+    Fail-soft like _hubspot_push_contact: never raises, never blocks the webhook.
+    Klaviyo drives the day-27 pre-charge notice, so a failure here is logged
+    loudly — a trial that never lands on the list gets no billing warning.
+    """
+    if not KLAVIYO_API_KEY or not email:
+        return
+
+    email_norm = email.lower().strip()
+    attributes = {'email': email_norm}
+    parts = (name or '').strip().split(None, 1)
+    if parts:
+        attributes['first_name'] = parts[0]
+    if len(parts) > 1:
+        attributes['last_name'] = parts[1]
+    if properties:
+        attributes['properties'] = {k: v for k, v in properties.items() if v is not None}
+
+    profile_id = None
+    try:
+        r = http_requests.post(
+            f'{KLAVIYO_API_BASE}/profile-import/',
+            json={'data': {'type': 'profile', 'attributes': attributes}},
+            headers=_klaviyo_headers(),
+            timeout=10,
+        )
+        if r.status_code in (200, 201):
+            profile_id = ((r.json() or {}).get('data') or {}).get('id')
+        else:
+            print(f'[Store API] Klaviyo profile upsert failed for {email_norm}: {r.status_code} {r.text[:200]}')
+            return
+    except Exception as e:
+        print(f'[Store API] Klaviyo profile upsert error for {email_norm}: {e}')
+        return
+
+    if not profile_id:
+        print(f'[Store API] Klaviyo returned no profile id for {email_norm}')
+        return
+
+    payload = {'data': [{'type': 'profile', 'id': profile_id}]}
+    for list_id, method in ((add_list, 'post'), (remove_list, 'delete')):
+        if not list_id:
+            continue
+        try:
+            r = getattr(http_requests, method)(
+                f'{KLAVIYO_API_BASE}/lists/{list_id}/relationships/profiles/',
+                json=payload,
+                headers=_klaviyo_headers(),
+                timeout=10,
+            )
+            if r.status_code not in (200, 202, 204):
+                print(f'[Store API] Klaviyo list {method} failed for {email_norm} (list {list_id}): {r.status_code} {r.text[:200]}')
+        except Exception as e:
+            print(f'[Store API] Klaviyo list {method} error for {email_norm} (list {list_id}): {e}')
 
 
 def _send_email(from_addr, to_addr, subject, body):
@@ -537,12 +625,21 @@ def _handle_checkout_completed(session):
     # lands as 'trialing' (not 'active'); trial_end is a unix timestamp.
     sub_status = 'active'
     trial_end_iso = None
+    price_display = None
     try:
         sub = stripe.Subscription.retrieve(subscription_id)
         sub_status = sub.get('status', 'active') or 'active'
         te = sub.get('trial_end')
         if te:
             trial_end_iso = datetime.utcfromtimestamp(int(te)).isoformat()
+        # Read the amount actually being charged rather than a hardcoded figure,
+        # so the pre-charge email can never quote a price that differs from the bill.
+        items = ((sub.get('items') or {}).get('data')) or []
+        if items:
+            unit_amount = ((items[0].get('price') or {}).get('unit_amount'))
+            if unit_amount is not None:
+                dollars = unit_amount / 100
+                price_display = f'{dollars:.0f}' if dollars == int(dollars) else f'{dollars:.2f}'
     except Exception as e:
         print(f'[Store API] Could not retrieve subscription {subscription_id}: {e}')
 
@@ -587,6 +684,21 @@ def _handle_checkout_completed(session):
     except Exception as e:
         print(f'[Store API] HubSpot subscriber push error: {e}')
 
+    # Enroll in the Klaviyo trial flow. trial_end_date is what the day-27
+    # pre-charge email renders, so it has to be on the profile from day 0.
+    _klaviyo_sync(
+        email=email,
+        name=name,
+        properties={
+            'app_name': product,
+            'app_price': price_display,
+            'trial_end_date': _klaviyo_format_trial_end(trial_end_iso),
+            'trial_activated': False,
+            'manage_subscription_url': f'{STORE_URL}/login.html',
+        },
+        add_list=KLAVIYO_LIST_TRIAL,
+    )
+
     print(f'[Store API] Subscription created: {product} for {email} (provisioned={all_provisioned})')
 
 
@@ -598,7 +710,21 @@ def _handle_subscription_cancelled(sub):
             ('cancelled', datetime.utcnow().isoformat(), subscription_id)
         )
         conn.commit()
+        row = conn.execute(
+            'SELECT email, name FROM subscriptions WHERE stripe_subscription_id = ?',
+            (subscription_id,)
+        ).fetchone()
     print(f'[Store API] Subscription cancelled: {subscription_id}')
+
+    # Drop them off the trial list immediately. A cancelled trial must never
+    # receive the day-27 notice warning about a charge that will not happen.
+    if row and row['email']:
+        _klaviyo_sync(
+            email=row['email'],
+            name=row['name'],
+            properties={'subscription_status': 'cancelled'},
+            remove_list=KLAVIYO_LIST_TRIAL,
+        )
 
 
 def _handle_subscription_updated(sub):
@@ -607,6 +733,10 @@ def _handle_subscription_updated(sub):
     te = sub.get('trial_end')
     trial_end_iso = datetime.utcfromtimestamp(int(te)).isoformat() if te else None
     with get_db() as conn:
+        previous = conn.execute(
+            'SELECT status, email, name, product FROM subscriptions WHERE stripe_subscription_id = ?',
+            (subscription_id,)
+        ).fetchone()
         conn.execute(
             'UPDATE subscriptions SET status = ?, trial_end = ? WHERE stripe_subscription_id = ?',
             (status, trial_end_iso, subscription_id)
@@ -614,12 +744,29 @@ def _handle_subscription_updated(sub):
         conn.commit()
     print(f'[Store API] Subscription {subscription_id} status -> {status}')
 
+    # trialing -> active is the day-30 conversion: hand them off from the trial
+    # flow to paid onboarding. Guarded on the previous status so the repeated
+    # 'active' updates Stripe sends on every renewal don't re-trigger it.
+    if (
+        previous
+        and previous['email']
+        and previous['status'] == 'trialing'
+        and status == 'active'
+    ):
+        _klaviyo_sync(
+            email=previous['email'],
+            name=previous['name'],
+            properties={'app_name': previous['product'], 'subscription_status': 'active'},
+            add_list=KLAVIYO_LIST_PAID,
+            remove_list=KLAVIYO_LIST_TRIAL,
+        )
+
 
 def _handle_trial_will_end(sub):
-    """Stripe fires this ~3 days before a trial ends. Remind the customer their
-    card will be charged unless they cancel, and alert us internally."""
+    """Stripe fires this ~3 days before a trial ends. Refresh the billing date
+    everywhere so the day-27 pre-charge email quotes the date Stripe will
+    actually charge on. The email itself is sent by Klaviyo, not here."""
     subscription_id = sub.get('id', '')
-    customer_id = sub.get('customer', '')
     te = sub.get('trial_end')
     trial_end_iso = datetime.utcfromtimestamp(int(te)).isoformat() if te else None
 
@@ -640,36 +787,15 @@ def _handle_trial_will_end(sub):
     print(f'[Store API] Trial ending soon for {subscription_id} (ends {trial_end_iso})')
     if not row or not row['email']:
         return
-    try:
-        _send_trial_ending_email(row['email'], row['name'], row['product'], trial_end_iso)
-    except Exception as e:
-        print(f'[Store API] Trial-ending email error: {e}')
 
-
-def _send_trial_ending_email(email, name, product, trial_end_iso):
-    first_name = html.escape((name or '').split()[0]) if name else 'there'
-    e_product = html.escape(product or '')
-    ends_str = ''
-    if trial_end_iso:
-        try:
-            ends_str = datetime.fromisoformat(trial_end_iso).strftime('%B %-d, %Y')
-        except Exception:
-            ends_str = trial_end_iso
-    when = f' on <b>{html.escape(ends_str)}</b>' if ends_str else ' soon'
-    body = f"""
-    <div style="font-family: sans-serif; max-width: 600px;">
-        <h2 style="color: #111;">Your {e_product} free trial is ending, {first_name}</h2>
-        <p>Your 30-day free trial ends{when}. To keep using {e_product} without
-        interruption, no action is needed — your subscription will continue and
-        your card on file will be charged automatically.</p>
-        <p>If you'd prefer not to continue, you can cancel any time before then
-        from your billing portal and you won't be charged.</p>
-        <p><a href="{STORE_URL}/login.html">Manage your subscription</a></p>
-        <p style="color:#888; font-size:12px; margin-top:24px;">Plainspoken Foundry Nine · store.plainspokenfoundrynine.com</p>
-    </div>
-    """
-    if _send_email(EMAIL_FROM_CUSTOMER, email, f'Your {product} free trial ends soon', body):
-        print(f'[Store API] Trial-ending email sent to {email}')
+    _klaviyo_sync(
+        email=row['email'],
+        name=row['name'],
+        properties={
+            'app_name': row['product'],
+            'trial_end_date': _klaviyo_format_trial_end(trial_end_iso),
+        },
+    )
 
 
 def _handle_payment_failed(invoice):
