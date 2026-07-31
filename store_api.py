@@ -693,7 +693,6 @@ def _handle_checkout_completed(session):
             'app_name': product,
             'app_price': price_display,
             'trial_end_date': _klaviyo_format_trial_end(trial_end_iso),
-            'trial_activated': False,
             'manage_subscription_url': f'{STORE_URL}/login.html',
         },
         add_list=KLAVIYO_LIST_TRIAL,
