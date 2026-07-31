@@ -2,7 +2,7 @@
 
 **Purpose:** durable session state so any future agent (me, another Claude session, or a human) can pick up without re-deriving context.
 
-**Last updated:** 2026-07-26
+**Last updated:** 2026-07-31
 **Active session:** https://claude.ai/code/session_01PDCcag8KXiq7YURGhjqPrn
 
 ---
@@ -175,8 +175,8 @@
 - [ ] **HARO daily scan** — `PLAYBOOK_HARO.md`. Sign up at Help a B2B Writer, Terkel.io, Qwoted. 10 min/morning to scan; 4-hour response goal on relevant queries.
 - [ ] **Quora + Stack Exchange answers** — `PLAYBOOK_QUORA_STACKEXCHANGE.md`. 3–5 substantive answers per week, 15 min each. Build profile credibility before mentioning PF9.
 
-#### Google Ads — property-first test in progress (decided 2026-06-03)
-- [ ] **Property campaign at $15/day** (~$456/mo, top of $300–500 budget range). Manufacturing campaign held at $0 until property proves out. Runbook: `PLAYBOOK_GOOGLE_ADS_PROPERTY_TEST.md`. Strategy source of truth: `PLAYBOOK_GOOGLE_ADS.md`. Conversion tracking ✅ live and correctly weighted. **Account was suspended 6/24 and reinstated 7/5 — use the CAUTIOUS relaunch (`APPEAL_GOOGLE_ADS_2026-06-24.md` §5): exact-match only, one ad group, competitor names negative-listed, $5/day ramp. Do NOT re-enable the old broad/phrase competitor-comparison campaign — that's what got it suspended.** Blocker before that: CSV import via Google Ads Editor still pending (founder runs from local machine). Given the suspension risk and that HN/Reddit are lower-risk, Google is now the LOWEST-priority channel per visitor.
+#### Google Ads — WITHDRAWN / SHELVED (decided 2026-07-31)
+- [x] **Google Ads is abandoned as a channel — do NOT restart it.** History: property-first test decided 6/3 → account auto-created a ghost campaign (~$47 wasted) → suspended 6/24 for "unacceptable business practices" (competitor-keyword false positive) → appeal succeeded, reinstatement email 7/5 → **but dashboard still showed suspended weeks later, so on 2026-07-31 the founder decided to withdraw entirely.** Rationale: highest-risk + lowest-priority-per-visitor channel, consumed disproportionate effort for zero traffic, and Reddit (lower-risk) + HN (free) are better bets. **Withdrawal steps for the founder (agent can't operate Google Ads): remove the billing/payment method (critical — prevents any spend if the account ever un-suspends, given the ghost-campaign auto-spend history); set any campaign to Removed/$0. Leave conversion tracking in place (harmless, ready if ever revived).** Docs `PLAYBOOK_GOOGLE_ADS.md`, `PLAYBOOK_GOOGLE_ADS_PROPERTY_TEST.md`, `APPEAL_GOOGLE_ADS_2026-06-24.md`, and `tools/google-ads/` are kept for reference/revival but are NOT an active plan. Paid traffic now = Reddit (see `PLAYBOOK_REDDIT_ADS.md`).
 
 #### When traffic + leads exist
 - [ ] **Stand up Cowork Lifecycle agent** — activation guide complete at `PLAYBOOK_LIFECYCLE_ACTIVATION.md`. Use it to configure the Cowork agent in the Cowork UI. 48h dry-run required before live sends. L3 (onboarding) first; L1 after L3 is stable. Threshold: 10+ non-subscriber leads/week before it's worth the config.
