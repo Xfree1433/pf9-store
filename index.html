@@ -965,6 +965,25 @@
         });
     }
 
+    // Deep link from lifecycle email: /?product=MAINTAINR scrolls to that card and
+    // opens its subscribe modal. Clicks the card's own Subscribe button rather than
+    // calling openSubscribe() directly, so the price stays defined in one place.
+    // Skipped when ?checkout is present — that is the Stripe return, handled below.
+    (function() {
+        try {
+            var qs = new URLSearchParams(window.location.search);
+            var want = qs.get('product');
+            // Product codes are [A-Z_] only; validating keeps this out of the
+            // selector, which would otherwise be a query-string injection point.
+            if (!want || qs.get('checkout') || !/^[A-Z_]{2,32}$/.test(want)) return;
+            var card = document.querySelector('.product-card[data-product="' + want + '"]');
+            if (!card) return;
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            var btn = card.querySelector('button[onclick^="openSubscribe"]');
+            if (btn) btn.click();
+        } catch (e) {}
+    })();
+
     // On return from Stripe success_url, record the conversion in PostHog (+ GA4).
     // Requires Stripe success_url to include ?checkout=success&product=<app> (see POSTHOG_TRACKING_PLAN.md).
     (function() {

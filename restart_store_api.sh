@@ -2,12 +2,25 @@
 #
 # Restart-only deploy for pf9-store-api.service.
 #
-# The GitHub Actions runner already syncs /opt/pf9-store on push, but gunicorn
-# does not hot-reload — the running workers keep serving whatever code they
-# imported at start. This restarts them, with guards so a bad file or a missing
-# secret is caught before the service goes down rather than after.
+# Something root-side syncs /opt/pf9-store from the repo — NOT a GitHub Actions
+# runner, despite what this comment used to claim: the only workflows in this
+# repo are Pages and CodeQL. Confirm the tree is actually current before
+# restarting — `git -C /opt/pf9-store diff HEAD origin/main` should be empty.
 #
-# Run on xfree143 as:  ssh -t xfree143.taile2beaa.ts.net 'sudo bash /tmp/restart_store_api.sh'
+# The restart is needed because gunicorn does not hot-reload: the workers keep
+# serving whatever code they imported at start. A healthy /health therefore
+# proves nothing about which version is live. The decisive check is that the
+# new MainPID's start time is later than store_api.py's mtime.
+#
+# Guards below catch a bad file or a missing secret before the service goes
+# down rather than after. EXPECT_MD5 must be bumped by hand whenever
+# store_api.py changes, or every restart aborts on the checksum.
+#
+# Needs a real sudo password — pf9-store-api is missing from the NOPASSWD list
+# that ~12 sibling PF9 services are on, so this cannot be run as a one-shot
+# `ssh ... sudo ...`. Log in first, then run it:
+#   ssh -t xfree143.taile2beaa.ts.net
+#   sudo bash /opt/pf9-store/restart_store_api.sh
 #
 set -euo pipefail
 
@@ -16,7 +29,7 @@ STORE_API=$STORE_DIR/store_api.py
 VENV=$STORE_DIR/venv
 UNIT=pf9-store-api.service
 PORT=5011
-EXPECT_MD5=7f3e39460005f2fd9c73b2ac5e6b89f9
+EXPECT_MD5=8f30123540af6cc0986ada14f1f10ef4
 BRIDGR_ENV=/opt/bridgr/.env
 OVERRIDE_ENV=$STORE_DIR/pf9-store-api.env
 

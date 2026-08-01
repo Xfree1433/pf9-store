@@ -308,6 +308,97 @@ APP_URL_MAP = {
     'MAINTAINR': 'https://maintainr.plainspokenfoundrynine.com',
 }
 
+# Product → the app we suggest next, for the paid month-3 expansion email.
+#
+# Keyed by what the customer already has, because the pitch only lands if it
+# names the connection. Pairings follow the workflow, not the product family:
+# the app that picks up where the current one stops. Some pairs are deliberately
+# reciprocal (REPORTR/EXTRACTR, COMPLI/PERMITR) — from either side the other
+# half is genuinely the next thing you'd want.
+#
+# Every target is checked against index.html: it must have a live Subscribe or
+# Start Free CTA. Nothing here may point at a "Join Waitlist" product, or the
+# email's one call to action dead-ends.
+#
+# The Klaviyo template reads related_app_name / related_app_detail /
+# related_app_url and has a |default: on each, so an unmapped product degrades
+# to a generic "browse all apps" card rather than an empty one.
+CROSS_SELL_MAP = {
+    'FLOWTRACK': ('TASKFLOW',
+        "FLOWTRACK shows you where work is; TASKFLOW is where it gets done — "
+        "assignments, due dates and a clear view of what's blocked."),
+    'TASKFLOW': ('FLOWTRACK',
+        "Once tasks are running, FLOWTRACK shows the process behind them — where "
+        "work queues up and which stage slows everything down."),
+    'QUALIFI': ('INSPECTR',
+        "Quality findings usually start with an inspection. INSPECTR handles the "
+        "scheduled checks, photo evidence and sign-off that feed straight into QUALIFI."),
+    'INSPECTR': ('COMPLI',
+        "Inspection results are evidence. COMPLI maps them to the frameworks you're "
+        "audited against, so findings become proof instead of paperwork — free to start."),
+    'SHIFTLOG': ('PERMITR',
+        "Handovers and permits cover the same shift change. PERMITR controls who is "
+        "cleared to work on what, so your log matches what was actually authorised."),
+    # COMPLI is the free tier on the storefront ("Start Free"), so lead with that —
+    # an expansion email that implies a second invoice for a free app reads badly.
+    'PERMITR': ('COMPLI',
+        "Permits prove control on the day. COMPLI proves it across the year, mapping "
+        "your permit records to the frameworks auditors ask about — and it's free to start."),
+    'COMPLI': ('PERMITR',
+        "COMPLI tracks the frameworks; PERMITR enforces them at the sharp end — no one "
+        "starts high-risk work without a signed permit."),
+    # Deliberately NOT OPSIQ from either of these, even though it is the sharpest
+    # fit: OPSIQ is still "Coming Soon / Join Waitlist" on the storefront, so the
+    # CTA would land on a waitlist form. Point these back at OPSIQ once it sells.
+    'REPORTR': ('EXTRACTR',
+        "REPORTR charts what is already in your systems. EXTRACTR goes after what "
+        "isn't — the numbers still stuck in PDFs, invoices and scanned forms."),
+    'EXTRACTR': ('REPORTR',
+        "EXTRACTR gets the data out of your documents. REPORTR puts it on a "
+        "dashboard that refreshes itself, instead of a spreadsheet you rebuild."),
+    'OPSIQ': ('REPORTR',
+        "OPSIQ answers one question at a time. REPORTR puts the answers you keep "
+        "asking on a dashboard that refreshes itself."),
+    'SUPPORTR': ('TASKFLOW',
+        "Tickets that need real work behind them end up as tasks. TASKFLOW takes the "
+        "handoff from SUPPORTR with an owner and a due date."),
+    'LANDLORDR': ('MAINTAINR',
+        "Every repair request in LANDLORDR becomes a work order in MAINTAINR — "
+        "contractor assigned, parts tracked, cost recorded against the unit."),
+    'TENANTLINK': ('MAINTAINR',
+        "Tenants report problems in TENANTLINK; MAINTAINR turns those into scheduled "
+        "work with a contractor, a cost and a completion date."),
+    'PROPERTY_BUNDLE': ('MAINTAINR',
+        "You already run the property and tenant side. MAINTAINR closes the loop — "
+        "repair requests become scheduled work orders with costs tracked per unit."),
+    'MAINTAINR': ('INSPECTR',
+        "Reactive repairs drop when you catch problems early. INSPECTR runs the "
+        "scheduled checks that generate work before something breaks."),
+}
+
+
+def _cross_sell_properties(product):
+    """Klaviyo profile properties for the month-3 expansion email.
+
+    Returns {} for an unknown product so the template's own |default: values
+    apply — better a generic card than one naming an app that does not exist.
+    """
+    pair = CROSS_SELL_MAP.get(product)
+    if not pair:
+        return {}
+    related, detail = pair
+    return {
+        'related_app_name': related,
+        'related_app_detail': detail,
+        # Deliberately the STORE, not APP_URL_MAP[related]: the recipient does
+        # not own this app yet, so the app's own host would just show them a
+        # login wall. ?product= opens that card's subscribe modal on the
+        # storefront; if index.html is ever served without that handler the
+        # param is ignored and they simply land on the store.
+        'related_app_url': f'{STORE_URL}/?product={related}',
+    }
+
+
 # Product → Registration endpoint mapping
 # Use loopback addresses — store API runs on the same pf9-apps host as the provisioning targets,
 # so this skips Cloudflare/tunnel overhead and whatever routing weirdness affects public URLs.
@@ -704,15 +795,20 @@ def _handle_checkout_completed(session):
 
     # Enroll in the Klaviyo trial flow. trial_end_date is what the day-27
     # pre-charge email renders, so it has to be on the profile from day 0.
+    trial_properties = {
+        'app_name': product,
+        'app_price': price_display,
+        'trial_end_date': _klaviyo_format_trial_end(trial_end_iso),
+        'manage_subscription_url': f'{STORE_URL}/login.html',
+    }
+    # Cross-sell target is a pure function of the product, so set it now rather
+    # than waiting for conversion. Costs nothing, and means the month-3 email
+    # has data even if the trialing -> active webhook is ever missed.
+    trial_properties.update(_cross_sell_properties(product))
     _klaviyo_sync(
         email=email,
         name=name,
-        properties={
-            'app_name': product,
-            'app_price': price_display,
-            'trial_end_date': _klaviyo_format_trial_end(trial_end_iso),
-            'manage_subscription_url': f'{STORE_URL}/login.html',
-        },
+        properties=trial_properties,
         add_list=KLAVIYO_LIST_TRIAL,
     )
 
@@ -770,10 +866,15 @@ def _handle_subscription_updated(sub):
         and previous['status'] == 'trialing'
         and status == 'active'
     ):
+        properties = {'app_name': previous['product'], 'subscription_status': 'active'}
+        # The month-3 expansion email renders related_app_* off the profile.
+        # Set it here as well as at checkout so a profile that predates the
+        # checkout-side mapping still gets it on conversion.
+        properties.update(_cross_sell_properties(previous['product']))
         _klaviyo_sync(
             email=previous['email'],
             name=previous['name'],
-            properties={'app_name': previous['product'], 'subscription_status': 'active'},
+            properties=properties,
             add_list=KLAVIYO_LIST_PAID,
             remove_list=KLAVIYO_LIST_TRIAL,
         )
