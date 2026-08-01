@@ -16,7 +16,7 @@ STORE_API=$STORE_DIR/store_api.py
 VENV=$STORE_DIR/venv
 UNIT=pf9-store-api.service
 PORT=5011
-EXPECT_MD5=2c3c859ee94c865c46f9bd5d8a0dd84c
+EXPECT_MD5=7f3e39460005f2fd9c73b2ac5e6b89f9
 BRIDGR_ENV=/opt/bridgr/.env
 OVERRIDE_ENV=$STORE_DIR/pf9-store-api.env
 
