@@ -12,6 +12,7 @@ import sqlite3
 import os
 import string
 import secrets
+import time
 import html
 import requests as http_requests
 
@@ -38,6 +39,11 @@ STORE_URL = 'https://store.plainspokenfoundrynine.com'
 EMAIL_FROM_CUSTOMER = os.environ.get('EMAIL_FROM_CUSTOMER', 'PF9 <welcome@plainspokenfoundrynine.com>')
 EMAIL_FROM_INTERNAL = os.environ.get('EMAIL_FROM_INTERNAL', 'PF9 Alerts <alerts@plainspokenfoundrynine.com>')
 NOTIFY_EMAIL        = os.environ.get('NOTIFY_EMAIL', '')
+
+# Shared secret presented to an app's registration endpoint to prove this is the
+# store fulfilling a paid subscription, for apps that keep public signup closed.
+# Unset means the header is simply not sent.
+PROVISION_SECRET    = os.environ.get('PROVISION_SECRET', '')
 
 
 # ── HubSpot CRM config ──
@@ -403,25 +409,50 @@ def _cross_sell_properties(product):
     }
 
 
-# Product → Registration endpoint mapping
-# Use loopback addresses — store API runs on the same pf9-apps host as the provisioning targets,
-# so this skips Cloudflare/tunnel overhead and whatever routing weirdness affects public URLs.
-REGISTER_MAP = {
-    'FLOWTRACK':  'http://127.0.0.1:3001/api/auth/register',
-    'REPORTR':    'http://127.0.0.1:3002/api/auth/register',
-    'SHIFTLOG':   'http://127.0.0.1:3003/api/auth/register',
-    'INSPECTR':   'http://127.0.0.1:3005/api/auth/register',
-    'LANDLORDR':  'http://127.0.0.1:5001/api/auth/register',
-    'TENANTLINK': 'http://127.0.0.1:5002/api/auth/register',
-    'PERMITR':    'http://127.0.0.1:5003/api/auth/register',
-    'TASKFLOW':   'http://127.0.0.1:5004/api/auth/register',
-    'OPSIQ':      'http://127.0.0.1:5050/api/auth/register',
-    'COMPLI':     'http://127.0.0.1:5200/api/v1/auth/register',
-    'EXTRACTR':   'http://127.0.0.1:5300/api/auth/register',
-    'SUPPORTR':   'http://127.0.0.1:5000/api/auth/register',
-    'MAINTAINR':  'http://127.0.0.1:3008/api/auth/register',
-    'QUALIFI':    'http://127.0.0.1:5400/api/auth/register',
+# Product → registration endpoint PATH. The host comes from APP_URL_MAP above,
+# so where an app lives is recorded in exactly one place.
+#
+# This used to be a map of full loopback URLs, introduced on the belief that the
+# store API ran on the same host as the apps. It does not: store_api runs on
+# xfree143, every target here runs on pf9-2. So 127.0.0.1:<port> resolved to
+# nothing and provisioning had been failing for every product — silently, since
+# _provision_account swallows connection errors and the customer just gets the
+# "we'll send your login details shortly" wording in the welcome email.
+#
+# Three of those ports were also simply wrong (OPSIQ was on 5050, which is
+# actually SUPPORTR; SUPPORTR was on 5000, which is dead; MAINTAINR was on 3008,
+# not 3006). Deriving the host from APP_URL_MAP makes that whole class of drift
+# impossible — there are no ports here to get out of date.
+#
+# Public HTTPS is not a fallback, it is the only transport that reaches all of
+# these: most of the Flask/gunicorn apps on pf9-2 bind 127.0.0.1 only, so no
+# cross-host address exists for them. Verified from xfree143 that Cloudflare
+# passes server-to-server POSTs through to every one of these origins.
+REGISTER_PATH = {
+    'FLOWTRACK':  '/api/auth/register',
+    'REPORTR':    '/api/auth/register',
+    'SHIFTLOG':   '/api/auth/register',
+    'INSPECTR':   '/api/auth/register',
+    'LANDLORDR':  '/api/auth/register',
+    'TENANTLINK': '/api/auth/register',
+    'PERMITR':    '/api/auth/register',
+    'TASKFLOW':   '/api/auth/register',
+    'OPSIQ':      '/api/auth/register',
+    'COMPLI':     '/api/v1/auth/register',   # COMPLI versions its API; the rest do not
+    'EXTRACTR':   '/api/auth/register',
+    'SUPPORTR':   '/api/auth/register',
+    'MAINTAINR':  '/api/auth/register',
+    'QUALIFI':    '/api/auth/register',
 }
+
+
+def _register_url(product):
+    """Public registration endpoint for a product, or None if we don't have one."""
+    base = APP_URL_MAP.get(product)
+    path = REGISTER_PATH.get(product)
+    if not base or not path:
+        return None
+    return base.rstrip('/') + path
 
 
 # ── Database setup ──
@@ -768,10 +799,20 @@ def _handle_checkout_completed(session):
 
     # Provision account in the app (bundles provision multiple apps)
     products_to_provision = BUNDLE_MAP.get(product, [product])
-    all_provisioned = True
-    for p in products_to_provision:
-        if not _provision_account(p, email, name, company, temp_password):
-            all_provisioned = False
+    results = {p: _provision_account(p, email, name, company, temp_password)
+               for p in products_to_provision}
+
+    # Only claim the account is ready when every app said 'ok'. 'exists' counts
+    # as not-ready on purpose: the customer can get in, but not with the password
+    # this email is about to quote, so the honest thing is to fall back to the
+    # "we'll send your login details shortly" wording and alert.
+    all_provisioned = all(r == 'ok' for r in results.values())
+
+    if not all_provisioned:
+        try:
+            _send_provisioning_alert(email, product, results, subscription_id)
+        except Exception as e:
+            print(f'[Store API] Provisioning alert error: {e}')
 
     if all_provisioned:
         # Password has been delivered to the app(s) and is about to be emailed to
@@ -954,29 +995,106 @@ def _send_payment_failed_alert(subscription_id, customer_email, attempt_count):
     _send_email(EMAIL_FROM_INTERNAL, NOTIFY_EMAIL, f'[PF9 Store] Payment failed — {customer_email or subscription_id}', body)
 
 
+def _send_provisioning_alert(email, product, results, subscription_id):
+    """Tell someone when a paid customer did not get their account.
+
+    This is the gap that let broken provisioning run unnoticed: the failure is
+    soft by design (the customer is charged, gets a softened welcome email, and
+    nothing else happens), so with no alert there was no signal at all. Every
+    other money-affecting failure here already emails NOTIFY_EMAIL.
+    """
+    if not NOTIFY_EMAIL:
+        print('[Store API] NOTIFY_EMAIL not set, skipping provisioning alert')
+        return
+    rows = ''
+    for p, r in results.items():
+        ok = (r == 'ok')
+        colour = '#0a7d28' if ok else ('#b26a00' if r == 'exists' else '#c00')
+        rows += (f'<tr><td style="padding:6px; font-weight:bold;">{html.escape(p)}</td>'
+                 f'<td style="padding:6px; color:{colour};">{html.escape(str(r))}</td></tr>\n')
+    body = f"""
+    <div style="font-family: sans-serif;">
+        <h3>Provisioning incomplete — customer paid</h3>
+        <p><b>Customer:</b> {html.escape(email)}</p>
+        <p><b>Purchased:</b> {html.escape(product)}</p>
+        <p><b>Subscription:</b> {html.escape(subscription_id or '(unknown)')}</p>
+        <table style="border-collapse:collapse;">{rows}</table>
+        <p>The welcome email was sent without login details. The temp password is
+        still in the <code>subscriptions</code> row for this subscription — create
+        the account manually with it, or reset and send new credentials.</p>
+    </div>
+    """
+    _send_email(EMAIL_FROM_INTERNAL, NOTIFY_EMAIL,
+                f'[PF9 Store] Provisioning failed — {email} ({product})', body)
+
+
 def _provision_account(product, email, name, company, password):
-    register_url = REGISTER_MAP.get(product)
+    """Create the customer's account in one app.
+
+    Returns 'ok', 'exists', or a short failure reason. 'exists' is deliberately
+    not 'ok': the account is usable, but it keeps whatever password it already
+    had, so the temp password in the welcome email would not work.
+    """
+    register_url = _register_url(product)
     if not register_url:
         print(f'[Store API] No register URL for {product} (skipping provisioning)')
-        return False
+        return 'no register url configured'
 
-    # Inspectr uses 'companyName', others might use 'organizationName'
-    if product == 'INSPECTR':
-        payload = {'email': email, 'name': name, 'password': password, 'companyName': company}
-    else:
-        payload = {'email': email, 'name': name, 'password': password, 'organizationName': company}
+    # Every app's register handler was read to confirm this: all of them take
+    # organizationName except INSPECTR, which takes companyName, and several
+    # accept either. Sending both keys covers all of them with one payload —
+    # the Next.js apps parse with a non-strict zod schema and the Flask apps
+    # read named keys, so in both cases the unused one is ignored rather than
+    # rejected. (An earlier read of a 400 on an empty body suggested COMPLI
+    # needed org_name; its source shows it already aliases organizationName.)
+    org = company or name or email.split('@')[0]
+    payload = {
+        'email': email,
+        'name': name or email.split('@')[0],
+        'password': password,
+        'organizationName': org,
+        'companyName': org,
+    }
 
-    try:
-        resp = http_requests.post(register_url, json=payload, timeout=15)
-        if resp.status_code in (200, 201):
-            print(f'[Store API] Provisioned {product} account for {email}')
-            return True
-        else:
-            print(f'[Store API] Provisioning failed for {product}: {resp.status_code} {resp.text[:200]}')
-            return False
-    except Exception as e:
-        print(f'[Store API] Provisioning error for {product}: {e}')
-        return False
+    # Identify ourselves rather than riding the default 'python-requests/x.y.z'.
+    # A Cloudflare rule on these zones returns 403 (error 1010) to some scripted
+    # user agents — 'Python-urllib/3.11' is blocked outright, measured. The
+    # requests default happens to pass today, but provisioning is a revenue path
+    # and should not depend on a third-party library's UA string staying off
+    # someone's blocklist.
+    headers = {'User-Agent': 'PF9-Store/1.0'}
+
+    # FLOWTRACK keeps public registration closed in production, so the only way
+    # to fulfil a paid FLOWTRACK subscription is to present this shared secret.
+    # Sent to every app: the others ignore an unknown header, and hardcoding
+    # "only FLOWTRACK gets it" would just be another per-product special case to
+    # forget about the next time an app closes its signup.
+    if PROVISION_SECRET:
+        headers['X-PF9-Provision-Secret'] = PROVISION_SECRET
+
+    # Two attempts: this now crosses the network, and losing the one shot at
+    # provisioning to a transient blip means a paying customer with no account.
+    last = 'unknown error'
+    for attempt in (1, 2):
+        try:
+            resp = http_requests.post(register_url, json=payload, headers=headers, timeout=20)
+            if resp.status_code in (200, 201):
+                print(f'[Store API] Provisioned {product} account for {email}')
+                return 'ok'
+            if resp.status_code == 409:
+                print(f'[Store API] {product} account already exists for {email}')
+                return 'exists'
+            last = f'HTTP {resp.status_code} {resp.text[:200]}'
+            # 4xx is the app telling us the request is wrong; retrying is pointless.
+            if 400 <= resp.status_code < 500:
+                break
+        except Exception as e:
+            last = str(e)
+        if attempt == 1:
+            time.sleep(2)
+
+    print(f'[Store API] Provisioning failed for {product} ({email}): {last}')
+    return last
 
 
 # ── Email Helpers ──

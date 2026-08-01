@@ -19,7 +19,7 @@ BRIDGR_ENV=/opt/bridgr/.env
 DB=/opt/bridgr/store_leads.db
 NGINX_SITE=/etc/nginx/sites-available/bridgr
 PORT=5011
-EXPECT_MD5=6f7ebb3f79f99121dfcfbb0838bed49b
+EXPECT_MD5=9f30240aafe376c3a1262fac9fdff98b
 
 say(){ echo -e "\n=== $* ==="; }
 
