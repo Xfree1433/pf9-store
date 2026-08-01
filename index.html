@@ -965,11 +965,15 @@
         });
     }
 
-    // Deep link from lifecycle email: /?product=MAINTAINR scrolls to that card and
-    // opens its subscribe modal. Clicks the card's own Subscribe button rather than
-    // calling openSubscribe() directly, so the price stays defined in one place.
+    // Deep link from lifecycle email: /?product=MAINTAINR opens that card's
+    // subscribe modal. Clicks the card's own Subscribe button rather than calling
+    // openSubscribe() directly, so the price stays defined in one place.
     // Skipped when ?checkout is present — that is the Stripe return, handled below.
-    (function() {
+    //
+    // Runs on load, not at parse time: a smooth scroll started during parse gets
+    // cancelled by the browser restoring scroll position, which silently broke
+    // the free-tier cards (they have no modal, so scrolling is the whole effect).
+    function pf9ProductDeepLink() {
         try {
             var qs = new URLSearchParams(window.location.search);
             var want = qs.get('product');
@@ -978,11 +982,14 @@
             if (!want || qs.get('checkout') || !/^[A-Z_]{2,32}$/.test(want)) return;
             var card = document.querySelector('.product-card[data-product="' + want + '"]');
             if (!card) return;
-            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
             var btn = card.querySelector('button[onclick^="openSubscribe"]');
-            if (btn) btn.click();
+            if (btn) { btn.click(); return; }  // modal is fixed-position, scroll is moot
+            // Free tier / waitlist cards have no modal — put the card on screen.
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
         } catch (e) {}
-    })();
+    }
+    if (document.readyState === 'complete') pf9ProductDeepLink();
+    else window.addEventListener('load', function() { setTimeout(pf9ProductDeepLink, 0); });
 
     // On return from Stripe success_url, record the conversion in PostHog (+ GA4).
     // Requires Stripe success_url to include ?checkout=success&product=<app> (see POSTHOG_TRACKING_PLAN.md).
