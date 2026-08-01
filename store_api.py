@@ -347,9 +347,13 @@ CROSS_SELL_MAP = {
     'COMPLI': ('PERMITR',
         "COMPLI tracks the frameworks; PERMITR enforces them at the sharp end — no one "
         "starts high-risk work without a signed permit."),
-    # Deliberately NOT OPSIQ from either of these, even though it is the sharpest
-    # fit: OPSIQ is still "Coming Soon / Join Waitlist" on the storefront, so the
-    # CTA would land on a waitlist form. Point these back at OPSIQ once it sells.
+    # These two point at each other rather than at OPSIQ, which is arguably the
+    # sharper fit for both. That was originally forced — OPSIQ was "Coming Soon /
+    # Join Waitlist" so the CTA would have dead-ended — but as of 2026-08-01 it
+    # sells, so the constraint is gone and this pairing is now a live choice, not
+    # a workaround. Left as-is deliberately: retargeting changes what goes out in
+    # the month-3 expansion email, and OPSIQ needs the recipient to supply their
+    # own Anthropic key, which is a harder ask than a one-click upsell.
     'REPORTR': ('EXTRACTR',
         "REPORTR charts what is already in your systems. EXTRACTR goes after what "
         "isn't — the numbers still stuck in PDFs, invoices and scanned forms."),
