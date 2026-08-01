@@ -59,7 +59,12 @@ if [ ! -x "$VENV/bin/python" ]; then
   python3 -m venv "$VENV"
 fi
 "$VENV/bin/pip" install --upgrade pip >/dev/null
-"$VENV/bin/pip" install flask gunicorn stripe resend requests
+# stripe is pinned deliberately. An unpinned install on 2026-07-20 pulled
+# stripe 15.x, where StripeObject stopped being a dict subclass — every webhook
+# handler calls .get() on the event object, so all of them began 500ing.
+# store_api._plain() now normalises at the boundary so either major works, but
+# the pin keeps a venv rebuild from silently changing the type again.
+"$VENV/bin/pip" install flask gunicorn 'stripe==15.3.1' resend requests
 chown -R "$DB_OWNER:$DB_GROUP" "$VENV"
 
 # ── wsgi entrypoint ─────────────────────────────────────────────────────────

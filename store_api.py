@@ -235,6 +235,25 @@ def _send_email(from_addr, to_addr, subject, body):
 # ── Stripe config ──
 STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
 
+
+def _plain(obj):
+    """Recursively convert a Stripe response object into plain dicts/lists.
+
+    stripe-python < 8 returned StripeObject, a dict subclass, so handler code
+    could call .get() on it directly. From v15 StripeObject is no longer a dict
+    subclass and .get() raises AttributeError, which 500s the whole webhook.
+    Normalising once at the boundary keeps the handlers version-agnostic.
+    Note to_dict() is shallow — nested objects stay StripeObject — so this has
+    to recurse (checkout sessions nest customer_details, subs nest items.data).
+    """
+    if hasattr(obj, 'to_dict'):
+        obj = obj.to_dict()
+    if isinstance(obj, dict):
+        return {k: _plain(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_plain(v) for v in obj]
+    return obj
+
 # Free-trial length applied to every new subscription checkout (card up front,
 # charged only when the trial ends).
 TRIAL_PERIOD_DAYS = int(os.environ.get('TRIAL_PERIOD_DAYS', '30'))
@@ -543,25 +562,24 @@ def stripe_webhook():
         print(f'[Store API] Webhook signature error: {e}')
         return jsonify({'error': 'Invalid signature'}), 400
 
+    # Convert once at the boundary so every handler below can keep using plain
+    # dict .get() access regardless of which stripe-python major is installed.
+    obj = _plain(event['data']['object'])
+
     if event['type'] == 'checkout.session.completed':
-        session = event['data']['object']
-        _handle_checkout_completed(session)
+        _handle_checkout_completed(obj)
 
     elif event['type'] == 'customer.subscription.deleted':
-        sub = event['data']['object']
-        _handle_subscription_cancelled(sub)
+        _handle_subscription_cancelled(obj)
 
     elif event['type'] == 'customer.subscription.updated':
-        sub = event['data']['object']
-        _handle_subscription_updated(sub)
+        _handle_subscription_updated(obj)
 
     elif event['type'] == 'invoice.payment_failed':
-        invoice = event['data']['object']
-        _handle_payment_failed(invoice)
+        _handle_payment_failed(obj)
 
     elif event['type'] == 'customer.subscription.trial_will_end':
-        sub = event['data']['object']
-        _handle_trial_will_end(sub)
+        _handle_trial_will_end(obj)
 
     return jsonify({'received': True})
 
@@ -627,7 +645,7 @@ def _handle_checkout_completed(session):
     trial_end_iso = None
     price_display = None
     try:
-        sub = stripe.Subscription.retrieve(subscription_id)
+        sub = _plain(stripe.Subscription.retrieve(subscription_id))
         sub_status = sub.get('status', 'active') or 'active'
         te = sub.get('trial_end')
         if te:
