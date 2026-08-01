@@ -970,9 +970,10 @@
     // openSubscribe() directly, so the price stays defined in one place.
     // Skipped when ?checkout is present — that is the Stripe return, handled below.
     //
-    // Runs on load, not at parse time: a smooth scroll started during parse gets
-    // cancelled by the browser restoring scroll position, which silently broke
-    // the free-tier cards (they have no modal, so scrolling is the whole effect).
+    // Runs on load rather than at parse time so the cards are guaranteed to exist.
+    // (An earlier version of this comment blamed load-time scroll restoration for
+    // the free-tier cards not scrolling. That was wrong — the real cause was the
+    // smooth scroll itself never running; see the note further down.)
     function pf9ProductDeepLink() {
         try {
             var qs = new URLSearchParams(window.location.search);
@@ -985,7 +986,21 @@
             var btn = card.querySelector('button[onclick^="openSubscribe"]');
             if (btn) { btn.click(); return; }  // modal is fixed-position, scroll is moot
             // Free tier / waitlist cards have no modal — put the card on screen.
-            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            //
+            // Deliberately NOT a smooth scroll. The root carries CSS
+            // scroll-behavior: smooth, and on this page that animation never
+            // actually runs: measured on the live site, a smooth scrollIntoView
+            // left scrollY at 9 indefinitely, while an instant scroll to the same
+            // target landed at 2972. behavior:'smooth' AND behavior:'auto' both
+            // defer to the CSS value, so both are no-ops here. Suppressing
+            // scroll-behavior for the one call is what makes it land. 'instant'
+            // would work too, but throws TypeError on browsers predating that
+            // enum value, and this whole block is inside a silent try/catch.
+            var root = document.documentElement;
+            var prevBehavior = root.style.scrollBehavior;
+            root.style.scrollBehavior = 'auto';
+            card.scrollIntoView({ block: 'center' });
+            root.style.scrollBehavior = prevBehavior;  // hand the page back its smooth scrolling
         } catch (e) {}
     }
     if (document.readyState === 'complete') pf9ProductDeepLink();
