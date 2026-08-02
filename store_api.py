@@ -409,6 +409,59 @@ def _cross_sell_properties(product):
     }
 
 
+def _owned_apps(email):
+    """Distinct PF9 apps this address currently pays for, bundles expanded.
+
+    Recomputed from the subscriptions table rather than incremented on the
+    Klaviyo profile. Stripe redelivers webhooks, so anything doing `count += 1`
+    drifts upward on every replay; recomputing is idempotent and self-heals a
+    profile that is already wrong.
+
+    "Owns" is deliberately ACTIVE_STATUSES rather than a set restated here, so
+    this can never drift from what actually grants access to an app. If a grace
+    period like `past_due` is ever added there, a customer in grace would keep
+    their access; without this coupling they would also start being pitched an
+    app they already own, which is the exact failure the split exists to
+    prevent. `trialing` is in that set, and rightly so: someone on day 3 of a
+    second app's trial has plainly already expanded.
+    """
+    email_norm = (email or '').strip().lower()
+    if not email_norm:
+        return []
+    # Placeholders are generated from the set's length, so the values still go
+    # through parameter binding — nothing user-supplied reaches the SQL text.
+    statuses = sorted(ACTIVE_STATUSES)
+    placeholders = ','.join('?' * len(statuses))
+    with get_db() as conn:
+        rows = conn.execute(
+            f"SELECT DISTINCT product FROM subscriptions "
+            f"WHERE lower(email) = ? AND status IN ({placeholders})",
+            (email_norm, *statuses)
+        ).fetchall()
+    apps = set()
+    for row in rows:
+        # A bundle is one subscription row but several apps, and the customer
+        # experiences it as several apps — count it that way.
+        apps.update(BUNDLE_MAP.get(row['product'], [row['product']]))
+    return sorted(apps)
+
+
+def _owned_app_properties(email):
+    """Klaviyo profile properties backing the month-3 conditional split.
+
+    `app_count` is what the split reads. `apps_owned` exists so a human opening
+    the profile can see *which* apps produced that number — a bare integer is
+    unauditable the day the split misfires.
+
+    Note the failure direction: if this returns 0 because the lookup found
+    nothing, the split sends the expansion email, which is exactly today's
+    behaviour. A wrong answer here degrades to the status quo rather than
+    silently suppressing mail.
+    """
+    apps = _owned_apps(email)
+    return {'app_count': len(apps), 'apps_owned': ', '.join(apps)}
+
+
 # Product → registration endpoint PATH. The host comes from APP_URL_MAP above,
 # so where an app lives is recorded in exactly one place.
 #
@@ -850,6 +903,9 @@ def _handle_checkout_completed(session):
     # than waiting for conversion. Costs nothing, and means the month-3 email
     # has data even if the trialing -> active webhook is ever missed.
     trial_properties.update(_cross_sell_properties(product))
+    # Seed the multi-app count from day 0 too. The subscription row for this
+    # checkout is already committed above, so it is included in the count.
+    trial_properties.update(_owned_app_properties(email))
     _klaviyo_sync(
         email=email,
         name=name,
@@ -916,6 +972,12 @@ def _handle_subscription_updated(sub):
         # Set it here as well as at checkout so a profile that predates the
         # checkout-side mapping still gets it on conversion.
         properties.update(_cross_sell_properties(previous['product']))
+        # Refresh the multi-app count that the month-3 conditional split reads.
+        # This is the moment it can change: converting a second app is what
+        # turns a single-app customer into someone who should NOT be pitched an
+        # expansion. Note app_name above is overwritten with the newest product,
+        # so it carries no history — app_count is the only multi-app signal.
+        properties.update(_owned_app_properties(previous['email']))
         _klaviyo_sync(
             email=previous['email'],
             name=previous['name'],
