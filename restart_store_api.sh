@@ -29,7 +29,7 @@ STORE_API=$STORE_DIR/store_api.py
 VENV=$STORE_DIR/venv
 UNIT=pf9-store-api.service
 PORT=5011
-EXPECT_MD5=24dc663f9c91d67bd85ac609ef5bcdf1   # 851221b-note commit — comment-only change
+EXPECT_MD5=f0e2b689c0249214803d6b2a81770809   # 12e1eef — checkout + cancellation Klaviyo events
 BRIDGR_ENV=/opt/bridgr/.env
 OVERRIDE_ENV=$STORE_DIR/pf9-store-api.env
 
@@ -75,11 +75,25 @@ echo "  new MainPID=$NEW_PID"
 say "Verify: confirm the new code is what got loaded"
 if grep -q KLAVIYO_API_KEY "$STORE_API" \
    && grep -q _owned_app_properties "$STORE_API" \
+   && grep -q _klaviyo_event "$STORE_API" \
    && ! grep -q _send_trial_ending_email "$STORE_API"; then
-  echo "  OK — Klaviyo sync present, app_count emitter present, dup day-27 emailer gone"
+  echo "  OK — Klaviyo sync + event emitter present, dup day-27 emailer gone"
 else
   echo "  !! loaded file is not the expected build"; exit 1
 fi
+
+# The greps above only describe what is ON DISK. gunicorn does not hot-reload,
+# so a file newer than the running process means the workers are still serving
+# the previous build — and /health returns 200 the whole time, cheerfully. This
+# is the check the header comment calls decisive, so do it rather than describe
+# it: on 2026-08-02 the service had been up since 16:09 UTC against a file
+# written at 17:46, and nothing in this script would have caught it.
+START_EPOCH=$(date -d "$(systemctl show "$UNIT" -p ActiveEnterTimestamp --value)" +%s)
+MTIME_EPOCH=$(stat -c %Y "$STORE_API")
+echo "  service started $(date -d "@$START_EPOCH" -u '+%F %T UTC'), code written $(date -d "@$MTIME_EPOCH" -u '+%F %T UTC')"
+[ "$START_EPOCH" -ge "$MTIME_EPOCH" ] || {
+  echo "  !! the running process is OLDER than the code on disk — restart did not pick it up"; exit 1; }
+echo "  OK — process is newer than the file it imported"
 
 say "Health checks"
 echo -n "  direct  :$PORT/store-api/health   -> "; curl -s -o /dev/null -w "%{http_code}\n" "http://127.0.0.1:$PORT/store-api/health"
@@ -94,4 +108,5 @@ say "bridgr.service untouched"
 systemctl is-active bridgr.service || true
 
 echo
-echo "Rollback if needed:  cd $STORE_DIR && git checkout 23cde47 -- store_api.py && systemctl restart $UNIT"
+echo "Rollback if needed:  cd $STORE_DIR && git checkout 1336fad -- store_api.py && systemctl restart $UNIT"
+echo "  (1336fad = the build running before the checkout/cancellation Klaviyo events went in)"
