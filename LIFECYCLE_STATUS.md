@@ -76,8 +76,66 @@ Since 2026-08-02 it sits behind a conditional split on `app_count` — see "L5 �
 | L3 | New subscriber onboarding | **Partial** | Trial flow (3 emails @ 0/3/27) + Paid flow both live. Spec says 4 emails over 14 days; actual trial cadence is 0/3/27. Cadence differs from spec — spec not updated, or flow not finished. Not resolved. |
 | L4 | Month-1 success | **Live** | Day-30 email in the Paid flow. Whether its content matches the spec's testimonial ask was NOT checked. |
 | L5 | Month-3 expansion | **Live + conditional** | Day-90 email in the Paid flow, gated on `app_count` since 2026-08-02. See below. |
-| L6 | Churn-save | **No flow** | Cancel does sync Klaviyo (`subscription_status: cancelled`, removed from trial list) so the *data* is there; no flow and no intercept page consume it. |
-| L7 | Win-back | **No flow** | Same — cancellation data exists, nothing acts on it. |
+| L6 | Churn-save | **Trigger shipped, flow not built** | Cancel now emits `Cancelled Subscription`. L6-E1 (the 24h email) is buildable once that's deployed. The L6 *intercept page* is frontend code and is not started. |
+| L7 | Win-back | **Trigger shipped, E1 unbuildable as specced** | Same trigger. L7-E2 is buildable. **L7-E1 is not** — its copy merges `{{reason}}` and `{{change}}`, and nothing collects either. See "L6 / L7 — 2026-08-02". |
+
+---
+
+## L6 / L7 — 2026-08-02
+
+These were on the backlog as "flow-building, no code — the cancellation data already syncs." That
+was wrong, and the reason is worth keeping:
+
+**Writing a profile property does not start a Klaviyo flow.** Flows trigger on a list join, a
+segment join, or a metric — nothing else. The cancel handler wrote `subscription_status: cancelled`
+and removed the profile from the trial list, so the *data* was correct and completely inert. There
+are also zero segments in the account, so there was no segment to join either. `3a88fe7` adds a
+`Cancelled Subscription` event.
+
+| Property on the event | Why it's there |
+|---|---|
+| `app_name` / `product` | The app actually cancelled |
+| `remaining_app_count` | `> 0` ⇒ still a customer, must not get win-back copy |
+| `reactivate_link` | Storefront card for that app; never expires |
+| `unique_id` | Subscription id, so a redelivered webhook records one cancellation |
+
+### The defect this uncovered
+
+The old handler flagged the profile cancelled **unconditionally**. A customer with two apps who
+cancelled one was marked churned account-wide and pulled off the trial list. Consequences, none of
+which anyone would have noticed until L6/L7 went live:
+
+- a still-paying customer would receive "saw you canceled" and win-back copy;
+- if their *other* app was mid-trial, removal from the trial list would have killed its day-27
+  pre-charge notice — a customer charged without warning;
+- `app_name` carried whatever the last checkout wrote, so the "you closed your ___" subject line
+  could name the app they kept.
+
+Cancellation is now evaluated against `_owned_apps()` *after* the status update, and only a customer
+with nothing left is flagged, delisted from both lists, and treated as churned.
+
+`app_count` is refreshed here too. It was previously only recomputed on the way up, so someone who
+dropped from two apps to one kept a stale count of 2 — which the L5 split reads as "already
+expanded" and silently suppresses the month-3 pitch. That was a live bug against the split shipped
+earlier the same day.
+
+### What is still blocked
+
+**L7-E1 cannot be built as written.** Its body is "you mentioned `{{reason}}`. Since then:
+`{{change}}`." Neither exists:
+
+- `reason` comes from the L6 intercept page, which is frontend code and does not exist;
+- `change` has no source at all — it is a per-customer claim someone has to author.
+
+Building it anyway renders "you mentioned ." to every recipient. Either write the intercept page
+first, or rewrite L7-E1 generically. This is a decision, not a task.
+
+**The metric does not exist in Klaviyo yet** — same chicken-and-egg as L2. The trigger picker only
+lists metrics that have received at least one event, so: deploy → one real cancellation → metric
+appears → build flows. Nothing here is buildable before the deploy.
+
+**Consent.** A churned customer is still a contactable profile, but check their consent state before
+assuming L7 will deliver; Klaviyo silently skips non-consented profiles.
 
 ---
 

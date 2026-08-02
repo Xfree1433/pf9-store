@@ -11,9 +11,11 @@ the ones marked *needs code* cannot be turned on from the Klaviyo UI:
 
 - `subscription_active` — Stripe webhook confirms paid. **Wired.** `_handle_subscription_updated`
   syncs the profile on trialing→active and moves it to the Paid list.
-- `subscription_canceled` — cancellation event. **Wired.** `_handle_subscription_cancelled` sets
-  `subscription_status` and pulls the profile off the trial list, so a cancelled trial can never
-  receive the day-27 charge notice.
+- `subscription_canceled` — cancellation event. **Code shipped `3a88fe7`, awaiting deploy.**
+  `_handle_subscription_cancelled` emits a `Cancelled Subscription` metric, which is what L6 and L7
+  trigger on — a profile property alone cannot start a flow. It also now evaluates cancellation
+  against what the customer still owns, so cancelling one app of several no longer flags them
+  churned account-wide.
 - `checkout_started` — Stripe checkout session created. **Code shipped `7f83a91`, awaiting deploy.**
   `create_checkout_session()` now emits a `Started Checkout` event, and conversion emits
   `Placed Order` so the flow can exclude customers who finished. Abandonment used to be invisible by
@@ -296,6 +298,16 @@ Before the Stripe cancel flow completes, show:
 ---
 
 ## L7 — Win-back (30 / 44 days post-cancel)
+
+**L7-E1 below is not buildable as written.** It merges `{{reason}}` and `{{change}}`. `reason` would
+come from the L6 intercept page, which does not exist; `change` has no source at all and is a
+per-customer claim someone has to write. Shipping it as-is renders "you mentioned ." to every
+recipient. Build the intercept page first, or rewrite this email generically. L7-E2 has no such
+dependency and is buildable today.
+
+Both L7 emails must also filter on `remaining_app_count = 0` from the `Cancelled Subscription`
+event. Without it, a customer who cancelled one app of several gets win-back copy while still
+paying.
 
 ### L7-E1 — Day 30
 
