@@ -1,5 +1,48 @@
 # PF9 Lifecycle Agent Activation Guide
 
+> ## 🛑 SUPERSEDED — do not execute (noted 2026-08-02)
+>
+> **Both things this guide is built on turned out not to exist.** It describes standing up a
+> *Cowork* lifecycle agent that sends through *Resend*. Neither is how PF9 does lifecycle email.
+>
+> **The ESP decision went the other way.** Klaviyo was chosen on 2026-05-30 and has been live
+> ever since — two flows (`X2tesT` PF9 Trial Onboarding, `VuD82q` PF9 Paid Onboarding),
+> triggered by list membership, with profile sync driven from `store_api.py`. Resend is still
+> wired, but it is the **transactional** path only (welcome, password, alerts). §2 below
+> recommends Resend for marketing sends; that recommendation was not taken.
+>
+> **There is no Cowork engagement.** `SOW_COWORK.md` was never sent or signed — its Effective
+> Date is still the literal `[DATE]` placeholder. So every "configure this in the Cowork UI"
+> instruction here points at a tool PF9 does not have, and Agent 4 was never created.
+>
+> **👉 `LIFECYCLE_STATUS.md` is the source of truth** for what is actually wired, sequence by
+> sequence, with how each fact was observed. `PLAYBOOK_LIFECYCLE.md` remains the spec for what
+> the sequences should *say*. Read those two; this file describes a third architecture that was
+> never built.
+>
+> **The current blocker is not in this document.** L2, L6 and L7 are blocked because the
+> production Klaviyo key lacks the `events:write` scope — every `Started Checkout` /
+> `Placed Order` / `Cancelled Subscription` call 403s silently. The code is written and
+> deployed; the fix is a credential change only the account owner can make. See
+> `LIFECYCLE_STATUS.md` → "Three things that will bite whoever builds the flow."
+>
+> **What is still worth reading here**, because it is architecture-independent and the Klaviyo
+> build has to answer it too:
+> - **§7's welcome-email collision check.** `store_api.py` `_send_welcome_email()` fires on
+>   `checkout.session.completed`. Any day-0 marketing welcome has to not duplicate it. This is
+>   a live concern under Klaviyo, not a Cowork-only one.
+> - **§9's escalation list** — refunds, legal, disputes, cancellations, press. Sound regardless
+>   of who sends.
+> - **§1's reasoning that the trigger source must be identified contacts, not anonymous GA4
+>   events.** That argument is why L1 (video-viewer nurture) still has no flow: it needs a
+>   `video_play` event tied to an email, and nothing emits one.
+>
+> Note also that §7's L3 cadence (4 emails over 14 days) does not match what was built — the
+> live trial flow sends at **day 0 / 3 / 27**. That gap is tracked in `LIFECYCLE_STATUS.md`,
+> not here.
+
+---
+
 **What this is:** the complete, paste-ready package to stand up the Cowork Lifecycle agent (Agent 4 from `AGENTS.md`). Work through it in the Cowork UI. Budget ~45 min to configure + 48h dry-run before it sends anything real.
 
 **Prerequisite reality check first** — see § 0.
@@ -52,6 +95,12 @@ You chose to proceed, so the rest of this assumes go.
 ---
 
 ## § 2. ESP decision
+
+> 🛑 **Decided against. The answer was Klaviyo, chosen 2026-05-30 and live since.** The
+> recommendation below is preserved as the reasoning at the time, not as guidance. Klaviyo
+> owns marketing/lifecycle email; Resend stayed on transactional only. Note the table below
+> does not even list Klaviyo as an option — that is how far this section is from current
+> reality. See `LIFECYCLE_STATUS.md` → "Stack — decided."
 
 **Recommended for v1: Resend** (already wired). The Cowork agent calls Resend's send API for each sequence email; the agent itself handles scheduling, dedup, and stop-on-reply logic.
 

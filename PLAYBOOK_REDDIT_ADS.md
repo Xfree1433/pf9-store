@@ -1,10 +1,18 @@
 # PF9 Reddit Ads Spec — Property-First Test
 
-**Purpose:** a lower-risk paid channel to run *instead of or alongside* Google Ads. Written property-first to match the paid strategy (property vertical proves out before manufacturing).
+**Purpose:** a lower-risk paid channel. Written property-first to match the paid strategy (property vertical proves out before manufacturing).
 
-**Why Reddit at all:** the Google Ads account was suspended for "unacceptable business practices" (competitor-keyword false positive) and only reinstated after an appeal. Reddit is a hedge — different platform, different policy regime, much cheaper clicks, and an audience of exactly the small landlords/investors PF9 targets. If Google gets twitchy again, Reddit keeps traffic flowing.
+**Why Reddit at all — updated 2026-08-02.** This originally read as a *hedge* against Google getting twitchy. It is no longer a hedge; **it is the only paid channel PF9 has left**, and it is unstarted. The corrected history, because the earlier version of this line conflated two separate suspensions:
 
-**Budget frame:** $10/day (~$300/mo) — bottom of the committed $300–500 range. Reddit clicks are far cheaper than Google's (~$0.30–$1.50 vs $3+), so $10/day buys meaningfully more clicks here than on Google.
+- **2026-06-24 — first suspension.** Google cited "Unacceptable business practices (Phishing / Public figure impersonation / Other)." The working theory at the time was a competitor-keyword false positive, which is what this playbook was written against. Appealed; **reinstated.** Package kept at `APPEAL_GOOGLE_ADS_2026-06-24.md`.
+- **~2026-07-26 — second suspension.** Same umbrella category, but Google named the specific policy this time: **Public Figure Impersonation.** The 2026-07-26 review found the flagged ad's 10 assets and the landing page both clean — no public figure anywhere — so this one was a false positive too. Appealed 2026-07-26.
+- **2026-08-02 — account cancelled.** Google's ~5-business-day reply window passed with no answer and the account was cancelled rather than wait longer. `PLAYBOOK_GOOGLE_ADS.md` and `PLAYBOOK_GOOGLE_ADS_PROPERTY_TEST.md` are both marked dead.
+
+So "if Google gets twitchy again" already happened, twice, and the second time it stuck. Reddit's remaining case stands on its own merits: different platform, different policy regime, much cheaper clicks, and an audience of exactly the small landlords/investors PF9 targets.
+
+**Status: not started.** There is no `rdt(` pixel in the storefront HTML and no Reddit Ads account. The pixel step below is still blocking.
+
+**Budget frame:** $10/day (~$300/mo). ⚠️ The "committed $300–500 range" this refers to was the budget for the **Google property test, which never launched** — there is no committed paid budget today (see `SALES_PLAN.md` §8). Treat $10/day as a proposal requiring a fresh spend decision, not an approved number. Reddit clicks are far cheaper than Google's (~$0.30–$1.50 vs $3+), so it does buy meaningfully more clicks per dollar.
 
 ---
 
