@@ -104,6 +104,15 @@ in — and day 27 sits behind a 24-day delay, so anyone who cancels after day 3 
 | UI — Trigger card | Trigger: Added to list, Trial Users — Active. Re-entry: none. **"No profile filters applied."** |
 | UI — Day 27 card → Settings | **Additional filters: empty**, "Add filter" untouched |
 
+The message that lands (`ReYNde`, template `TGNJvL`), verbatim:
+
+- Subject: `Your {{ person.Properties.app_name|default:'PF9' }} trial ends {{ person.Properties.trial_end_date|default:'soon' }}`
+- Preview: `Your card is charged on that date. Cancel any time before then.`
+
+So the customer who already cancelled is told their card is about to be charged, and invited to
+cancel something they have already cancelled. This is not a merely-irrelevant email; it reads as a
+billing error and invites a support ticket.
+
 ### Why removal alone is not enough
 
 Klaviyo re-checks **profile filters** before each message and skips anyone who fails; **trigger
