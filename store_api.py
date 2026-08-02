@@ -4,6 +4,32 @@ Handles:
 - Demo request form submissions (saves to DB + sends email)
 - Stripe subscription checkout + webhooks + account provisioning
 - CORS enabled for store.plainspokenfoundrynine.com
+
+TWO COPIES OF THIS FILE RUN ON xfree143. Both are live; neither is stale.
+
+    /opt/pf9-store/store_api.py   <- this repo, deployed here.
+                                     Served by pf9-store-api.service on :5011.
+                                     nginx routes /store-api here.
+
+    /opt/bridgr/store_api.py      <- NOT a leftover. bridgr's src/web/app.py
+                                     imports it at line 76:
+                                         from store_api import store_bp, ...
+                                     That is a bare module-level import, not
+                                     inside a try/except, so DELETING THAT FILE
+                                     STOPS bridgr FROM STARTING. The running
+                                     process holds the module in memory, so the
+                                     breakage would not appear until some later,
+                                     unrelated restart.
+
+The bridgr copy is pinned at commit 851221b (2026-03-17) and does not receive
+changes made here -- it predates the trials/app_count work entirely. It answers
+/store-api/* on :5010, which nginx does not route to, but it does read
+STRIPE_SECRET_KEY from the shared /opt/bridgr/.env. A Stripe key rotation
+therefore leaves a stale key resident in the bridgr process until bridgr is
+restarted, which is its own decision: xfree143's bridgr is legacy and flagged
+read-only.
+
+Do not "clean up" the bridgr copy without first changing that import.
 """
 
 from flask import Blueprint, request, jsonify

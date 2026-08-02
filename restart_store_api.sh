@@ -29,7 +29,7 @@ STORE_API=$STORE_DIR/store_api.py
 VENV=$STORE_DIR/venv
 UNIT=pf9-store-api.service
 PORT=5011
-EXPECT_MD5=681af4cc7236bb34db85b5f0dfcbb8dc   # b4d80e0 — adds app_count/apps_owned
+EXPECT_MD5=24dc663f9c91d67bd85ac609ef5bcdf1   # 851221b-note commit — comment-only change
 BRIDGR_ENV=/opt/bridgr/.env
 OVERRIDE_ENV=$STORE_DIR/pf9-store-api.env
 
