@@ -231,7 +231,11 @@ def _klaviyo_sync(email, name='', properties=None, add_list=None, remove_list=No
         return
 
     payload = {'data': [{'type': 'profile', 'id': profile_id}]}
-    for list_id, method in ((add_list, 'post'), (remove_list, 'delete')):
+    # remove_list takes either one list id or several. A cancellation that ends
+    # the customer's last subscription has to come off both lifecycle lists, and
+    # accepting a sequence here does that without a second profile upsert.
+    removals = [remove_list] if isinstance(remove_list, str) else list(remove_list or [])
+    for list_id, method in [(add_list, 'post')] + [(l, 'delete') for l in removals]:
         if not list_id:
             continue
         try:
@@ -1078,20 +1082,74 @@ def _handle_subscription_cancelled(sub):
         )
         conn.commit()
         row = conn.execute(
-            'SELECT email, name FROM subscriptions WHERE stripe_subscription_id = ?',
+            'SELECT email, name, product FROM subscriptions WHERE stripe_subscription_id = ?',
             (subscription_id,)
         ).fetchone()
     print(f'[Store API] Subscription cancelled: {subscription_id}')
 
-    # Drop them off the trial list immediately. A cancelled trial must never
-    # receive the day-27 notice warning about a charge that will not happen.
-    if row and row['email']:
-        _klaviyo_sync(
-            email=row['email'],
-            name=row['name'],
-            properties={'subscription_status': 'cancelled'},
-            remove_list=KLAVIYO_LIST_TRIAL,
-        )
+    if not (row and row['email']):
+        return
+
+    email = row['email']
+    cancelled_product = row['product']
+
+    # Recomputed AFTER the status update above, so this is what the customer
+    # still pays for — the subscription just cancelled is already excluded.
+    remaining = _owned_apps(email)
+
+    properties = {
+        # Name the app they actually cancelled. app_name otherwise carries
+        # whatever the last checkout happened to write, which for a multi-app
+        # customer is the wrong app to put in a "you closed your ___" subject.
+        'app_name': cancelled_product,
+        'cancelled_app': cancelled_product,
+    }
+    # Cancelling is the other moment app_count can change, and until now it was
+    # only refreshed on the way up. A stale-high count silently suppresses the
+    # month-3 expansion pitch for someone who has since dropped back to one app.
+    properties.update(_owned_app_properties(email))
+
+    if remaining:
+        # Still a customer. Cancelling one app of several must NOT flag the
+        # profile cancelled outright — that would pull a paying subscriber into
+        # the win-back sequence and strip them off the lists carrying their
+        # remaining apps' mail. subscription_status is deliberately left alone
+        # rather than rewritten to 'active': the remaining apps may be trialing,
+        # and guessing here would replace one wrong answer with another.
+        remove_lists = None
+    else:
+        properties['subscription_status'] = 'cancelled'
+        # Last app gone. Off both lifecycle lists: trial removal stops a day-27
+        # notice about a charge that will never happen, paid removal stops the
+        # day-30 and day-90 emails.
+        remove_lists = [KLAVIYO_LIST_TRIAL, KLAVIYO_LIST_PAID]
+
+    _klaviyo_sync(
+        email=email,
+        name=row['name'],
+        properties=properties,
+        remove_list=remove_lists,
+    )
+
+    # The trigger for L6 churn-save and L7 win-back. Writing a profile property
+    # does not start a Klaviyo flow — only a list join, a segment join, or a
+    # metric does — so without this event those sequences have nothing to hang
+    # off, however good the data on the profile is.
+    _klaviyo_event(
+        metric='Cancelled Subscription',
+        email=email,
+        name=row['name'],
+        unique_id=subscription_id,
+        properties={
+            'app_name': cancelled_product,
+            'product': cancelled_product,
+            # Lets the flow drop someone who cancelled one app of several. They
+            # have not churned, and win-back copy addressed to a current
+            # customer reads as if we do not know who they are.
+            'remaining_app_count': len(remaining),
+            'reactivate_link': f'{STORE_URL}/?product={cancelled_product}',
+        },
+    )
 
 
 def _handle_subscription_updated(sub):
