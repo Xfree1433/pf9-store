@@ -43,7 +43,10 @@ print(f'key loaded: {len(key)} chars, prefix {key[:6]}...')
 print(f'store_api.KLAVIYO_API_KEY populated: {bool(store_api.KLAVIYO_API_KEY)}')
 print(f'STORE_URL: {store_api.STORE_URL}')
 
-EMAIL = 'test@example.com'
+# Must be a domain we own. Klaviyo returns 202 for events on RFC-2606 reserved
+# domains (example.com) and then silently discards them — no metric is created
+# and nothing surfaces in the API. Verified 2026-08-02.
+EMAIL = 'metric-bootstrap@plainspokenfoundrynine.com'
 STAMP = 'metric-bootstrap-20260802'
 
 EVENTS = [
@@ -104,7 +107,9 @@ if FIRE:
     print("  curl -s -H \"Authorization: Klaviyo-API-Key $KEY\" -H 'revision: 2024-10-15' \\")
     print("    'https://a.klaviyo.com/api/metrics/' | grep -o '\"name\":\"[^\"]*\"'")
     print('Expect Started Checkout, Placed Order, Cancelled Subscription.')
-    print('If absent, re-read the 403 above: as of 2026-08-02 the production key')
-    print('lacked events:write and every call here failed silently.')
+    print('Two failure modes have actually happened, both silent:')
+    print('  1. key lacks events:write -> 403, swallowed by the fail-soft emitter')
+    print('  2. profile email on a reserved domain -> 202 accepted, then discarded')
+    print('Both leave the metric list unchanged, which is why it is the only proof.')
 else:
     print('\nDRY RUN — nothing sent. Re-run with: fire')
