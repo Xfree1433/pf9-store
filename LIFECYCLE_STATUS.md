@@ -58,10 +58,12 @@ could not both fire.
 ### `VuD82q` — PF9 Paid Onboarding · live · trigger: Added to List
 
 ```
-wait 30d → email (day 30) → wait 60d → email (day 90)
+wait 30d → email (day 30) → wait 60d → split → Path #1  → email (day 90)
+                                             → Everyone else → End
 ```
 
 The day-90 email is **L5-E1, the month-3 expansion pitch, and it is live and sending today.**
+Since 2026-08-02 it sits behind a conditional split on `app_count` — see "L5 — closed 2026-08-02".
 
 ---
 
@@ -73,23 +75,24 @@ The day-90 email is **L5-E1, the month-3 expansion pitch, and it is live and sen
 | L2 | Cart abandon | **No flow** | Needs `checkout_started`. `create_checkout_session()` does NOT sync Klaviyo — the profile is first touched at `checkout.session.completed`, i.e. only *after* success. The abandon case is invisible by construction. |
 | L3 | New subscriber onboarding | **Partial** | Trial flow (3 emails @ 0/3/27) + Paid flow both live. Spec says 4 emails over 14 days; actual trial cadence is 0/3/27. Cadence differs from spec — spec not updated, or flow not finished. Not resolved. |
 | L4 | Month-1 success | **Live** | Day-30 email in the Paid flow. Whether its content matches the spec's testimonial ask was NOT checked. |
-| L5 | Month-3 expansion | **Live but unconditional** | Day-90 email in the Paid flow. See below. |
+| L5 | Month-3 expansion | **Live + conditional** | Day-90 email in the Paid flow, gated on `app_count` since 2026-08-02. See below. |
 | L6 | Churn-save | **No flow** | Cancel does sync Klaviyo (`subscription_status: cancelled`, removed from trial list) so the *data* is there; no flow and no intercept page consume it. |
 | L7 | Win-back | **No flow** | Same — cancellation data exists, nothing acts on it. |
 
 ---
 
-## L5 — the actual open gap
+## L5 — closed 2026-08-02
 
-The day-90 expansion email is live. **It has no conditional split.** Both flows contain only
-`send-email` and `time-delay` actions — no profile filter, no branch. So every paid subscriber
-reaching day 90 gets pitched an app, including one who already owns it.
+The day-90 expansion email is live and **now gated on a conditional split**, so a subscriber who
+already owns more than one app is no longer pitched an app. Before 2026-08-02 the Paid flow held
+only `send-email` and `time-delay` actions — no profile filter, no branch — and every paid
+subscriber reaching day 90 got the pitch unconditionally.
 
-`b4d80e0` shipped the data to fix that:
+`b4d80e0` shipped the data the split reads:
 
 | Property | Set where | Purpose |
 |---|---|---|
-| `app_count` | checkout completed; trialing→active | Integer the split should read. `> 1` ⇒ skip the pitch. |
+| `app_count` | checkout completed; trialing→active | Integer the split reads. `>= 2` ⇒ skip the pitch. |
 | `apps_owned` | same | Comma-separated names. Exists so a human opening the profile can audit *why* `app_count` is what it is. |
 | `related_app_name` / `_detail` / `_url` | same | The cross-sell target the email renders. |
 | `app_name`, `app_price`, `trial_end_date`, `manage_subscription_url` | checkout; trial_will_end | Trial flow merge tags. |
@@ -98,9 +101,7 @@ reaching day 90 gets pitched an app, including one who already owns it.
 Both are recomputed from the `subscriptions` table on every write, never incremented — Stripe
 redelivers webhooks, and a counter would drift upward on replay.
 
-**The split itself does not exist in Klaviyo. `app_count` currently has no consumer.**
-
-### Why it hasn't been built
+### Why it stayed unbuilt until now
 
 Production, read 2026-08-02:
 
@@ -111,47 +112,75 @@ distinct emails    : 3
 customers with >1 app : 0
 ```
 
-The split would today change the behaviour of **zero** sends. That is the argument for waiting.
-The argument against waiting is that the email is already going out unconditionally, so the gap
-is live rather than theoretical — the moment a second app is sold, it misfires.
+The split changes the behaviour of **zero** sends today. That was the argument for waiting. The
+argument against waiting — the one that won — is that the email was already going out
+unconditionally, so the gap was live rather than theoretical: the moment a second app sells, it
+misfires. Building it while it is a no-op is the cheapest time to build it.
 
 Also note: **existing profiles do not backfill.** `app_count` only lands on a profile when that
 customer next hits checkout or converts trialing→active. The 3 current profiles will not have it
-until then, so the split must treat "property missing" as `0` — which is the safe direction
-anyway, since 0 sends the email, i.e. today's behaviour.
+until then, so the split had to treat "property missing" as `0` — which is the safe direction
+anyway, since 0 sends the email, i.e. today's behaviour. That is why the filter carries an `is not
+set` clause and not just a numeric comparison.
 
-### Attempted 2026-08-02 — blocked, and not for the reason expected
+### How it was built — 2026-08-02
 
-The "~5-minute Klaviyo UI change" this file previously claimed **cannot be done today at all.**
-The split was built and then reverted; the flow is back to its exact original 4 actions
-(`107907837.links.next == 107907860`, no split action). What the attempt established:
+The blocker was never UI navigation. **Klaviyo's split builder only offers dimensions it has
+already observed on a profile.** Searching the Dimension picker for `app_count` returned empty,
+and there is no "create custom property" affordance in that builder — a property that has never
+been written cannot be referenced. The emitter was fine all along: local and server `store_api.py`
+are md5-identical (`24dc663f…`), `_owned_app_properties` appears 3× in the running file, it had
+simply never executed. The only rich profile (`mark.pierce@outlook.com`) was last written
+2026-08-01 16:34 CDT and `b4d80e0` shipped at 20:08 CDT — exactly the no-backfill case predicted
+above, not a bug.
 
-- **Klaviyo's split builder only offers dimensions it has already observed on a profile.**
-  Searching the Dimension picker for `app_count` returns empty, and there is no "create custom
-  property" affordance in that builder. A property that has never been written cannot be
-  referenced. This is the hard blocker — not a UI-navigation problem.
-- **The emitter is deployed and correct.** Local and server `store_api.py` are md5-identical
-  (`24dc663f…`) and `_owned_app_properties` appears 3× in the running file. It has simply never
-  executed: the only rich profile (`mark.pierce@outlook.com`) was last written 2026-08-01
-  16:34 CDT, and `b4d80e0` shipped at 20:08 CDT. So this is exactly the no-backfill situation
-  predicted above, not a bug.
+Unblocked by writing `app_count` to one profile purely to register the dimension: the synthetic
+`test@example.com` (`01KSXCGTMGDKGK70X68ASHJSH6`), which is on the Trial list only, is **not** on
+the Paid list, and has `can_receive_email_marketing: false` — so it cannot reach this flow or be
+emailed at all. Written as a true **integer**, which matters: an integer registers a *numeric*
+dimension and so offers `is less than`; a string would have registered a text dimension with
+equality operators only.
+
+The split as built — `multi-branch-split` `113483855`, inserted between the 60-day delay
+(`107907837`) and the day-90 send (`107907860`):
+
+```
+Path #1 (order 0)   app_count is less than 2  OR  app_count is not set   → 107907860 (day-90 email)
+Everyone else (is_else)                                                  → End
+```
+
+Things that are easy to get backwards, all confirmed the hard way:
+
 - **Branch placement is the inverse of the obvious guess.** Inserting a split above an existing
   action puts that action on **Path #1** (evaluated first) and auto-creates an "Everyone else"
-  branch to End. So Path #1's criteria must describe *who still receives* the email —
-  i.e. `app_count is less than 2` **OR** `app_count is not set`. The OR is mandatory: in Klaviyo
-  a numeric comparison against an absent property evaluates FALSE, so `< 2` alone would route
-  every un-backfilled profile to "Everyone else" and silently kill the day-90 email.
+  branch to End. So Path #1's criteria describe *who still receives* the email, not who is skipped.
+- **The OR is mandatory.** In Klaviyo a numeric comparison against an absent property evaluates
+  FALSE, so `< 2` alone would route every un-backfilled profile to "Everyone else" and silently
+  kill the day-90 email.
+- **`is not set` exists only under Type: Text.** With Type: Number the operator list is exactly
+  six — equals, doesn't equal, is at least, is at most, is greater than, is less than. The
+  existence operators (`is set` / `is not set`) appear only once the row's Type is switched to
+  Text. So the two conditions deliberately carry different Types; that is correct, not a mistake.
+- **Conditions inside one `condition_group` are OR'd, and separate groups are AND'd** — the
+  inverse of the convention the Klaviyo segment docs describe. This one is worth re-checking
+  before trusting any future filter, because getting it backwards yields
+  `< 2 AND is not set`, which is unsatisfiable and would send the email to *nobody*. Verified by
+  round-trip: the saved single group of two conditions re-renders in the UI as two rows joined by
+  an `OR` chip, with Apply greyed (i.e. no pending change).
+- **The canvas card lies by omission.** The Path #1 node on the canvas renders only
+  "app_count is less than 2." — it truncates to the first condition. The Path details panel and
+  the API both show both. Never read the canvas card as the filter.
 - **Klaviyo flow edits persist server-side immediately**, even while the UI shows "Unsaved
   changes" with Save greyed out. The flow's `updated` attribute did **not** move
   (still 2026-05-30T20:07:58), so it is useless for detecting drift. Verify structure via
   `get_flows`, never via the UI or the timestamp.
-- The public API is read-only for flow structure; there is no flow-mutation endpoint. Any
-  future attempt is UI-only.
+- The public API is read-only for flow structure; there is no flow-mutation endpoint. This was
+  UI-only work and any future change will be too.
 
-**To unblock:** `app_count` must exist on at least one profile before the dimension appears.
-Either wait for the next real checkout / trialing→active conversion to write it naturally, or
-deliberately write it to a profile to register the dimension. The latter is an ESP data write
-and was not taken without sign-off.
+**What to watch.** The 3 existing production profiles have no `app_count` and will not get one
+until they next hit checkout or convert trialing→active. They match the `is not set` clause, so
+they still receive the email — today's behaviour, unchanged. The split only begins changing
+outcomes once a customer owns 2+ apps.
 
 ---
 
@@ -180,10 +209,16 @@ Listed so they are not mistaken for "checked and fine":
 ## Re-verifying this file
 
 ```bash
-# flows, their status, and step order
-#   Klaviyo MCP: get_flows include=flow-actions
-#     fields_flow_action=definition.type,definition.id,definition.links.next,
-#                        definition.data.value,definition.data.unit
+# flows, their status, step order, AND the L5 branch_filter
+#   Klaviyo MCP: get_flows filter=any(id,["VuD82q"]) include=flow-actions
+#                           fields_flow_action=definition
+#   Ask of the output:
+#     - does action 113483855 still exist and carry a NON-null branch_filter?
+#       (a null branch_filter on a live flow = undefined branching, treat as an incident)
+#     - does its Path #1 still have links.next == 107907860, the day-90 send?
+#     - are BOTH conditions present — numeric less-than 2 AND existence not-set?
+#   Do not verify any of this from the flow editor canvas; the card truncates to
+#   the first condition, and the flow's `updated` attribute never moves.
 # lists
 #   Klaviyo MCP: get_lists
 
