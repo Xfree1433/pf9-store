@@ -1,6 +1,8 @@
 # Lifecycle Email Sequences
 
-**Stack:** transactional via the existing `store_api.py` SMTP path; marketing via ESP (Customer.io / Loops / Resend — Cowork picks in week 2). All sequences CAN-SPAM compliant with one-click unsubscribe on marketing sends.
+**Stack:** transactional via the existing `store_api.py` SMTP path; marketing via **Klaviyo** (picked and built 2026-05-30 — the earlier Customer.io / Loops / Resend shortlist is closed). All sequences CAN-SPAM compliant with one-click unsubscribe on marketing sends.
+
+This file is the spec — what each sequence should say and why. For which sequences actually exist in Klaviyo today, see `LIFECYCLE_STATUS.md`. Not all of them do.
 
 **Golden rule:** every email drives to exactly one action. If you can't name the action in five words, don't send it.
 
