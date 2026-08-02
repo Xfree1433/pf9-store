@@ -29,7 +29,7 @@ STORE_API=$STORE_DIR/store_api.py
 VENV=$STORE_DIR/venv
 UNIT=pf9-store-api.service
 PORT=5011
-EXPECT_MD5=9f30240aafe376c3a1262fac9fdff98b
+EXPECT_MD5=681af4cc7236bb34db85b5f0dfcbb8dc   # b4d80e0 — adds app_count/apps_owned
 BRIDGR_ENV=/opt/bridgr/.env
 OVERRIDE_ENV=$STORE_DIR/pf9-store-api.env
 
@@ -73,8 +73,10 @@ echo "  new MainPID=$NEW_PID"
   echo "  !! service did not come back. journalctl -u $UNIT -n 40"; exit 1; }
 
 say "Verify: confirm the new code is what got loaded"
-if grep -q KLAVIYO_API_KEY "$STORE_API" && ! grep -q _send_trial_ending_email "$STORE_API"; then
-  echo "  OK — Klaviyo sync present, duplicate day-27 emailer gone"
+if grep -q KLAVIYO_API_KEY "$STORE_API" \
+   && grep -q _owned_app_properties "$STORE_API" \
+   && ! grep -q _send_trial_ending_email "$STORE_API"; then
+  echo "  OK — Klaviyo sync present, app_count emitter present, dup day-27 emailer gone"
 else
   echo "  !! loaded file is not the expected build"; exit 1
 fi
