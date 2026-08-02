@@ -247,6 +247,71 @@ def _klaviyo_sync(email, name='', properties=None, add_list=None, remove_list=No
             print(f'[Store API] Klaviyo list {method} error for {email_norm} (list {list_id}): {e}')
 
 
+def _klaviyo_event(metric, email, properties=None, name='', unique_id=None, value=None):
+    """
+    Record a Klaviyo event — a metric occurrence against a profile.
+
+    Separate from _klaviyo_sync because the two answer different questions.
+    _klaviyo_sync says what a person *is* (properties, list membership); this
+    says what a person *did*, at a point in time. Cart abandonment is only
+    expressible as the second kind: Stripe never tells us a customer closed the
+    tab, so "started but has not placed an order" can only be derived from a
+    recorded start.
+
+    Fail-soft like _klaviyo_sync — never raises. Note this one runs in the
+    checkout request path rather than a webhook, so the stakes are higher than
+    usual: a Klaviyo outage must cost us a lifecycle email, never a sale. Every
+    failure mode below ends at a print statement.
+
+    `unique_id` is Klaviyo's idempotency key. Pass something stable and
+    checkout-specific (the Stripe session or subscription id) so a
+    double-clicked Subscribe button or a redelivered webhook records one event
+    rather than two — the same reasoning that keeps app_count recomputed instead
+    of incremented.
+
+    The event API upserts the profile as a side effect, so a first-time visitor
+    who abandons still becomes addressable. It does NOT grant marketing consent,
+    which is deliberate — that is a decision for whoever configures the flow.
+    """
+    if not KLAVIYO_API_KEY or not email or not metric:
+        return
+
+    email_norm = email.lower().strip()
+
+    profile_attributes = {'email': email_norm}
+    parts = (name or '').strip().split(None, 1)
+    if parts:
+        profile_attributes['first_name'] = parts[0]
+    if len(parts) > 1:
+        profile_attributes['last_name'] = parts[1]
+
+    attributes = {
+        'metric': {'data': {'type': 'metric', 'attributes': {'name': metric}}},
+        'profile': {'data': {'type': 'profile', 'attributes': profile_attributes}},
+    }
+    if properties:
+        attributes['properties'] = {k: v for k, v in properties.items() if v is not None}
+    if unique_id:
+        attributes['unique_id'] = str(unique_id)
+    if value is not None:
+        attributes['value'] = value
+
+    try:
+        r = http_requests.post(
+            f'{KLAVIYO_API_BASE}/events/',
+            json={'data': {'type': 'event', 'attributes': attributes}},
+            headers=_klaviyo_headers(),
+            timeout=10,
+        )
+        # The events endpoint is asynchronous: 202 Accepted is the success case,
+        # and it returns an empty body. Treating "not 2xx" as failure rather than
+        # checking for 200 specifically avoids logging a false alarm on every send.
+        if r.status_code not in (200, 201, 202):
+            print(f'[Store API] Klaviyo event "{metric}" failed for {email_norm}: {r.status_code} {r.text[:200]}')
+    except Exception as e:
+        print(f'[Store API] Klaviyo event "{metric}" error for {email_norm}: {e}')
+
+
 def _send_email(from_addr, to_addr, subject, body):
     """Send an email via Resend. No-op if resend/key not configured."""
     if not resend or not os.environ.get('RESEND_API_KEY'):
@@ -685,10 +750,45 @@ def create_checkout_session():
                 'company': company,
             },
         )
-        return _cors_response(jsonify({'url': session.url}))
     except Exception as e:
         print(f'[Store API] Stripe error: {e}')
         return _cors_response(jsonify({'error': 'Failed to create checkout session'}), 500)
+
+    # The success return deliberately sits OUTSIDE the try above. Anything added
+    # after this point that raises would otherwise be caught by that handler and
+    # reported to the customer as "Failed to create checkout session" — a 500 for
+    # a checkout that Stripe already created successfully.
+
+    # Record the *start* of checkout. This is the only signal that a customer
+    # ever wanted this app: Stripe is silent when someone closes the tab, so
+    # without this event, abandonment is invisible and the L2 cart-abandon
+    # sequence has nothing to trigger on. Fires after Session.create() succeeds,
+    # so a Stripe failure is never reported to Klaviyo as an abandoned cart.
+    _klaviyo_event(
+        metric='Started Checkout',
+        email=email,
+        name=name,
+        # Stripe's session id, so a double-clicked Subscribe button records one
+        # abandonment rather than two — and so does a retried request.
+        unique_id=session.id,
+        properties={
+            'app_name': product,
+            'product': product,
+            'company': company or None,
+            # Two links, because they expire differently and the emails are
+            # 47 hours apart:
+            #   resume_link  — Stripe's own hosted page, keeps the exact cart,
+            #                  but Stripe expires checkout sessions after 24h.
+            #   restart_link — the storefront card, never expires, costs the
+            #                  customer a re-typed name and email.
+            # L2-E1 (1h) should use resume_link. L2-E2 (48h) MUST NOT: by then
+            # the session is dead and the link renders an expired-page error.
+            'resume_link': session.url,
+            'restart_link': f'{STORE_URL}/?product={product}',
+        },
+    )
+
+    return _cors_response(jsonify({'url': session.url}))
 
 
 @store_bp.route('/subscription-status', methods=['GET'])
@@ -937,6 +1037,33 @@ def _handle_checkout_completed(session):
         name=name,
         properties=trial_properties,
         add_list=KLAVIYO_LIST_TRIAL,
+    )
+
+    # Closes out the L2 cart-abandon flow. That flow filters on "has not Placed
+    # Order since starting", so without this event every customer who *did*
+    # finish still gets the "you didn't finish" email an hour later — the single
+    # worst-looking failure in the whole lifecycle programme.
+    #
+    # Note this is emitted per checkout, not per person: an existing customer
+    # buying a second app both starts and completes a new checkout, and the pair
+    # has to balance. Filtering on trial-list membership instead would treat
+    # them as already-converted and never mail them at all.
+    _klaviyo_event(
+        metric='Placed Order',
+        email=email,
+        name=name,
+        # Stripe redelivers webhooks; the guard at the top of this handler
+        # catches most replays, but the subscription id makes the event itself
+        # idempotent rather than relying on that.
+        unique_id=subscription_id,
+        # price_display is either None or a formatted number, so this cannot
+        # raise. Gives Klaviyo the revenue figure behind the L2 recovery KPI.
+        value=float(price_display) if price_display else None,
+        properties={
+            'app_name': product,
+            'product': product,
+            'company': company or None,
+        },
     )
 
     print(f'[Store API] Subscription created: {product} for {email} (provisioned={all_provisioned})')
