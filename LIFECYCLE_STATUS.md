@@ -72,12 +72,74 @@ Since 2026-08-02 it sits behind a conditional split on `app_count` — see "L5 �
 | # | Spec | Built? | Detail |
 |---|---|---|---|
 | L1 | Video viewer, no subscribe | **No flow** | Needs a `video_play` event. Nothing in `store_api.py` emits one; no flow exists to consume it. |
-| L2 | Cart abandon | **No flow** | Needs `checkout_started`. `create_checkout_session()` does NOT sync Klaviyo — the profile is first touched at `checkout.session.completed`, i.e. only *after* success. The abandon case is invisible by construction. |
+| L2 | Cart abandon | **Events shipped, flow not built** | `create_checkout_session()` now emits `Started Checkout` and conversion emits `Placed Order`. The data blocker is gone; the flow itself is still missing, and the events do not reach Klaviyo until the store API is redeployed. See "L2 — half-closed 2026-08-02". |
 | L3 | New subscriber onboarding | **Partial** | Trial flow (3 emails @ 0/3/27) + Paid flow both live. Spec says 4 emails over 14 days; actual trial cadence is 0/3/27. Cadence differs from spec — spec not updated, or flow not finished. Not resolved. |
 | L4 | Month-1 success | **Live** | Day-30 email in the Paid flow. Whether its content matches the spec's testimonial ask was NOT checked. |
 | L5 | Month-3 expansion | **Live + conditional** | Day-90 email in the Paid flow, gated on `app_count` since 2026-08-02. See below. |
 | L6 | Churn-save | **No flow** | Cancel does sync Klaviyo (`subscription_status: cancelled`, removed from trial list) so the *data* is there; no flow and no intercept page consume it. |
 | L7 | Win-back | **No flow** | Same — cancellation data exists, nothing acts on it. |
+
+---
+
+## L2 — half-closed 2026-08-02
+
+`7f83a91` shipped the missing data. It did **not** build the flow, and until the store API is
+redeployed it changes nothing in production — the code is in git, not on the server.
+
+| Metric | Emitted from | Carries |
+|---|---|---|
+| `Started Checkout` | `create_checkout_session()`, after `Session.create()` succeeds | `app_name`, `resume_link`, `restart_link`, `unique_id` = Stripe session id |
+| `Placed Order` | `_handle_checkout_completed()` | `app_name`, `value` (dollars), `unique_id` = subscription id |
+
+`Placed Order` is not decoration. The flow's exit condition is "has not placed an order since
+starting", so without it every customer who *did* buy still gets the "you didn't finish" email an
+hour later.
+
+Both are emitted **per checkout, not per person**, so an existing customer buying a second app both
+enters and exits correctly. Filtering on trial-list membership instead would read them as
+already-converted and never mail them at all.
+
+### Three things that will bite whoever builds the flow
+
+**Neither metric exists in Klaviyo yet.** As of 2026-08-02 the account has 22 metrics and all but
+`Active on Site` are Klaviyo-internal. A metric is created by its first event, and the flow editor's
+trigger picker only lists metrics that already exist — so the flow **cannot be built until at least
+one event has actually been received**. Order of operations is: deploy → one checkout start →
+metric appears → build flow. Note also that Klaviyo metrics cannot be deleted, so the first send
+fixes the name permanently.
+
+**`resume_link` dies before L2-E2 does.** Stripe expires checkout sessions after 24 hours; the spec
+sends E2 at 48. The event therefore carries two links, and they are not interchangeable:
+
+- `resume_link` — Stripe's hosted page, keeps the exact cart, **valid ~24h**. Use in E1 (1 hour).
+- `restart_link` — the storefront card (`/?product=X`), never expires, costs the customer a
+  re-typed name and email. Use in E2 (48 hours).
+
+Using `resume_link` in E2 ships a link that renders an expired-session error to every recipient.
+
+**The event upserts a profile but does not grant marketing consent.** That is deliberate — a person
+who typed their email into a checkout form has not subscribed to anything, and deciding otherwise is
+a consent call, not a code call. Klaviyo will skip flow sends to a non-consented profile unless the
+message is configured to allow it, so this has to be settled *before* the flow goes live or L2 will
+appear to work and silently deliver nothing.
+
+### Verifying after deploy
+
+```bash
+# 1. did the metrics appear?
+#    Klaviyo MCP: get_metrics fields_metric=["name","integration"]
+#    Expect "Started Checkout" and "Placed Order", both integration.category = API.
+#    If they are absent after a real checkout, the deploy did not take.
+
+# 2. is the pair balancing?
+#    A healthy week has Started Checkout >= Placed Order. If they are equal,
+#    nothing is abandoning, which almost certainly means the start event is
+#    firing late rather than that the store converts at 100%.
+```
+
+Failures are logged, never raised — `[Store API] Klaviyo event "Started Checkout" ...` on the store
+API journal is the only place a broken send shows up. A silent absence of that line means
+`KLAVIYO_API_KEY` is unset, not that everything is fine.
 
 ---
 

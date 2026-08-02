@@ -14,10 +14,11 @@ the ones marked *needs code* cannot be turned on from the Klaviyo UI:
 - `subscription_canceled` — cancellation event. **Wired.** `_handle_subscription_cancelled` sets
   `subscription_status` and pulls the profile off the trial list, so a cancelled trial can never
   receive the day-27 charge notice.
-- `checkout_started` — Stripe checkout session created. **Not wired — needs code.**
-  `create_checkout_session()` touches neither Klaviyo nor HubSpot; the profile is first written at
-  `checkout.session.completed`, i.e. only after success. Abandonment is invisible by construction,
-  which is what blocks L2 entirely.
+- `checkout_started` — Stripe checkout session created. **Code shipped `7f83a91`, awaiting deploy.**
+  `create_checkout_session()` now emits a `Started Checkout` event, and conversion emits
+  `Placed Order` so the flow can exclude customers who finished. Abandonment used to be invisible by
+  construction; it no longer is. What remains for L2 is the flow itself, which cannot be built until
+  the deploy lands and one real event creates the metric in Klaviyo.
 - `demo_clicked` — visitor clicks any `/demo` link. **Not wired.** Note the form *submission* is
   captured — `/demo-request` pushes to HubSpot — but that is a different, later event than the
   click, and it reaches HubSpot only, never Klaviyo.
@@ -97,6 +98,12 @@ All sequences stop immediately on human reply or conversion to next stage.
 
 ## L2 — Cart abandon
 
+**The two emails must use different links.** Stripe expires a checkout session after ~24 hours, so
+`{{resume_link}}` — which preserves the exact cart — is dead by the time E2 sends at 48h. E2 uses
+`{{restart_link}}`, the storefront card, which never expires but costs the customer a re-typed name
+and email. Both are on the `Started Checkout` event. Swapping them ships an expired-session error to
+every E2 recipient.
+
 ### L2-E1 — 1 hour after `checkout_started`
 
 **Subject:** Stripe hiccup on your {{app_name}} subscription?
@@ -115,7 +122,7 @@ All sequences stop immediately on human reply or conversion to next stage.
 
 > {{first_name}}, if you'd rather not subscribe right now that's completely fine — just let me know and I'll stop reminders.
 >
-> Link's still live if you change your mind: {{resume_link}}
+> Link's still live if you change your mind: {{restart_link}}
 >
 > — {{founder_first}}
 
