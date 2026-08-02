@@ -113,7 +113,31 @@ say "bridgr.service untouched"
 systemctl is-active bridgr.service || true
 
 echo
-echo "Rollback if needed:  cd $STORE_DIR && git checkout 12e1eef -- store_api.py && systemctl restart $UNIT"
-echo "  (12e1eef = the build that was live before the subscription_status=trialing write."
-echo "   Rolling back also means EXPECT_MD5 above no longer matches, so this script will"
-echo "   refuse to run again until you restore the old sum f0e2b689c0249214803d6b2a81770809.)"
+echo "Rollback if needed — the day-27 fix has TWO halves and this script owns only one."
+echo
+echo "  1. Code (here):"
+echo "       cd $STORE_DIR && git checkout 12e1eef -- store_api.py && systemctl restart $UNIT"
+echo "     12e1eef = the build before the subscription_status=trialing write. Rolling back"
+echo "     also invalidates EXPECT_MD5 above, so this script refuses to run again until you"
+echo "     restore the old sum f0e2b689c0249214803d6b2a81770809."
+echo
+echo "  2. Klaviyo, flow X2tesT (PF9 Trial Onboarding), profile filter added 2026-08-02:"
+echo "       subscription_status not-equals 'cancelled'  OR  subscription_status not-set"
+echo
+echo "     Step 1 does NOT disable it, and usually should not. The day-27 guard keeps"
+echo "     working after a code rollback because 12e1eef ALSO writes"
+echo "     subscription_status='cancelled' on the cancel path — that write is what the"
+echo "     filter reads, and both builds make it."
+echo
+echo "     What a code rollback does lose is the 'trialing' reset at trial start, so a"
+echo "     returning customer stays labelled 'cancelled' through their entire second"
+echo "     trial. That is dormant today: X2tesT is No-re-entry, so they never re-enter"
+echo "     and the filter never judges them. It turns into a silent suppression of the"
+echo "     whole onboarding sequence the moment re-entry is switched on. Rolled-back"
+echo "     code + re-entry enabled = a flow that sends nothing and logs nothing."
+echo
+echo "     So: leave the filter alone for an ordinary rollback. Remove it only if you are"
+echo "     abandoning the property-based approach, or before enabling re-entry on a"
+echo "     rolled-back build. To remove: https://www.klaviyo.com/flow/X2tesT/edit"
+echo "     -> flow settings -> Profile filters. UI only — the public API exposes flows"
+echo "     read-only, so there is no curl for this and it cannot be scripted here."
