@@ -1,7 +1,7 @@
 # Lifecycle Status — what is actually wired
 
-**Last verified: 2026-08-02** against Klaviyo (live API), `store_api.py` @ `92290cd`, and the
-production DB on xfree143.
+**Last verified: 2026-08-02** against Klaviyo (live API), `store_api.py` @ `12e1eef` (the build
+running in production since the 17:49 UTC restart), and the production DB on xfree143.
 
 `PLAYBOOK_LIFECYCLE.md` is the *spec* — what the sequences should say and why. It deliberately
 carries no implementation state, because a spec that also tracks build status stops being
@@ -76,7 +76,7 @@ Since 2026-08-02 it sits behind a conditional split on `app_count` — see "L5 �
 | # | Spec | Built? | Detail |
 |---|---|---|---|
 | L1 | Video viewer, no subscribe | **No flow** | Needs a `video_play` event. Nothing in `store_api.py` emits one; no flow exists to consume it. |
-| L2 | Cart abandon | **Events shipped, flow not built** | `create_checkout_session()` now emits `Started Checkout` and conversion emits `Placed Order`. The data blocker is gone; the flow itself is still missing, and the events do not reach Klaviyo until the store API is redeployed. See "L2 — half-closed 2026-08-02". |
+| L2 | Cart abandon | **Events shipped, flow not built** | `create_checkout_session()` now emits `Started Checkout` and conversion emits `Placed Order`. **Deployed 2026-08-02** — the events now reach Klaviyo. The flow itself is still missing, and the metrics do not exist in Klaviyo until the first real event fires. See "L2 — half-closed 2026-08-02". |
 | L3 | New subscriber onboarding | **Partial + one live defect** | Trial flow (3 emails @ 0/3/27) + Paid flow both live. Spec says 4 emails over 14 days; actual trial cadence is 0/3/27 — unresolved. **Separately: the trial flow has no filters, so a cancelled trial still gets the day-27 charge notice.** See "Day-27 filter — 2026-08-02". |
 | L4 | Month-1 success | **Live** | Day-30 email in the Paid flow. Whether its content matches the spec's testimonial ask was NOT checked. |
 | L5 | Month-3 expansion | **Live + conditional** | Day-90 email in the Paid flow, gated on `app_count` since 2026-08-02. See below. |
@@ -210,8 +210,8 @@ assuming L7 will deliver; Klaviyo silently skips non-consented profiles.
 
 ## L2 — half-closed 2026-08-02
 
-`7f83a91` shipped the missing data. It did **not** build the flow, and until the store API is
-redeployed it changes nothing in production — the code is in git, not on the server.
+`7f83a91` shipped the missing data and it is now deployed (2026-08-02, service restarted onto
+`fb501d8`). It did **not** build the flow.
 
 | Metric | Emitted from | Carries |
 |---|---|---|

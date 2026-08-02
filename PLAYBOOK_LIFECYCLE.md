@@ -11,12 +11,12 @@ the ones marked *needs code* cannot be turned on from the Klaviyo UI:
 
 - `subscription_active` — Stripe webhook confirms paid. **Wired.** `_handle_subscription_updated`
   syncs the profile on trialing→active and moves it to the Paid list.
-- `subscription_canceled` — cancellation event. **Code shipped `3a88fe7`, awaiting deploy.**
+- `subscription_canceled` — cancellation event. **Live since 2026-08-02** (`3a88fe7`, deployed at `fb501d8`).
   `_handle_subscription_cancelled` emits a `Cancelled Subscription` metric, which is what L6 and L7
   trigger on — a profile property alone cannot start a flow. It also now evaluates cancellation
   against what the customer still owns, so cancelling one app of several no longer flags them
   churned account-wide.
-- `checkout_started` — Stripe checkout session created. **Code shipped `7f83a91`, awaiting deploy.**
+- `checkout_started` — Stripe checkout session created. **Live since 2026-08-02** (`7f83a91`, deployed at `fb501d8`).
   `create_checkout_session()` now emits a `Started Checkout` event, and conversion emits
   `Placed Order` so the flow can exclude customers who finished. Abandonment used to be invisible by
   construction; it no longer is. What remains for L2 is the flow itself, which cannot be built until
