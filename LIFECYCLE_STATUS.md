@@ -113,14 +113,45 @@ customers with >1 app : 0
 
 The split would today change the behaviour of **zero** sends. That is the argument for waiting.
 The argument against waiting is that the email is already going out unconditionally, so the gap
-is live rather than theoretical — the moment a second app is sold, it misfires. It is a
-~5-minute change in the Klaviyo UI (add a conditional split before the day-90 send, branch on
-`app_count > 1`).
+is live rather than theoretical — the moment a second app is sold, it misfires.
 
 Also note: **existing profiles do not backfill.** `app_count` only lands on a profile when that
 customer next hits checkout or converts trialing→active. The 3 current profiles will not have it
 until then, so the split must treat "property missing" as `0` — which is the safe direction
 anyway, since 0 sends the email, i.e. today's behaviour.
+
+### Attempted 2026-08-02 — blocked, and not for the reason expected
+
+The "~5-minute Klaviyo UI change" this file previously claimed **cannot be done today at all.**
+The split was built and then reverted; the flow is back to its exact original 4 actions
+(`107907837.links.next == 107907860`, no split action). What the attempt established:
+
+- **Klaviyo's split builder only offers dimensions it has already observed on a profile.**
+  Searching the Dimension picker for `app_count` returns empty, and there is no "create custom
+  property" affordance in that builder. A property that has never been written cannot be
+  referenced. This is the hard blocker — not a UI-navigation problem.
+- **The emitter is deployed and correct.** Local and server `store_api.py` are md5-identical
+  (`24dc663f…`) and `_owned_app_properties` appears 3× in the running file. It has simply never
+  executed: the only rich profile (`mark.pierce@outlook.com`) was last written 2026-08-01
+  16:34 CDT, and `b4d80e0` shipped at 20:08 CDT. So this is exactly the no-backfill situation
+  predicted above, not a bug.
+- **Branch placement is the inverse of the obvious guess.** Inserting a split above an existing
+  action puts that action on **Path #1** (evaluated first) and auto-creates an "Everyone else"
+  branch to End. So Path #1's criteria must describe *who still receives* the email —
+  i.e. `app_count is less than 2` **OR** `app_count is not set`. The OR is mandatory: in Klaviyo
+  a numeric comparison against an absent property evaluates FALSE, so `< 2` alone would route
+  every un-backfilled profile to "Everyone else" and silently kill the day-90 email.
+- **Klaviyo flow edits persist server-side immediately**, even while the UI shows "Unsaved
+  changes" with Save greyed out. The flow's `updated` attribute did **not** move
+  (still 2026-05-30T20:07:58), so it is useless for detecting drift. Verify structure via
+  `get_flows`, never via the UI or the timestamp.
+- The public API is read-only for flow structure; there is no flow-mutation endpoint. Any
+  future attempt is UI-only.
+
+**To unblock:** `app_count` must exist on at least one profile before the dimension appears.
+Either wait for the next real checkout / trialing→active conversion to write it naturally, or
+deliberately write it to a profile to register the dimension. The latter is an ESP data write
+and was not taken without sign-off.
 
 ---
 
@@ -128,8 +159,12 @@ anyway, since 0 sends the email, i.e. today's behaviour.
 
 Listed so they are not mistaken for "checked and fine":
 
-- **Email bodies.** No flow message content was read. Whether the live emails match the copy in
-  `PLAYBOOK_LIFECYCLE.md`, or use the merge tags listed above at all, is unknown.
+- **Email bodies.** Still unread — template contents (`RXA7h3`, `XtS2ji`) were never pulled, so
+  whether the body copy matches `PLAYBOOK_LIFECYCLE.md` is unknown. *Partially resolved
+  2026-08-02:* the **subject lines** do use `b4d80e0`'s merge tags, with defaults —
+  day-30 renders `{{ person.Properties.app_name|default:'PF9' }}` and day-90 renders
+  `{{ person.Properties.related_app_name|default:'another PF9 app' }}`. So the tags are wired at
+  least in the subjects, and degrade safely when absent.
 - **`{{current_spend}}`** (spec line 213/215). Nothing in `store_api.py` sets it. If the live
   day-90 email uses it, it renders empty or falls to a default.
 - **L5-E2**, the day-100 follow-up (spec line 223). The Paid flow ends after day 90 — so it
