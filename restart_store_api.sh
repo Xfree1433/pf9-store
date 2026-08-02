@@ -53,8 +53,27 @@ else
 fi
 
 say "Check: KLAVIYO_API_KEY (lifecycle emails are a no-op without it)"
+# Presence is NOT authorisation, and this check used to conflate them. On
+# 2026-08-02 the key was present here and reported "ACTIVE" while every
+# _klaviyo_event call was failing 403:
+#     "Your API key is missing required scopes: events:write"
+# Profile writes have their own scope and were working the whole time, which is
+# why profiles carry correct subscription_status while no PF9 metric exists.
+# _klaviyo_event fails soft (a print, by design — a Klaviyo outage must never
+# cost a sale), so this failed silently and nothing surfaced it.
+#
+# Verify with a real probe rather than trusting this line:
+#   curl -s -o /dev/null -w '%{http_code}\n' -X POST https://a.klaviyo.com/api/events/ \
+#     -H "Authorization: Klaviyo-API-Key $KLAVIYO_API_KEY" -H 'revision: 2024-10-15' \
+#     -H 'content-type: application/json' --data '{...}'
+# 403 = still missing events:write; 202 = fixed. Note that a successful probe
+# CREATES a metric, and Klaviyo metrics cannot be deleted — so probe with a
+# metric name you actually want (see LIFECYCLE_STATUS.md), not a scratch one.
 if grep -qhE '^KLAVIYO_API_KEY=.+' "$BRIDGR_ENV" "$OVERRIDE_ENV" 2>/dev/null; then
-  echo "  present — Klaviyo sync will be ACTIVE after this restart"
+  echo "  present — profile sync (properties, list add/remove) will be ACTIVE"
+  echo "  NOTE: presence does not prove scope. As of 2026-08-02 this key lacks"
+  echo "  events:write, so Started Checkout / Placed Order / Cancelled Subscription"
+  echo "  are silently dropped and the L2/L6/L7 sequences cannot be built."
 else
   echo "  NOT SET — trial/paid profiles will not reach Klaviyo and no lifecycle"
   echo "  email will ever send. Everything else works. To enable, add the key to"

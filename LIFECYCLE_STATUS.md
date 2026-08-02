@@ -7,6 +7,13 @@ Local, `origin/main`, and production are in sync. Both halves of the day-27 fix 
 Klaviyo flow filter and the `subscription_status: 'trialing'` write. See "Day-27 filter —
 2026-08-02".
 
+🛑 **Blocker, discovered 2026-08-02: the production Klaviyo key lacks the `events:write` scope.**
+Every `Started Checkout` / `Placed Order` / `Cancelled Subscription` call 403s, silently, because
+the emitter is fail-soft. **L2, L6 and L7 are all blocked on this** — not on code, which is written
+and deployed, and not on flow-building, which cannot start until the metrics exist. Profile
+properties and list membership are unaffected (different scope) and work correctly, which is what
+made this invisible. Fix is user-only; see "Three things that will bite whoever builds the flow".
+
 `PLAYBOOK_LIFECYCLE.md` is the *spec* — what the sequences should say and why. It deliberately
 carries no implementation state, because a spec that also tracks build status stops being
 readable as either. This file is the other half: for each specced sequence, what exists in
@@ -81,12 +88,12 @@ Since 2026-08-02 it sits behind a conditional split on `app_count` — see "L5 �
 | # | Spec | Built? | Detail |
 |---|---|---|---|
 | L1 | Video viewer, no subscribe | **No flow** | Needs a `video_play` event. Nothing in `store_api.py` emits one; no flow exists to consume it. |
-| L2 | Cart abandon | **Events shipped, flow not built** | `create_checkout_session()` now emits `Started Checkout` and conversion emits `Placed Order`. **Deployed 2026-08-02** — the events now reach Klaviyo. The flow itself is still missing, and the metrics do not exist in Klaviyo until the first real event fires. See "L2 — half-closed 2026-08-02". |
+| L2 | Cart abandon | **🛑 Blocked — events rejected by Klaviyo** | `create_checkout_session()` emits `Started Checkout` and conversion emits `Placed Order`. Deployed 2026-08-02, but the events do **not** reach Klaviyo: the production key lacks the `events:write` scope and every call 403s, silently, because the emitter is fail-soft. Flow also not built. See "Three things that will bite whoever builds the flow". |
 | L3 | New subscriber onboarding | **Partial; day-27 defect closed** | Trial flow (3 emails @ 0/3/27) + Paid flow both live. Spec says 4 emails over 14 days; actual trial cadence is 0/3/27 — still unresolved. **The day-27 defect is fixed:** a profile filter on `X2tesT` now drops cancelled trials before the charge notice. See "Day-27 filter — 2026-08-02". |
 | L4 | Month-1 success | **Live** | Day-30 email in the Paid flow. Whether its content matches the spec's testimonial ask was NOT checked. |
 | L5 | Month-3 expansion | **Live + conditional** | Day-90 email in the Paid flow, gated on `app_count` since 2026-08-02. See below. |
-| L6 | Churn-save | **Trigger shipped, flow not built** | Cancel now emits `Cancelled Subscription`. L6-E1 (the 24h email) is buildable once that's deployed. The L6 *intercept page* is frontend code and is not started. |
-| L7 | Win-back | **Trigger shipped, E1 unbuildable as specced** | Same trigger. L7-E2 is buildable. **L7-E1 is not** — its copy merges `{{reason}}` and `{{change}}`, and nothing collects either. See "L6 / L7 — 2026-08-02". |
+| L6 | Churn-save | **🛑 Blocked — events rejected by Klaviyo** | Cancel emits `Cancelled Subscription`, deployed, but it 403s on the missing `events:write` scope like L2's. L6-E1 (the 24h email) is unbuildable until the metric exists, and the metric cannot exist until the scope is granted. The L6 *intercept page* is frontend code and is not started. |
+| L7 | Win-back | **🛑 Blocked — events rejected by Klaviyo** | Same trigger, same `events:write` block as L6. Even once unblocked, L7-E2 is buildable but **L7-E1 is not** — its copy merges `{{reason}}` and `{{change}}`, and nothing collects either. See "L6 / L7 — 2026-08-02". |
 
 ---
 
@@ -256,9 +263,11 @@ earlier the same day.
 Building it anyway renders "you mentioned ." to every recipient. Either write the intercept page
 first, or rewrite L7-E1 generically. This is a decision, not a task.
 
-**The metric does not exist in Klaviyo yet** — same chicken-and-egg as L2. The trigger picker only
-lists metrics that have received at least one event, so: deploy → one real cancellation → metric
-appears → build flows. Nothing here is buildable before the deploy.
+**The metric does not exist in Klaviyo yet** — same chicken-and-egg as L2, and now with a hard
+blocker in front of it. The code is deployed, but the production key lacks `events:write`, so
+`Cancelled Subscription` 403s and the metric can never be created by a real cancellation either.
+The order is: grant the scope → one event → metric appears → build flows. Nothing here is
+buildable until the scope is fixed; deploying more code will not help.
 
 **Consent.** A churned customer is still a contactable profile, but check their consent state before
 assuming L7 will deliver; Klaviyo silently skips non-consented profiles.
@@ -285,12 +294,48 @@ already-converted and never mail them at all.
 
 ### Three things that will bite whoever builds the flow
 
+**🛑 The production API key cannot write events at all — this blocks L2, L6 and L7 outright.**
+Attempted 2026-08-02 by calling the deployed `_klaviyo_event` directly against production. All
+three metrics returned:
+
+```
+403 permission_denied
+"Your API key is missing required scopes: events:write"
+```
+
+Scope probe on the same key: `GET /api/profiles/` → **200**, `GET /api/metrics/` → **403**. So the
+key is provisioned for profiles and lists but not events. That split explains a discrepancy that
+otherwise looks like a code bug: profiles carry correct `subscription_status` values while not one
+PF9 metric exists. The profile half was always working; the event half has never worked once.
+
+This failed **silently**, and by design — `_klaviyo_event` is fail-soft (its docstring: a Klaviyo
+outage must cost a lifecycle email, never a sale), so every call has been ending at a `print` on the
+store host. Nothing alerts. The restart script made it worse by reporting `KLAVIYO_API_KEY
+present — Klaviyo sync will be ACTIVE`, conflating presence with authorisation; that message has
+been corrected.
+
+**Fix is user-only** (creating/rotating an API key is a credential action): in Klaviyo →
+Settings → API keys, grant the existing key `events:write`, or issue a new private key with
+`events:write` + `profiles:write` + `lists:write`, then update `KLAVIYO_API_KEY` in
+`/opt/pf9-store/pf9-store-api.env` and restart `pf9-store-api.service`. Note that file currently
+carries the key on **two consecutive lines** (lines 5 and 6, byte-identical — verified by SHA, so
+harmless today, but update both or delete one).
+
+**Then** the metric-creation problem below applies, unchanged:
+
 **Neither metric exists in Klaviyo yet.** As of 2026-08-02 the account has 22 metrics and all but
 `Active on Site` are Klaviyo-internal. A metric is created by its first event, and the flow editor's
 trigger picker only lists metrics that already exist — so the flow **cannot be built until at least
-one event has actually been received**. Order of operations is: deploy → one checkout start →
-metric appears → build flow. Note also that Klaviyo metrics cannot be deleted, so the first send
-fixes the name permanently.
+one event has actually been received**. Order of operations is: fix the scope → one event → metric
+appears → build flow. Note also that Klaviyo metrics cannot be deleted, so the first send fixes the
+name permanently.
+
+A ready-to-run bootstrapper is committed at `tools/pf9_metric_bootstrap.py` (dry-run by default,
+`fire` to send; run it on xfree143 with `/opt/pf9-store/venv/bin/python`, which is where the key
+and the deployed module are). It calls the **deployed** `_klaviyo_event` rather than a hand-rolled POST,
+so the permanent metric names come from the code that will emit them, and it mirrors each real call
+site's properties so Klaviyo learns the property names for the flow editor's picker. It will work
+unchanged once the scope is granted.
 
 **`resume_link` dies before L2-E2 does.** Stripe expires checkout sessions after 24 hours; the spec
 sends E2 at 48. The event therefore carries two links, and they are not interchangeable:
