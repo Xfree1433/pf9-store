@@ -134,6 +134,13 @@ every E2 recipient.
 
 ## L3 — New subscriber onboarding
 
+> ⚠️ **The live trial flow needs a filter it does not have.** `X2tesT` carries no profile filter
+> and no per-message filters, so cancelling a trial does not stop the day-27 pre-charge notice —
+> removal from the trial list prevents *entry*, and by day 27 the profile is already inside a
+> 24-day delay. Anyone editing this sequence should add a flow-level profile filter
+> `subscription_status is not equal to cancelled` before adding messages. Detail and evidence in
+> `LIFECYCLE_STATUS.md`, "Day-27 filter — 2026-08-02".
+
 ### L3-E1 — Immediately on `subscription_active`
 
 **Subject:** Welcome — your {{app_name}} login is ready

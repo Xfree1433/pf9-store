@@ -55,6 +55,10 @@ claim in `store_api.py`'s header comment that Klaviyo — not the app — owns t
 deliberately has no day-27 sender; `_send_trial_ending_email` was removed precisely so the two
 could not both fire.
 
+⚠️ **This flow has no filter of any kind.** `profile_filter: null`, and `additional_filters: null`
+on all three messages. A cancelled trial still gets the day-27 charge notice — see
+"Day-27 filter — 2026-08-02".
+
 ### `VuD82q` — PF9 Paid Onboarding · live · trigger: Added to List
 
 ```
@@ -73,11 +77,76 @@ Since 2026-08-02 it sits behind a conditional split on `app_count` — see "L5 �
 |---|---|---|---|
 | L1 | Video viewer, no subscribe | **No flow** | Needs a `video_play` event. Nothing in `store_api.py` emits one; no flow exists to consume it. |
 | L2 | Cart abandon | **Events shipped, flow not built** | `create_checkout_session()` now emits `Started Checkout` and conversion emits `Placed Order`. The data blocker is gone; the flow itself is still missing, and the events do not reach Klaviyo until the store API is redeployed. See "L2 — half-closed 2026-08-02". |
-| L3 | New subscriber onboarding | **Partial** | Trial flow (3 emails @ 0/3/27) + Paid flow both live. Spec says 4 emails over 14 days; actual trial cadence is 0/3/27. Cadence differs from spec — spec not updated, or flow not finished. Not resolved. |
+| L3 | New subscriber onboarding | **Partial + one live defect** | Trial flow (3 emails @ 0/3/27) + Paid flow both live. Spec says 4 emails over 14 days; actual trial cadence is 0/3/27 — unresolved. **Separately: the trial flow has no filters, so a cancelled trial still gets the day-27 charge notice.** See "Day-27 filter — 2026-08-02". |
 | L4 | Month-1 success | **Live** | Day-30 email in the Paid flow. Whether its content matches the spec's testimonial ask was NOT checked. |
 | L5 | Month-3 expansion | **Live + conditional** | Day-90 email in the Paid flow, gated on `app_count` since 2026-08-02. See below. |
 | L6 | Churn-save | **Trigger shipped, flow not built** | Cancel now emits `Cancelled Subscription`. L6-E1 (the 24h email) is buildable once that's deployed. The L6 *intercept page* is frontend code and is not started. |
 | L7 | Win-back | **Trigger shipped, E1 unbuildable as specced** | Same trigger. L7-E2 is buildable. **L7-E1 is not** — its copy merges `{{reason}}` and `{{change}}`, and nothing collects either. See "L6 / L7 — 2026-08-02". |
+
+---
+
+## Day-27 filter — 2026-08-02
+
+**Finding: a customer who cancels their trial still receives the day-27 "your card is charged on
+[date]" email. The protection the code claimed to provide does not exist.**
+
+`_handle_subscription_cancelled()` removes the profile from `RKeAnZ` (Trial Users — Active) and
+its comment claimed this "stops a day-27 notice about a charge that will never happen." It does
+not. Removal stops them *entering* the flow. It does not pull them out of one they are already
+in — and day 27 sits behind a 24-day delay, so anyone who cancels after day 3 is already in it.
+
+### What was checked
+
+| Where | What it says |
+|---|---|
+| API — flow `X2tesT` | `profile_filter: null` |
+| API — messages `VpT7Fy`, `YpvAcX`, `ReYNde` | `additional_filters: null` on all three |
+| UI — Trigger card | Trigger: Added to list, Trial Users — Active. Re-entry: none. **"No profile filters applied."** |
+| UI — Day 27 card → Settings | **Additional filters: empty**, "Add filter" untouched |
+
+### Why removal alone is not enough
+
+Klaviyo re-checks **profile filters** before each message and skips anyone who fails; **trigger
+filters are not checked again at send time**. This flow has neither. The "must still be a member
+at send time" guarantee that people assume covers this is documented for **segments**, not lists
+— and this is a list-triggered flow. Klaviyo's own docs are silent on list removal mid-flow, and
+the community answer to exactly this problem is to add a flow-level profile filter, which "kicks
+them out before the next step" if they are sitting in a delay.
+
+Relying on undocumented behaviour is a bad trade here. The failure mode is a customer being told
+their card is about to be charged after they cancelled — the one email where being wrong costs a
+support ticket and trust, not a click.
+
+### The fix (UI only, not shipped — needs a decision)
+
+Add a **flow-level profile filter** on `X2tesT`:
+
+```
+subscription_status  is not equal to  cancelled
+```
+
+Flow-level, not per-message, so it also covers anything added to this flow later. `store_api.py`
+already writes `subscription_status = 'cancelled'` on the last-app cancel path, so the data side
+needs no change — but note it is only written when the customer's **last** app goes, which is
+correct here: someone cancelling one app of two is still trialing the other and should still get
+its notice.
+
+**Not applied.** Changing a live flow was out of scope for a check, and it is worth deciding
+alongside the L6/L7 build rather than as a one-off.
+
+### Incident note
+
+While inspecting the canvas, a click-drag intended to pan the view instead moved the
+"Trial Day 3 — Check-in" node below the day-27 node. Klaviyo persists structural edits to live
+flows immediately — the API confirmed the reordered `next` chain. It was dragged back and the API
+re-read confirms the original order restored exactly:
+
+```
+107907408 (Day 1) → 107907493 (3d) → 107907514 (Day 3) → 107907598 (24d) → 107908224 (Day 27) → null
+```
+
+Wrong for ~3 minutes. The flow shows no sends in the last 30 days, so nothing was mis-sent. Pan
+the canvas from empty space only — anywhere over a node is a node drag.
 
 ---
 

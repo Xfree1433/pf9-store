@@ -1119,9 +1119,21 @@ def _handle_subscription_cancelled(sub):
         remove_lists = None
     else:
         properties['subscription_status'] = 'cancelled'
-        # Last app gone. Off both lifecycle lists: trial removal stops a day-27
-        # notice about a charge that will never happen, paid removal stops the
-        # day-30 and day-90 emails.
+        # Last app gone. Off both lifecycle lists.
+        #
+        # This stops them ENTERING the trial and paid flows. It does NOT, on its
+        # own, stop mail to someone already mid-flow — and the day-27 notice is
+        # exactly that case, since it sits behind a 24-day delay. Klaviyo only
+        # documents the "must still be a member at send time" guarantee for
+        # SEGMENTS; a list-triggered flow re-checks nothing unless the flow
+        # carries a profile filter, and PF9 Trial Onboarding (X2tesT) currently
+        # has profile_filter: null with additional_filters: null on all three
+        # messages. Verified in the UI 2026-08-02.
+        #
+        # So a trial cancelled on, say, day 10 still gets "your card is charged
+        # on [date]" on day 27. The fix is a flow-level profile filter in
+        # Klaviyo (subscription_status is not 'cancelled'), not more code here —
+        # see LIFECYCLE_STATUS.md, "Day-27 filter — 2026-08-02".
         remove_lists = [KLAVIYO_LIST_TRIAL, KLAVIYO_LIST_PAID]
 
     _klaviyo_sync(
