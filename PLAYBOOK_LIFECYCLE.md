@@ -6,12 +6,26 @@ This file is the spec — what each sequence should say and why. For which seque
 
 **Golden rule:** every email drives to exactly one action. If you can't name the action in five words, don't send it.
 
-**Segmentation triggers (must be wired in week 2):**
-- `demo_clicked` — fired when visitor clicks any `/demo` link
-- `checkout_started` — Stripe checkout session created
-- `subscription_active` — Stripe webhook confirms paid
-- `subscription_canceled` — cancellation event
-- `last_login` / `last_action` per app — to power activation sequences
+**Segmentation triggers.** State as of 2026-08-02 — these are not equivalent pieces of work, and
+the ones marked *needs code* cannot be turned on from the Klaviyo UI:
+
+- `subscription_active` — Stripe webhook confirms paid. **Wired.** `_handle_subscription_updated`
+  syncs the profile on trialing→active and moves it to the Paid list.
+- `subscription_canceled` — cancellation event. **Wired.** `_handle_subscription_cancelled` sets
+  `subscription_status` and pulls the profile off the trial list, so a cancelled trial can never
+  receive the day-27 charge notice.
+- `checkout_started` — Stripe checkout session created. **Not wired — needs code.**
+  `create_checkout_session()` touches neither Klaviyo nor HubSpot; the profile is first written at
+  `checkout.session.completed`, i.e. only after success. Abandonment is invisible by construction,
+  which is what blocks L2 entirely.
+- `demo_clicked` — visitor clicks any `/demo` link. **Not wired.** Note the form *submission* is
+  captured — `/demo-request` pushes to HubSpot — but that is a different, later event than the
+  click, and it reaches HubSpot only, never Klaviyo.
+- `last_login` / `last_action` per app — to power activation sequences. **Not wired, and larger
+  than it looks.** Requires every app in the fleet to report activity back to the store; there is
+  no such channel today.
+
+Build state for the sequences themselves lives in `LIFECYCLE_STATUS.md`.
 
 ---
 
