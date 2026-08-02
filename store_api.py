@@ -1028,6 +1028,22 @@ def _handle_checkout_completed(session):
         'app_price': price_display,
         'trial_end_date': _klaviyo_format_trial_end(trial_end_iso),
         'manage_subscription_url': f'{STORE_URL}/login.html',
+        # Starting a trial clears any earlier 'cancelled'. The property is
+        # account-level and nothing else resets it on the way back up:
+        # _handle_subscription_updated only writes 'active' at conversion, three
+        # weeks later, so without this a returning customer would sit at
+        # 'cancelled' through their entire second trial.
+        #
+        # This does NOT currently rescue their welcome email — X2tesT is set to
+        # "No re-entry" (verified 2026-08-02: reentry_criteria absent from the
+        # flow definition), so a returning customer never re-enters that flow at
+        # all and the day-27 filter never gets to judge them. The reason to
+        # write it anyway is that 'cancelled' on someone who is actively
+        # trialing is simply false, and the day-27 filter has now made this
+        # property load-bearing: any flow or segment keyed on it inherits the
+        # lie, and enabling re-entry later would turn it into a silent
+        # suppression of the whole onboarding sequence.
+        'subscription_status': 'trialing',
     }
     # Cross-sell target is a pure function of the product, so set it now rather
     # than waiting for conversion. Costs nothing, and means the month-3 email
@@ -1126,14 +1142,18 @@ def _handle_subscription_cancelled(sub):
         # exactly that case, since it sits behind a 24-day delay. Klaviyo only
         # documents the "must still be a member at send time" guarantee for
         # SEGMENTS; a list-triggered flow re-checks nothing unless the flow
-        # carries a profile filter, and PF9 Trial Onboarding (X2tesT) currently
-        # has profile_filter: null with additional_filters: null on all three
-        # messages. Verified in the UI 2026-08-02.
+        # carries a profile filter.
         #
-        # So a trial cancelled on, say, day 10 still gets "your card is charged
-        # on [date]" on day 27. The fix is a flow-level profile filter in
-        # Klaviyo (subscription_status is not 'cancelled'), not more code here —
-        # see LIFECYCLE_STATUS.md, "Day-27 filter — 2026-08-02".
+        # So a trial cancelled on day 10 used to still get "your card is charged
+        # on [date]" on day 27. The fix is NOT more code here: it is the
+        # flow-level profile filter added to PF9 Trial Onboarding (X2tesT) on
+        # 2026-08-02, which reads
+        #     subscription_status not-equals 'cancelled' OR subscription_status not-set
+        # (one condition_group, so OR). That filter is what makes the
+        # subscription_status write above load-bearing — it is the only thing
+        # the flow inspects to decide whether to keep sending, so changing that
+        # value's spelling here silently disarms the guard.
+        # See LIFECYCLE_STATUS.md, "Day-27 filter — 2026-08-02".
         remove_lists = [KLAVIYO_LIST_TRIAL, KLAVIYO_LIST_PAID]
 
     _klaviyo_sync(

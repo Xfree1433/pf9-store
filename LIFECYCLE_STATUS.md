@@ -3,6 +3,10 @@
 **Last verified: 2026-08-02** against Klaviyo (live API), `store_api.py` @ `12e1eef` (the build
 running in production since the 17:49 UTC restart), and the production DB on xfree143.
 
+⚠️ **Local `store_api.py` is now one commit AHEAD of production.** The `subscription_status:
+'trialing'` write on the trial-start path is committed but not deployed — it needs interactive sudo
+on xfree143. The Klaviyo-side day-27 filter *is* live. See "Day-27 filter — 2026-08-02".
+
 `PLAYBOOK_LIFECYCLE.md` is the *spec* — what the sequences should say and why. It deliberately
 carries no implementation state, because a spec that also tracks build status stops being
 readable as either. This file is the other half: for each specced sequence, what exists in
@@ -55,9 +59,10 @@ claim in `store_api.py`'s header comment that Klaviyo — not the app — owns t
 deliberately has no day-27 sender; `_send_trial_ending_email` was removed precisely so the two
 could not both fire.
 
-⚠️ **This flow has no filter of any kind.** `profile_filter: null`, and `additional_filters: null`
-on all three messages. A cancelled trial still gets the day-27 charge notice — see
-"Day-27 filter — 2026-08-02".
+**Filtering:** as of 2026-08-02 this flow carries a `profile_filter` that drops anyone whose
+`subscription_status` is `cancelled`, so a cancelled trial no longer receives the day-27 charge
+notice. `additional_filters` remains `null` on all three messages — the guard is flow-level by
+design, so it covers any message added later. See "Day-27 filter — 2026-08-02".
 
 ### `VuD82q` — PF9 Paid Onboarding · live · trigger: Added to List
 
@@ -77,7 +82,7 @@ Since 2026-08-02 it sits behind a conditional split on `app_count` — see "L5 �
 |---|---|---|---|
 | L1 | Video viewer, no subscribe | **No flow** | Needs a `video_play` event. Nothing in `store_api.py` emits one; no flow exists to consume it. |
 | L2 | Cart abandon | **Events shipped, flow not built** | `create_checkout_session()` now emits `Started Checkout` and conversion emits `Placed Order`. **Deployed 2026-08-02** — the events now reach Klaviyo. The flow itself is still missing, and the metrics do not exist in Klaviyo until the first real event fires. See "L2 — half-closed 2026-08-02". |
-| L3 | New subscriber onboarding | **Partial + one live defect** | Trial flow (3 emails @ 0/3/27) + Paid flow both live. Spec says 4 emails over 14 days; actual trial cadence is 0/3/27 — unresolved. **Separately: the trial flow has no filters, so a cancelled trial still gets the day-27 charge notice.** See "Day-27 filter — 2026-08-02". |
+| L3 | New subscriber onboarding | **Partial; day-27 defect closed** | Trial flow (3 emails @ 0/3/27) + Paid flow both live. Spec says 4 emails over 14 days; actual trial cadence is 0/3/27 — still unresolved. **The day-27 defect is fixed:** a profile filter on `X2tesT` now drops cancelled trials before the charge notice. See "Day-27 filter — 2026-08-02". |
 | L4 | Month-1 success | **Live** | Day-30 email in the Paid flow. Whether its content matches the spec's testimonial ask was NOT checked. |
 | L5 | Month-3 expansion | **Live + conditional** | Day-90 email in the Paid flow, gated on `app_count` since 2026-08-02. See below. |
 | L6 | Churn-save | **Trigger shipped, flow not built** | Cancel now emits `Cancelled Subscription`. L6-E1 (the 24h email) is buildable once that's deployed. The L6 *intercept page* is frontend code and is not started. |
@@ -95,7 +100,7 @@ its comment claimed this "stops a day-27 notice about a charge that will never h
 not. Removal stops them *entering* the flow. It does not pull them out of one they are already
 in — and day 27 sits behind a 24-day delay, so anyone who cancels after day 3 is already in it.
 
-### What was checked
+### What was checked (state *before* the fix — kept as the evidence for the finding)
 
 | Where | What it says |
 |---|---|
@@ -126,22 +131,62 @@ Relying on undocumented behaviour is a bad trade here. The failure mode is a cus
 their card is about to be charged after they cancelled — the one email where being wrong costs a
 support ticket and trust, not a click.
 
-### The fix (UI only, not shipped — needs a decision)
+### The fix — APPLIED 2026-08-02 18:02 UTC
 
-Add a **flow-level profile filter** on `X2tesT`:
+A **flow-level profile filter** now sits on `X2tesT`. Flow-level, not per-message, so it also
+covers anything added to this flow later. As stored:
+
+```json
+"profile_filter": {"condition_groups": [{"conditions": [
+  {"property": "properties['subscription_status']",
+   "filter": {"type": "string",    "operator": "not-equals", "value": "cancelled"}},
+  {"property": "properties['subscription_status']",
+   "filter": {"type": "existence", "operator": "not-set"}}
+]}]}
+```
+
+Both conditions live in **one** `condition_group`, which is Klaviyo's OR. Reads as: *not cancelled,
+**or** never set.*
+
+**Why the OR matters.** The obvious one-line filter — `subscription_status is not equal to
+cancelled` — is a trap. Klaviyo's handling of a *missing* property under a negative operator is not
+documented, and every profile created before today lacks the property entirely: a custom property
+does not exist in the account, or in the flow-editor's Dimension picker, until something writes it.
+Had "missing" evaluated as *fails*, the filter would have silently suppressed the entire trial
+sequence for every pre-existing profile — trading a wrong email for no emails at all. The
+`is not set` branch removes the guess.
+
+**Verified after saving**, via `get_flow`, that the filter persisted *and* that the action chain was
+not disturbed — the incident below is why this is checked rather than assumed:
 
 ```
-subscription_status  is not equal to  cancelled
+107907408 (Day 1) → 107907493 (3d) → 107907514 (Day 3) → 107907598 (24d) → 107908224 (Day 27) → null
 ```
 
-Flow-level, not per-message, so it also covers anything added to this flow later. `store_api.py`
-already writes `subscription_status = 'cancelled'` on the last-app cancel path, so the data side
-needs no change — but note it is only written when the customer's **last** app goes, which is
-correct here: someone cancelling one app of two is still trialing the other and should still get
-its notice.
+All five actions still report `updated: 17:41:48` while the flow moved to `18:02:30`, so the save
+touched the filter and nothing else.
 
-**Not applied.** Changing a live flow was out of scope for a check, and it is worth deciding
-alongside the L6/L7 build rather than as a one-off.
+**Data side.** `store_api.py` already wrote `subscription_status = 'cancelled'` on the last-app
+cancel path — only when the customer's **last** app goes, which is correct here: someone cancelling
+one app of two is still trialing the other and should still get its notice. What was missing is that
+nothing ever wrote the property back *up*. `_handle_subscription_updated` only writes `'active'` at
+conversion, three weeks later, so a returning customer would sit at `'cancelled'` through their
+entire second trial. The trial-start sync now writes `subscription_status: 'trialing'`.
+
+To be precise about what that reset does and does not buy: it does **not** currently rescue a
+returning customer's welcome email, because `X2tesT` is set to **No re-entry** (confirmed 2026-08-02
+— `reentry_criteria` is absent from the flow definition), so they never re-enter the flow for the
+filter to judge them. It is worth writing anyway because `'cancelled'` on someone who is actively
+trialing is simply false, and the filter has now made this property load-bearing: any flow or
+segment keyed on it inherits the lie, and turning re-entry on later would convert it into a silent
+suppression of the whole onboarding sequence.
+
+⚠️ **The code half is committed but NOT deployed.** The filter is live in Klaviyo now; the
+`subscription_status: 'trialing'` write needs a deploy (interactive sudo on xfree143). Until then a
+returning customer's profile still carries `'cancelled'` through their second trial.
+
+**Blast radius at the time of the fix:** the Klaviyo account holds 3 profiles, all test data. The
+defect was real, and is now closed, but it had reached no real customer.
 
 ### Incident note
 

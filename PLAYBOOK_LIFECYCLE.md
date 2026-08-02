@@ -134,12 +134,17 @@ every E2 recipient.
 
 ## L3 — New subscriber onboarding
 
-> ⚠️ **The live trial flow needs a filter it does not have.** `X2tesT` carries no profile filter
-> and no per-message filters, so cancelling a trial does not stop the day-27 pre-charge notice —
-> removal from the trial list prevents *entry*, and by day 27 the profile is already inside a
-> 24-day delay. Anyone editing this sequence should add a flow-level profile filter
-> `subscription_status is not equal to cancelled` before adding messages. Detail and evidence in
-> `LIFECYCLE_STATUS.md`, "Day-27 filter — 2026-08-02".
+> ⚠️ **`X2tesT` carries a flow-level profile filter — do not remove it.** Added 2026-08-02:
+> `subscription_status not-equals 'cancelled'` **OR** `subscription_status is not set`.
+>
+> It exists because removal from the trial list prevents *entry* only. By day 27 a cancelled
+> profile is already inside a 24-day delay, so without this filter it still receives "your card is
+> charged on [date]" — which reads as a billing error to someone who has already cancelled.
+>
+> The `is not set` half is not redundant: a Klaviyo custom property does not exist until something
+> writes it, and a bare `not-equals` risks excluding every profile that lacks the property
+> entirely. Keep both halves in **one** condition group (that is Klaviyo's OR). Detail and evidence
+> in `LIFECYCLE_STATUS.md`, "Day-27 filter — 2026-08-02".
 
 ### L3-E1 — Immediately on `subscription_active`
 

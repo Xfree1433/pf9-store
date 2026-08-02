@@ -29,7 +29,7 @@ STORE_API=$STORE_DIR/store_api.py
 VENV=$STORE_DIR/venv
 UNIT=pf9-store-api.service
 PORT=5011
-EXPECT_MD5=f0e2b689c0249214803d6b2a81770809   # 12e1eef — checkout + cancellation Klaviyo events
+EXPECT_MD5=01e45e4187644ae68e9ce68d176310cd   # trial start writes subscription_status=trialing
 BRIDGR_ENV=/opt/bridgr/.env
 OVERRIDE_ENV=$STORE_DIR/pf9-store-api.env
 
@@ -73,11 +73,16 @@ echo "  new MainPID=$NEW_PID"
   echo "  !! service did not come back. journalctl -u $UNIT -n 40"; exit 1; }
 
 say "Verify: confirm the new code is what got loaded"
+# The trialing marker is this build's distinguishing feature. It pairs with the
+# Klaviyo-side day-27 profile filter (subscription_status not-equals cancelled
+# OR not-set): without this write, a returning customer stays labelled
+# 'cancelled' through their whole second trial.
 if grep -q KLAVIYO_API_KEY "$STORE_API" \
    && grep -q _owned_app_properties "$STORE_API" \
    && grep -q _klaviyo_event "$STORE_API" \
+   && grep -q "'subscription_status': 'trialing'" "$STORE_API" \
    && ! grep -q _send_trial_ending_email "$STORE_API"; then
-  echo "  OK — Klaviyo sync + event emitter present, dup day-27 emailer gone"
+  echo "  OK — Klaviyo sync + event emitter + trialing reset present, dup day-27 emailer gone"
 else
   echo "  !! loaded file is not the expected build"; exit 1
 fi
@@ -108,5 +113,7 @@ say "bridgr.service untouched"
 systemctl is-active bridgr.service || true
 
 echo
-echo "Rollback if needed:  cd $STORE_DIR && git checkout 1336fad -- store_api.py && systemctl restart $UNIT"
-echo "  (1336fad = the build running before the checkout/cancellation Klaviyo events went in)"
+echo "Rollback if needed:  cd $STORE_DIR && git checkout 12e1eef -- store_api.py && systemctl restart $UNIT"
+echo "  (12e1eef = the build that was live before the subscription_status=trialing write."
+echo "   Rolling back also means EXPECT_MD5 above no longer matches, so this script will"
+echo "   refuse to run again until you restore the old sum f0e2b689c0249214803d6b2a81770809.)"
