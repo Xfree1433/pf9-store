@@ -1,5 +1,22 @@
 # Google Ads — Property Test Launch Runbook
 
+> # 🛑 DEAD — do not execute (2026-08-02)
+>
+> **The Google Ads account was cancelled on 2026-08-02**, so this runbook has no account to
+> run against. Account 731-567-9505 was suspended (Public Figure Impersonation — a
+> mis-categorized automated flag), appealed on 2026-07-26, and cancelled when the appeal went
+> unanswered past its ~5-business-day window.
+>
+> The $15/day property test described below **never launched**. See
+> `PLAYBOOK_GOOGLE_ADS.md` for the full context; it is dead for the same reason.
+>
+> One thing here is still worth reading if paid search is ever revisited on any platform:
+> **Step 0**, the onboarding auto-create trap that cost ~$4 of accidental spend on
+> 2026-06-20. That is a Google dark pattern, not a one-off, and it will fire again on any
+> new account.
+
+---
+
 **Your decision (2026-06-03):** start paid with a **test budget (~$300–500/mo)**, **property vertical first.**
 
 This is the click-by-click execution doc for exactly that. It assumes nothing about prior Google Ads experience. `PLAYBOOK_GOOGLE_ADS.md` remains the strategy source of truth — this runbook just sequences the mechanical steps for the property-only test and points back to it for the deep parts.

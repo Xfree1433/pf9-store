@@ -1,5 +1,27 @@
 # PF9 Google Ads Playbook
 
+> # 🛑 DEAD — do not execute (2026-08-02)
+>
+> **The Google Ads account was cancelled on 2026-08-02.** Account 731-567-9505 was suspended
+> under "Unacceptable Business Practices: Public Figure Impersonation" — a mis-categorized
+> automated suspension, per the 2026-07-26 investigation (the flagged ad's 10 assets and the
+> landing page were both clean). An appeal was filed 2026-07-26; Google's ~5-business-day
+> reply window passed without resolution, and the account was cancelled rather than wait
+> longer.
+>
+> **Google Ads is no longer a PF9 channel.** Nothing below is actionable. It is kept as a
+> record of the strategy and as a starting point if paid search is ever revisited on a new
+> account — but reopening that decision is a founder call, not a task in this file.
+>
+> Also dead as a consequence: `PLAYBOOK_GOOGLE_ADS_PROPERTY_TEST.md` (the click-by-click
+> runbook for this) and the Google Ads Editor CSV bundle in `tools/google-ads/`.
+>
+> Paid acquisition currently has **no live channel**. `PLAYBOOK_REDDIT_ADS.md` is the only
+> remaining paid path on file and it is not started — there is no `rdt(` pixel on the
+> storefront.
+
+---
+
 **Goal:** drive high-intent buyers to the storefront via paid search on competitor-comparison terms. Funnel them through the comparison pages → calculators or videos → Stripe.
 
 **Why now:** the 6 comparison pages (`/comparisons/`) and 2 calculators are tailor-made landing destinations for buyers actively shopping. Without paid traffic these pages take months to rank organically. Paid skips the wait.

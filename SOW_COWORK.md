@@ -1,5 +1,33 @@
 # Statement of Work — Cowork × Plainspoken Foundry Nine
 
+> ## ⚠️ Status: unexecuted draft — never sent, never signed (noted 2026-08-02)
+>
+> **This SOW has no legal force.** It was drafted 2026-04-18 and every commercial term is
+> still an unfilled placeholder: `[DATE]`, `$[MONTHLY FEE]`, `$[SETUP FEE]`, `$[BONUS]`,
+> `[STATE]`, `[CITY]`, and both signature blocks are blank. §14's own "fields to fill before
+> sending" list is untouched — so this was never even sent to Cowork, let alone executed.
+>
+> **Consequences, since several sections read as live obligations:**
+>
+> - **No Effective Date means no clock.** The §8 term, the §4 week-numbered deliverable due
+>   dates, and the §7 "within 5 business days of Effective Date" obligations are all anchored
+>   to a date that does not exist. Nothing here is overdue, because nothing here ever started.
+> - **No agency is engaged.** Read every "Cowork will" as a proposal. The demand-gen work that
+>   has actually happened was done in-house.
+> - **§3.1's paid-media scope is dead on arrival.** Google Ads was cancelled 2026-08-02 after a
+>   mis-categorized suspension and an unanswered appeal (see `PLAYBOOK_GOOGLE_ADS.md`,
+>   marked dead); LinkedIn Ads were never started. There is no live paid channel to manage.
+> - **§5's money is fiction.** The $5,000/mo media ceiling, the $15,000 term cap and the
+>   "$30,000 total PF9 exposure" were never funded or approved. Actual lifetime paid spend is
+>   ~$4. Do not quote the $30k figure anywhere; `SALES_PLAN.md` §8 has the corrected picture.
+> - **§6's SLAs and §12's liability cap are unenforceable** — both are keyed to fees paid
+>   under this SOW, and none have been.
+>
+> Keep this as a template if the agency conversation is ever revived. Until then it is a
+> draft, not an agreement.
+
+---
+
 **SOW #:** PF9-COWORK-001
 **Effective date:** [DATE]
 **Term:** 90 days from Effective Date, auto-convertible to a 90-day renewal on mutual written consent
