@@ -1,11 +1,11 @@
 # Lifecycle Status — what is actually wired
 
-**Last verified: 2026-08-02** against Klaviyo (live API), `store_api.py` @ `12e1eef` (the build
-running in production since the 17:49 UTC restart), and the production DB on xfree143.
+**Last verified: 2026-08-02** against Klaviyo (live API), `store_api.py` @ `6f94c01` (the build
+running in production since the 18:19 UTC restart), and the production DB on xfree143.
 
-⚠️ **Local `store_api.py` is now one commit AHEAD of production.** The `subscription_status:
-'trialing'` write on the trial-start path is committed but not deployed — it needs interactive sudo
-on xfree143. The Klaviyo-side day-27 filter *is* live. See "Day-27 filter — 2026-08-02".
+Local, `origin/main`, and production are in sync. Both halves of the day-27 fix are live: the
+Klaviyo flow filter and the `subscription_status: 'trialing'` write. See "Day-27 filter —
+2026-08-02".
 
 `PLAYBOOK_LIFECYCLE.md` is the *spec* — what the sequences should say and why. It deliberately
 carries no implementation state, because a spec that also tracks build status stops being
@@ -181,9 +181,12 @@ trialing is simply false, and the filter has now made this property load-bearing
 segment keyed on it inherits the lie, and turning re-entry on later would convert it into a silent
 suppression of the whole onboarding sequence.
 
-⚠️ **The code half is committed but NOT deployed.** The filter is live in Klaviyo now; the
-`subscription_status: 'trialing'` write needs a deploy (interactive sudo on xfree143). Until then a
-returning customer's profile still carries `'cancelled'` through their second trial.
+**Deployed 2026-08-02 18:19 UTC** (`6f94c01`, MainPID 3799585). Both halves are now live. The
+restart was verified the only way that proves anything with gunicorn — the new process start
+(18:19:12) is later than `store_api.py`'s mtime (18:08:02), so the workers actually imported this
+build rather than continuing to serve the previous one behind a 200 on `/health`. The deploy also
+confirmed `KLAVIYO_API_KEY` is present, so the `subscription_status` writes genuinely reach
+Klaviyo — without that key the filter would be judging a property nothing ever sets.
 
 **Blast radius at the time of the fix:** the Klaviyo account holds 3 profiles, all test data. The
 defect was real, and is now closed, but it had reached no real customer.
