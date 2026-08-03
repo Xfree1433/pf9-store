@@ -1,7 +1,16 @@
 # Lifecycle Status — what is actually wired
 
-**Last verified: 2026-08-02** against Klaviyo (live API), `store_api.py` @ `6f94c01` (the build
-running in production since the 18:19 UTC restart), and the production DB on xfree143.
+**Last verified: 2026-08-03** against Klaviyo (live API), `store_api.py` @ `6f94c01` (the build
+running in production since the 2026-08-02 18:19 UTC restart), and the production DB on xfree143.
+
+> ## ⛔ Read first — the whole lifecycle programme delivers nothing today (2026-08-03)
+>
+> No code path grants marketing consent, so every profile the storefront creates is
+> `NEVER_SUBSCRIBED`. Three flows are in Draft and two are live, and **none of the five can deliver
+> to a real customer.** The sharp end is the **day-27 pre-charge notice**: it is flagged
+> `transactional: false`, and `store_api.py` deleted its own sender on the assumption Klaviyo owned
+> it — so a trial converts to a charge with no warning email. That is a billing exposure, and it is
+> invisible because the flow reports healthy. See **"Consent — audited 2026-08-03"**.
 
 Local, `origin/main`, and production are in sync. Both halves of the day-27 fix are live: the
 Klaviyo flow filter and the `subscription_status: 'trialing'` write. See "Day-27 filter —
@@ -12,7 +21,7 @@ with Events + Lists + Profiles access replaced the old Lists+Profiles-only one; 
 allow editing an existing key's scopes, so the old key was replaced rather than amended. All three
 metrics — `Started Checkout`, `Placed Order`, `Cancelled Subscription` — now exist in the account
 and are selectable as flow triggers. **L2, L6 and L7 are no longer blocked on scope, and all three
-have since been built** — each is in Draft, gated only on the marketing-consent question. Scope
+have since been built** — each is in Draft, gated on the marketing-consent question. Scope
 probe after the swap:
 `profiles` / `metrics` / `lists` / `flows` all **200**, `POST /api/events/` **202**.
 
@@ -57,6 +66,10 @@ in the env — the code defaults are what run. Both default list IDs were confir
 live; three (`RWvZ2m` L2, `VgquRn` L6, `RZQKa2` L7) were built on 2026-08-02 and are all in Draft,
 each documented in its own section below.
 
+⚠️ **"Live" here means the flow is switched on, not that it delivers.** All six messages across the
+two live flows are `transactional: false`, and no code path grants marketing consent, so a real
+customer would enter these flows and be skipped at every send. See "Consent — audited 2026-08-03".
+
 ### `X2tesT` — PF9 Trial Onboarding · live · trigger: Added to List
 
 Order confirmed by walking each action's explicit `next` pointer, not inferred from ID order:
@@ -98,6 +111,106 @@ Since 2026-08-02 it sits behind a conditional split on `app_count` — see "L5 �
 | L5 | Month-3 expansion | **Live + conditional** | Day-90 email in the Paid flow, gated on `app_count` since 2026-08-02. See below. |
 | L6 | Churn-save | **Half built 2026-08-02 — L6-E1 in Draft; L6-Page not started** | Flow `VgquRn` "PF9 Churn Save": `Cancelled Subscription` trigger → 1 day → L6-E1. Send-time `Placed Order` = 0 filter, Smart Sending off. Structure verified against `GET /api/flows/VgquRn?include=flow-actions`. The L6 *intercept page* is frontend code and is still not started — it is also what blocks L7-E1. **Turning the flow on is gated on the marketing-consent question below** — see "L6 — built 2026-08-02". |
 | L7 | Win-back | **Built 2026-08-02 — in Draft, not live** | Flow `RZQKa2` "PF9 Win-back": `Cancelled Subscription` trigger with a `remaining_app_count = 0` **trigger filter** → 30 days → L7-E1 → 14 days → L7-E2. Both emails carry a send-time `Placed Order` = 0 filter and have Smart Sending off. L7-E1's spec copy was unbuildable and was **rewritten generically** — see "L7 — built 2026-08-02". Structure verified against `GET /api/flows/RZQKa2`. **Turning it on is gated on the marketing-consent question below.** |
+
+---
+
+## Consent — audited 2026-08-03
+
+**Finding: nothing in the codebase ever grants marketing consent, so every profile the storefront
+creates lands `NEVER_SUBSCRIBED`. This does not only gate the three Draft flows — it means the two
+*live* flows have no consented audience either, including the day-27 pre-charge notice.**
+
+This supersedes the softer "check their consent state" notes elsewhere in this file. The question is
+not whether individual profiles happen to be consented; it is that no code path can produce one.
+
+### What was checked
+
+`GET /api/profiles` with `additional-fields[profile]=subscriptions`, full account, unfiltered —
+**four profiles, all internal:**
+
+| Profile | Consent | Deliverable | Origin |
+|---|---|---|---|
+| `xfree143@gmail.com` | SUBSCRIBED | yes | 2026-05-30, `subscription_status: cancelled` |
+| `mark.pierce@outlook.com` | SUBSCRIBED | yes | 2026-05-30, `trialing` |
+| `test@example.com` | SUBSCRIBED | **no** — `USER_SUPPRESSED` | 2026-05-30, reserved domain |
+| `metric-bootstrap@plainspokenfoundrynine.com` | **NEVER_SUBSCRIBED** | no marketing | 2026-08-02, metric bootstrapper |
+
+There is no real customer population, so this cannot be answered by sampling. It has to be answered
+from the code — and the one profile created purely by current code is the unconsented one.
+
+### Why no code path grants consent
+
+Both Klaviyo writers in `store_api.py` avoid it, one deliberately and one incidentally:
+
+- **`_klaviyo_event`** — deliberate, and documented in its own docstring: *"The event API upserts the
+  profile as a side effect… It does NOT grant marketing consent, which is deliberate — that is a
+  decision for whoever configures the flow."*
+- **`_klaviyo_sync`** — incidental. It upserts via `profile-import`, then adds to a list via
+  `POST /lists/{id}/relationships/profiles/`. That is Klaviyo's *add-without-subscribing* path. Only
+  the subscription-create job sets consent, and it is never called.
+
+A repo-wide grep for `subscription-create`, `subscribe_profile` and `consent` across `*.py` / `*.sh`
+returns **exactly one hit** — the docstring above saying it does not happen.
+
+**The lists do not rescue it.** `Trial Users — Active` (`RKeAnZ`) and `Paid Subscribers` (`SfBnvH`)
+are both `single_opt_in`, but that governs what happens when someone *subscribes*. It does not
+retroactively subscribe a profile that was only added to the list.
+
+**The three SUBSCRIBED profiles are therefore misleading.** Their `$consent_timestamp` lands seconds
+after profile creation on 2026-05-30, method `API` — hand-seeded when the account was set up, by
+something that is not in this repo. They are not evidence that the product produces consented
+profiles, and reading them as such is how this went unnoticed.
+
+### The live flows are exposed too — all six messages are `transactional: false`
+
+Read back from `GET /api/flows/{id}?additional-fields[flow]=definition`:
+
+| Flow | Message | `transactional` | Smart Sending |
+|---|---|---|---|
+| `X2tesT` Trial Onboarding | Day 1 — Welcome | false | on |
+| `X2tesT` Trial Onboarding | Day 3 — Check-in | false | on |
+| `X2tesT` Trial Onboarding | **Day 27 — Pre-Charge Notice** | **false** | off |
+| `VuD82q` Paid Onboarding | Month 1 — Check-in | false | on |
+| `VuD82q` Paid Onboarding | Month 3 — Expansion | false | on |
+
+Four of those are marketing and correctly flagged. **The day-27 notice is not marketing** — its
+preview text is "Your card is charged on that date. Cancel any time before then." It is a billing
+notification carrying a marketing flag.
+
+### ⛔ The day-27 notice has no fallback
+
+`store_api.py` line 87 states it: *"Klaviyo owns the day-27 pre-charge notice, which is why
+`_handle_trial_will_end` no longer emails directly."* The in-app sender was removed on purpose so the
+two could not double-fire. So for a real customer under current code:
+
+1. Trial starts → `_klaviyo_sync` adds them to `RKeAnZ` without consent → `NEVER_SUBSCRIBED`
+2. Day 27 → flow is live, profile filter passes, Smart Sending already off on this message
+3. Klaviyo skips the send for lack of consent
+4. Nothing else sends — **the card is charged with no warning**
+
+That is a billing-surprise and chargeback exposure, not a missed marketing touch. It is also the
+hardest kind to notice, because the flow reports as live and healthy throughout. Note this is a
+*second, independent* way the day-27 email fails, stacked on the cancelled-trial defect recorded in
+"Day-27 filter — 2026-08-02" below. That one was fixed; this one is open.
+
+### Two fixes, deliberately kept separate
+
+1. **Flag day-27 `transactional: true`** — one setting in the Klaviyo UI, no code. Defensible on the
+   merits: a pre-charge billing notice genuinely is transactional, which is the same reasoning that
+   already turned Smart Sending off on that message alone. Closes the billing exposure independently
+   of any consent work.
+2. **Add a consent step at checkout** — the real fix, and a code change. Unblocks L2/L6/L7 and makes
+   the other four live emails legitimate rather than dormant.
+
+**Do not generalise fix 1.** Flagging the win-back, expansion or cart-abandon emails transactional to
+route around consent is the abuse pattern that flag exists to prevent. It applies to the pre-charge
+notice and nothing else in this file.
+
+**Not verified:** no live send test was run, so "Klaviyo skips non-consented profiles" is Klaviyo's
+documented behaviour applied to observed config, not something watched happening. A single real send
+to a `NEVER_SUBSCRIBED` profile would settle it. Note also that `metric-bootstrap@` reports
+`can_receive_email_marketing: true` *while* `NEVER_SUBSCRIBED` — that field tracks suppression and
+deliverability, not consent, and is not evidence the send would land.
 
 ---
 
@@ -274,8 +387,9 @@ unavailable. Building it later would be an upgrade to a shipped email, not an un
 **The `Cancelled Subscription` metric now exists** (created 2026-08-02 by the bootstrapper, after
 the key scope was fixed), so the chicken-and-egg that blocked both L6 and L7 is gone.
 
-**Consent.** A churned customer is still a contactable profile, but check their consent state before
-assuming L7 will deliver; Klaviyo silently skips non-consented profiles.
+**Consent.** Audited 2026-08-03 and it is worse than "check before assuming": no code path grants
+consent at all, so a churned customer is addressable but not mailable. See "Consent — audited
+2026-08-03" above.
 
 ---
 
@@ -517,6 +631,10 @@ a consent call, not a code call. Klaviyo will skip flow sends to a non-consented
 message is configured to allow it, so this has to be settled *before* the flow goes live or L2 will
 appear to work and silently deliver nothing.
 
+The 2026-08-03 audit showed this is not specific to L2 or to `_klaviyo_event`: `_klaviyo_sync` does
+not grant consent either, so the two live flows are in the same position. See "Consent — audited
+2026-08-03".
+
 ### Verifying after deploy
 
 ```bash
@@ -659,6 +777,10 @@ Listed so they are not mistaken for "checked and fine":
   never been measured.
 - **HubSpot list IDs** 12/13/14 — env vars are set but the values were not confirmed against
   HubSpot.
+- **That Klaviyo actually skips a non-consented profile.** The 2026-08-03 consent finding rests on
+  Klaviyo's documented behaviour applied to observed config, not on a send watched failing. No live
+  send test was run. A single real send to a `NEVER_SUBSCRIBED` profile would settle it, and should
+  be done before any fix is judged to have worked.
 
 ---
 
