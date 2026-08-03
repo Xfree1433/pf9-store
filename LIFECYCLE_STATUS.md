@@ -93,7 +93,7 @@ Since 2026-08-02 it sits behind a conditional split on `app_count` — see "L5 �
 | L3 | New subscriber onboarding | **Partial; day-27 defect closed** | Trial flow (3 emails @ 0/3/27) + Paid flow both live. Spec says 4 emails over 14 days; actual trial cadence is 0/3/27 — still unresolved. **The day-27 defect is fixed:** a profile filter on `X2tesT` now drops cancelled trials before the charge notice. See "Day-27 filter — 2026-08-02". |
 | L4 | Month-1 success | **Live** | Day-30 email in the Paid flow. Whether its content matches the spec's testimonial ask was NOT checked. |
 | L5 | Month-3 expansion | **Live + conditional** | Day-90 email in the Paid flow, gated on `app_count` since 2026-08-02. See below. |
-| L6 | Churn-save | **Not built — unblocked, flow work remains** | Cancel emits `Cancelled Subscription`, deployed, and the metric now exists (scope fixed 2026-08-02), so L6-E1 (the 24h email) is buildable. The L6 *intercept page* is frontend code and is still not started. |
+| L6 | Churn-save | **Half built 2026-08-02 — L6-E1 in Draft; L6-Page not started** | Flow `VgquRn` "PF9 Churn Save": `Cancelled Subscription` trigger → 1 day → L6-E1. Send-time `Placed Order` = 0 filter, Smart Sending off. Structure verified against `GET /api/flows/VgquRn?include=flow-actions`. The L6 *intercept page* is frontend code and is still not started — it is also what blocks L7-E1. **Turning the flow on is gated on the marketing-consent question below** — see "L6 — built 2026-08-02". |
 | L7 | Win-back | **Not built — L7-E2 unblocked, L7-E1 still blocked on data** | Same trigger as L6, and the scope block is cleared. L7-E2 is now buildable, but **L7-E1 is not** — its copy merges `{{reason}}` and `{{change}}`, and nothing collects either. That is a data gap, not a permissions one. See "L6 / L7 — 2026-08-02". |
 
 ---
@@ -271,6 +271,57 @@ data above, which no amount of Klaviyo configuration solves.
 
 **Consent.** A churned customer is still a contactable profile, but check their consent state before
 assuming L7 will deliver; Klaviyo silently skips non-consented profiles.
+
+---
+
+## L6 — built 2026-08-02
+
+**Only half of L6 was built.** The spec has two parts: L6-Page (a pre-cancel intercept asking why)
+and L6-E1 (the 24-hour follow-up email). L6-E1 is built and in **Draft**. L6-Page is storefront
+frontend code, does not exist, and is not a Klaviyo artifact — see "What is still blocked" above,
+where it is also the thing that keeps L7-E1 unbuildable.
+
+**Flow `VgquRn` — "PF9 Churn Save".** Read back from
+`GET /api/flows/VgquRn?additional-fields[flow]=definition&include=flow-actions`, not from the canvas:
+
+| Node | Action id | Value |
+|---|---|---|
+| Trigger | metric `REutQc` | `Cancelled Subscription`. Re-entry allowed. `trigger_filter: null`, `profile_filter: null`. |
+| Delay | `113496276` | `{unit: days, value: 1, timezone: profile}`, all seven weekdays |
+| Email | `113496376` | `L6-E1 - Churn save 24h`, message `SNHiyi`, template `WAn6mF` |
+
+Email: sender `PlainSpoken Foundry Nine <support@plainspokenfoundrynine.com>`, `reply_to_email: null`
+(Klaviyo routes replies to the from address — correct here, the email exists to get a reply),
+subject `closed your {{ event.app_name|default:'PF9' }} — honest question`,
+`smart_sending_enabled: false`, and an `additional_filters` condition on metric `XEMaYg`
+(`Placed Order`), `count equals 0`, timeframe `flow-start`.
+
+**Why the guard is a send-time filter, not a trigger filter** — same reasoning as L2: an entry-time
+"hasn't re-subscribed" test passes for everyone at t=0 and never re-evaluates. On the send-email
+action it is checked immediately before send, so someone who cancels and re-subscribes inside the
+24-hour window is dropped rather than mailed.
+
+**Smart Sending is deliberately off.** A cancellation follow-up suppressed because an unrelated
+lifecycle email went out ten hours earlier would silently lose the one message aimed at
+understanding why someone left.
+
+**`remaining_app_count` is deliberately NOT filtered on.** That property exists to keep win-back
+copy away from a still-paying customer, which is an **L7** requirement. L6-E1 asks "what would have
+made it worth keeping?" about one specific app, and since the multi-app defect fix `app_name` is
+accurate per-cancellation — so the question is correctly targeted even for a customer who still pays
+for other apps. Adding the filter here would silence the most useful feedback in the funnel.
+
+**Body verified at the template level**, since the canvas cannot show this: `WAn6mF` contains
+`{{ person.first_name|default:'there' }}`, `{{ event.app_name|default:'PF9' }}`,
+`{{ event.reactivate_link }}` and `{% unsubscribe 'Unsubscribe' %}`, and carries no residue of the
+Trial Day 3 template it was cloned from. The template's auto-generated *name* still reads
+`2026-08-02 20:13 PF9 — Trial Day 3: Check-in` — cosmetic only; flow-message-scoped templates cannot
+be renamed via the API (PATCH `/api/templates/{id}` 404s where GET 200s), and the flow *action* name
+is what appears in the editor.
+
+**Still to do before it can go live:** the marketing-consent question below — it gates L6 exactly as
+it gates L2. A churned customer who is not consented means the flow appears to run and delivers
+nothing. Turning the flow on is a founder decision and was deliberately left undone.
 
 ---
 
