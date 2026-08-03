@@ -5,16 +5,23 @@ running in production since the 2026-08-02 18:19 UTC restart), and the productio
 
 > ## ⛔ Read first — the whole lifecycle programme delivers nothing today (2026-08-03)
 >
-> No code path grants marketing consent, so every profile the storefront creates is
+> No code path grants marketing consent **in production**, so every profile the storefront creates is
 > `NEVER_SUBSCRIBED`. Three flows are in Draft and two are live, and **none of the five can deliver
 > to a real customer.** The sharp end is the **day-27 pre-charge notice**: it is flagged
 > `transactional: false`, and `store_api.py` deleted its own sender on the assumption Klaviyo owned
 > it — so a trial converts to a charge with no warning email. That is a billing exposure, and it is
 > invisible because the flow reports healthy. See **"Consent — audited 2026-08-03"**.
+>
+> **Status 2026-08-03:** a checkout consent step is now written and committed (`b93baa2`, `73e1fef`)
+> but **not pushed, not deployed, and inert even once deployed** — the Klaviyo key is missing the
+> `subscriptions:write` scope it needs. See **"Consent — fix built 2026-08-03"**. The day-27 exposure
+> is a *separate* fix and is still completely open: it needs `transactional: true` on that message,
+> and no amount of consent work closes it.
 
-Local, `origin/main`, and production are in sync. Both halves of the day-27 fix are live: the
-Klaviyo flow filter and the `subscription_status: 'trialing'` write. See "Day-27 filter —
-2026-08-02".
+⚠️ **Local is 2 commits ahead of `origin/main` and production** as of 2026-08-03 (`b93baa2`,
+`73e1fef` — the consent change). `origin/main` and production remain in sync with each other at
+`13a60bf`. Both halves of the day-27 *filter* fix are live: the Klaviyo flow filter and the
+`subscription_status: 'trialing'` write. See "Day-27 filter — 2026-08-02".
 
 ✅ **The `events:write` blocker is CLEARED (2026-08-02, later the same day).** A new private key
 with Events + Lists + Profiles access replaced the old Lists+Profiles-only one; Klaviyo does not
@@ -53,10 +60,16 @@ Cowork picks in week 2)"*. That is stale. The decision was made and built:
 **active**, not dormant. `KLAVIYO_LIST_TRIAL` / `KLAVIYO_LIST_PAID` / `KLAVIYO_REVISION` are NOT
 in the env — the code defaults are what run. Both default list IDs were confirmed real:
 
-| Constant | Default in code | Klaviyo list name |
-|---|---|---|
-| `KLAVIYO_LIST_TRIAL` | `RKeAnZ` | Trial Users — Active |
-| `KLAVIYO_LIST_PAID` | `SfBnvH` | Paid Subscribers |
+| Constant | Default in code | Klaviyo list name | Opt-in | Triggers a flow? |
+|---|---|---|---|---|
+| `KLAVIYO_LIST_TRIAL` | `RKeAnZ` | Trial Users — Active | single | **yes — X2tesT, live** |
+| `KLAVIYO_LIST_PAID` | `SfBnvH` | Paid Subscribers | single | **yes — VuD82q, live** |
+| `KLAVIYO_LIST_CONSENT` | `W7gYXU` | Marketing Consent — Storefront | single | no — deliberately |
+
+The last column is not trivia. Adding a profile to either of the first two **starts a live onboarding
+flow**, which is why the consent grant added 2026-08-03 targets a third list that triggers nothing.
+`W7gYXU` was created 2026-08-03 with `single_opt_in` set explicitly — the account default is double,
+and inheriting it would have made consent pending-confirmation instead of granted.
 
 ---
 
@@ -200,7 +213,8 @@ hardest kind to notice, because the flow reports as live and healthy throughout.
    already turned Smart Sending off on that message alone. Closes the billing exposure independently
    of any consent work.
 2. **Add a consent step at checkout** — the real fix, and a code change. Unblocks L2/L6/L7 and makes
-   the other four live emails legitimate rather than dormant.
+   the other four live emails legitimate rather than dormant. **Built 2026-08-03 — see the next
+   section. Committed, not yet deployed, and inert until the API key gains a scope it lacks today.**
 
 **Do not generalise fix 1.** Flagging the win-back, expansion or cart-abandon emails transactional to
 route around consent is the abuse pattern that flag exists to prevent. It applies to the pre-charge
@@ -211,6 +225,102 @@ documented behaviour applied to observed config, not something watched happening
 to a `NEVER_SUBSCRIBED` profile would settle it. Note also that `metric-bootstrap@` reports
 `can_receive_email_marketing: true` *while* `NEVER_SUBSCRIBED` — that field tracks suppression and
 deliverability, not consent, and is not evidence the send would land.
+
+---
+
+## Consent — fix built 2026-08-03 (committed, NOT deployed, currently inert)
+
+Fix 2 above. Two commits on `main`, **neither pushed at time of writing**, and the code is a
+deliberate no-op until two account-side things are done.
+
+| | |
+|---|---|
+| `b93baa2` | API side — `_klaviyo_subscribe`, `KLAVIYO_LIST_CONSENT`, restart-script guards |
+| `73e1fef` | Storefront side — the checkbox in the subscribe modal |
+
+### What the code does
+
+- **`_klaviyo_subscribe(email, list_id)`** — `POST /api/profile-subscription-bulk-create-jobs/`,
+  setting `subscriptions.email.marketing.consent = SUBSCRIBED`, tagged
+  `custom_source: 'Storefront checkout'` so the consent record carries its own provenance.
+- **`create_checkout_session`** reads `marketing_consent` from the request body. It is *not* in the
+  required-field check — a tick you cannot check out without is not consent.
+- The call sits **after `_klaviyo_event` and outside the `try`**, per the existing comment at the
+  top of that region, so a Klaviyo failure can never be reported to the customer as
+  "Failed to create checkout session".
+- **Checkbox is unticked by default and not `required`.** A pre-ticked box is not affirmative
+  consent. Its wording separates marketing from billing email, so declining does not read as opting
+  out of the day-27 notice.
+
+### Three decisions worth not re-litigating
+
+**Granted at checkout *start*, not in the webhook.** Checkout start is the only moment that covers
+someone who abandons — and abandoners are precisely who L2 exists to reach. A webhook-time grant
+would reach only customers who completed, i.e. the ones who need it least.
+
+**Subscribes to a dedicated list, `W7gYXU` "Marketing Consent — Storefront".** Created 2026-08-03,
+single opt-in, no flow triggers, used for nothing else. It is *not* either lifecycle list, and this
+is load-bearing: `RKeAnZ` triggers **X2tesT (live)** and `SfBnvH` triggers **VuD82q (live)**, both on
+`Added to List`. Subscribing to either at checkout start would begin trial onboarding for someone who
+has not paid and may never. Verified via
+`GET /api/lists?include=flow-triggers`.
+
+**The list relationship is required, not optional.** Omit it and Klaviyo falls back to the
+**account-level default opt-in process, which is Double opt-in** (Settings → API keys → Default
+opt-in settings, read 2026-08-03). The profile would then sit unconfirmed pending a click while
+`_klaviyo_subscribe` saw its 202 and reported success. Consent itself is profile-level rather than
+list-level, so this one grant is what makes *every* flow deliverable to that person, not just flows
+reading `W7gYXU`.
+
+### ⛔ Why it does nothing yet — the key is missing `subscriptions:write`
+
+Probed 2026-08-03 against the key in `/opt/pf9-store/pf9-store-api.env`:
+
+| Endpoint | Result |
+|---|---|
+| `GET /api/lists/` (control) | **200** — key is valid |
+| `POST /api/events/` | **400** — `events:write` present |
+| `POST /api/profile-subscription-bulk-create-jobs/` | **403** — `"missing required scopes: subscriptions:write"` |
+
+Key scopes as shown in the UI: *Read: Flows and Metrics / Full Access: Events, List, and Profiles.*
+No Subscriptions scope at all.
+
+**This is the same failure shape as the events:write incident**, one day later: the helper fails soft
+by design, so without the scope the customer ticks the box, sees a normal checkout, and stays
+`NEVER_SUBSCRIBED`. That is worse than the events gap — a silently broken promise rather than a
+silently skipped email — which is why every branch of `_klaviyo_subscribe` logs.
+
+Klaviyo does not allow editing scopes on an existing private key (⋮ offers only Disable / Clone /
+Delete), so the fix is **clone → add Subscriptions → replace `KLAVIYO_API_KEY`**, exactly as was done
+for events on 2026-08-02.
+
+**The probe is safe to repeat and should be, since any comment about scopes goes stale the moment the
+key changes.** A malformed POST returns 403 for a missing scope and 400 once present, and creates
+nothing either way. Note the events endpoint does **not** share that property — a valid probe there
+creates a metric, and Klaviyo metrics cannot be deleted.
+
+### Deploy order matters
+
+`index.html` ships on push (GitHub Pages, `.github/workflows/deploy.yml`); `store_api.py` only on a
+manual restart. Pushed together, there is a window where the checkbox is live against a server that
+ignores the field. Hence the split:
+
+1. Clone the key, add Subscriptions, put the new value in `/opt/pf9-store/pf9-store-api.env`.
+   The list id is baked as a code default, so this is the only env change.
+2. `git push origin b93baa2:main`
+3. `git -C /opt/pf9-store diff HEAD origin/main` empty; restart aborts on md5 mismatch regardless
+   (`EXPECT_MD5=4e2d690e869dc97e0d03cff6202a220e`, bumped in the same commit).
+4. `ssh -t xfree143.taile2beaa.ts.net` → `sudo bash /opt/pf9-store/restart_store_api.sh`.
+   Needs an interactive sudo password — `pf9-store-api` is not on the NOPASSWD list.
+5. Re-probe. **400 = scope landed.** Still 403 means the checkbox would be a lie.
+6. `git push origin main` to ship the checkbox.
+
+### What this does not fix
+
+- **The day-27 billing exposure.** Untouched. A customer converting to paid is still charged with no
+  warning email whether or not they ticked the box. That remains fix 1, UI-only, and open.
+- **Existing profiles.** Nothing retroactive; consent cannot be granted on someone's behalf.
+- **Proof.** See "Not verified" — no send has been watched succeeding *or* failing.
 
 ---
 
@@ -781,6 +891,18 @@ Listed so they are not mistaken for "checked and fine":
   Klaviyo's documented behaviour applied to observed config, not on a send watched failing. No live
   send test was run. A single real send to a `NEVER_SUBSCRIBED` profile would settle it, and should
   be done before any fix is judged to have worked.
+- **That `_klaviyo_subscribe` works.** Written and committed 2026-08-03, never executed once — the
+  key returns 403 for lack of `subscriptions:write`, so not a single call has reached a 2xx. The
+  payload shape is built to the documented schema for revision `2024-10-15` and has **not** been
+  round-tripped against the live endpoint. First real run should be checked by reading the profile
+  back with `additional-fields[profile]=subscriptions` and confirming `SUBSCRIBED`, rather than
+  trusting the 202 — the endpoint is asynchronous and accepts before it applies.
+- **That the consent tick survives the round trip.** The checkbox and the API field were written in
+  separate commits and have never run together; nothing has yet confirmed a ticked box arrives as
+  `marketing_consent: true` in `create_checkout_session`.
+- **`W7gYXU` behaviour under a real subscribe.** Created 2026-08-03 with `single_opt_in` set
+  explicitly at creation (the account default is double, so this mattered), but no profile has been
+  added to it yet and no confirmation-email behaviour has been observed either way.
 
 ---
 
