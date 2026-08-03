@@ -89,7 +89,7 @@ Since 2026-08-02 it sits behind a conditional split on `app_count` — see "L5 �
 | # | Spec | Built? | Detail |
 |---|---|---|---|
 | L1 | Video viewer, no subscribe | **No flow** | Needs a `video_play` event. Nothing in `store_api.py` emits one; no flow exists to consume it. |
-| L2 | Cart abandon | **Not built — unblocked, flow work remains** | `create_checkout_session()` emits `Started Checkout` and conversion emits `Placed Order`. Both deployed 2026-08-02, and both metrics now exist in Klaviyo (scope fixed same day), so they are selectable as trigger and exit condition. The flow itself is still unbuilt. See "Three things that will bite whoever builds the flow". |
+| L2 | Cart abandon | **Built 2026-08-02 — in Draft, not live** | Flow `RWvZ2m` "PF9 Cart Abandon": `Started Checkout` trigger → 1h → L2-E1 (`resume_link`) → 47h → L2-E2 (`restart_link`). Both emails carry a send-time `Placed Order` = 0 filter and have Smart Sending off. Structure verified against `GET /api/flows/RWvZ2m?include=flow-actions`. **Turning it on is gated on the marketing-consent question below** — see "L2 — built 2026-08-02". |
 | L3 | New subscriber onboarding | **Partial; day-27 defect closed** | Trial flow (3 emails @ 0/3/27) + Paid flow both live. Spec says 4 emails over 14 days; actual trial cadence is 0/3/27 — still unresolved. **The day-27 defect is fixed:** a profile filter on `X2tesT` now drops cancelled trials before the charge notice. See "Day-27 filter — 2026-08-02". |
 | L4 | Month-1 success | **Live** | Day-30 email in the Paid flow. Whether its content matches the spec's testimonial ask was NOT checked. |
 | L5 | Month-3 expansion | **Live + conditional** | Day-90 email in the Paid flow, gated on `app_count` since 2026-08-02. See below. |
@@ -274,10 +274,42 @@ assuming L7 will deliver; Klaviyo silently skips non-consented profiles.
 
 ---
 
-## L2 — half-closed 2026-08-02
+## L2 — built 2026-08-02
 
 `7f83a91` shipped the missing data and it is now deployed (2026-08-02, service restarted onto
-`fb501d8`). It did **not** build the flow.
+`fb501d8`). The flow was then built the same day and is **in Draft**.
+
+**Flow `RWvZ2m` — "PF9 Cart Abandon".** Read back from
+`GET /api/flows/RWvZ2m?additional-fields[flow]=definition&include=flow-actions`, not from the canvas:
+
+| Node | Action id | Value |
+|---|---|---|
+| Trigger | metric `RDTdMQ` | `Started Checkout`, integration `API`. Re-entry allowed. No trigger filter. |
+| Delay | `113495607` | 1 hour |
+| Email | `113495627` | `L2-E1 - Cart abandon 1h (resume link)`, template `QSsqvH` |
+| Delay | `113495854` | 47 hours (1 + 47 = 48h from trigger, per spec) |
+| Email | `113495856` | `L2-E2 - Cart abandon 48h (restart link)`, template `Vf7eMc` |
+
+Both emails: sender `PlainSpoken Foundry Nine <support@plainspokenfoundrynine.com>`,
+`smart_sending_enabled: false`, and an identical `additional_filters` condition —
+metric `XEMaYg` (`Placed Order`, integration `API`), `count equals 0`, timeframe `flow-start`.
+
+**The guard is on each email, not on the trigger.** Klaviyo's trigger-panel filters ("Limit the flow
+to trigger only when…") evaluate at flow entry, which is the wrong moment: at t=0 nobody has bought
+yet, so an entry-time "hasn't bought" test passes for everyone and never fires again. `additional_filters`
+on the send-email action is evaluated immediately before send, which is the moment that matters. Each
+email therefore needs its own copy; they are not inherited.
+
+**Smart Sending is deliberately off.** It suppresses anyone emailed in the last 16 hours. A cart-abandon
+recovery email dropped because a Trial or Paid onboarding email went out ten hours earlier would
+silently lose the highest-intent message in the funnel.
+
+**Link assignment verified at the template level**, since this is the one thing that cannot be checked
+by looking at the canvas: `QSsqvH` (E1) contains `{{ event.resume_link }}` and no `resume`-less
+variant; `Vf7eMc` (E2) contains `{{ event.restart_link }}` and no occurrence of `resume_link`.
+
+**Still to do before it can go live:** the marketing-consent question below. Turning the flow on is a
+founder decision and was deliberately left undone.
 
 | Metric | Emitted from | Carries |
 |---|---|---|
@@ -292,7 +324,10 @@ Both are emitted **per checkout, not per person**, so an existing customer buyin
 enters and exits correctly. Filtering on trial-list membership instead would read them as
 already-converted and never mail them at all.
 
-### Three things that will bite whoever builds the flow
+### Three things that bit while building the flow
+
+All three are recorded below as they were found. The first two are resolved; the third — marketing
+consent — is **still open and is what keeps the flow in Draft**.
 
 **✅ RESOLVED 2026-08-02 — the API key could not write events at all, which blocked L2, L6 and L7
 outright.** Kept here because both failure modes are silent and will recur on any future key.
@@ -355,7 +390,12 @@ sends E2 at 48. The event therefore carries two links, and they are not intercha
 
 Using `resume_link` in E2 ships a link that renders an expired-session error to every recipient.
 
-**The event upserts a profile but does not grant marketing consent.** That is deliberate — a person
+✅ **Handled in the built flow** and verified by reading the two templates back over the API rather
+than trusting the canvas: `QSsqvH` (E1) has `resume_link`, `Vf7eMc` (E2) has `restart_link`, and
+neither contains the other's.
+
+**⛔ OPEN — this is the one blocker on turning L2 live. The event upserts a profile but does not
+grant marketing consent.** That is deliberate — a person
 who typed their email into a checkout form has not subscribed to anything, and deciding otherwise is
 a consent call, not a code call. Klaviyo will skip flow sends to a non-consented profile unless the
 message is configured to allow it, so this has to be settled *before* the flow goes live or L2 will
