@@ -92,6 +92,20 @@ KLAVIYO_REVISION   = os.environ.get('KLAVIYO_REVISION', '2024-10-15')
 KLAVIYO_LIST_TRIAL = os.environ.get('KLAVIYO_LIST_TRIAL', 'RKeAnZ')
 KLAVIYO_LIST_PAID  = os.environ.get('KLAVIYO_LIST_PAID', 'SfBnvH')
 
+# The list the checkout consent tick subscribes to. Intentionally NOT one of the
+# two above: both are "Added to List" triggers for live onboarding flows, so
+# subscribing to either at checkout start would begin trial onboarding for
+# someone who has not paid and may never. This one must be single opt-in with no
+# flow triggers hanging off it. Unset = consent is never granted; see
+# _klaviyo_subscribe.
+#
+# W7gYXU is "Marketing Consent — Storefront", created 2026-08-03 for exactly this
+# and nothing else. If you ever repoint this, check the replacement's
+# opt_in_process is single_opt_in first: the ACCOUNT default is double opt-in, so
+# a list created without specifying it inherits double and consent silently
+# becomes pending-confirmation instead of granted.
+KLAVIYO_LIST_CONSENT = os.environ.get('KLAVIYO_LIST_CONSENT', 'W7gYXU')
+
 
 def _hubspot_list_for_product(product):
     """Map a product key (or calculator-lead tag) to a HubSpot list ID. None if ambiguous."""
@@ -314,6 +328,88 @@ def _klaviyo_event(metric, email, properties=None, name='', unique_id=None, valu
             print(f'[Store API] Klaviyo event "{metric}" failed for {email_norm}: {r.status_code} {r.text[:200]}')
     except Exception as e:
         print(f'[Store API] Klaviyo event "{metric}" error for {email_norm}: {e}')
+
+
+def _klaviyo_subscribe(email, list_id=None):
+    """
+    Grant email marketing consent for a profile.
+
+    Deliberately separate from _klaviyo_sync, because adding a profile to a list
+    and subscribing it are different operations in Klaviyo. The list-relationship
+    POST in _klaviyo_sync grants membership only — which is why every profile the
+    storefront has ever created reads NEVER_SUBSCRIBED. Consent comes from this
+    endpoint and nowhere else.
+
+    The list relationship is REQUIRED, not optional, and which list it is matters
+    twice over:
+
+      1. Omit it and the account-level default opt-in process applies instead.
+         That setting is Double opt-in, so the profile would sit unconfirmed
+         pending a click while this function saw a 202 and reported success.
+      2. It must not be a lifecycle list. KLAVIYO_LIST_TRIAL triggers the live
+         "PF9 Trial Onboarding" flow and KLAVIYO_LIST_PAID triggers the live
+         "PF9 Paid Onboarding" flow, both on Added to List. Subscribing here — at
+         checkout start, before Stripe has confirmed anything — would begin trial
+         onboarding for someone who may never pay.
+
+    Hence KLAVIYO_LIST_CONSENT: a dedicated single-opt-in list with no flow
+    triggers. Consent itself is profile-level rather than list-level, so this one
+    grant is what makes every flow deliverable to that person, not just the ones
+    reading this list.
+
+    Requires the subscriptions:write scope on KLAVIYO_API_KEY. A key without it
+    returns 403 and every call here is a no-op — the same silent-failure shape
+    that hid the missing events:write scope for a day. Probe rather than assume:
+    a malformed POST to this endpoint returns 403 for a missing scope and 400
+    once the scope is present, and creates nothing either way.
+
+    Fail-soft like its siblings: never raises, never costs a sale. Note the
+    asymmetry that creates. A customer who ticked the box believes they
+    subscribed, so a failure here is worse than a failure in _klaviyo_event —
+    it is a promise silently broken rather than an email silently skipped.
+    That is why every branch below logs.
+    """
+    if not KLAVIYO_API_KEY or not email:
+        return
+    if not list_id:
+        print('[Store API] Klaviyo subscribe skipped: KLAVIYO_LIST_CONSENT is unset, '
+              'so consent was NOT granted despite the customer opting in.')
+        return
+
+    email_norm = email.lower().strip()
+    payload = {
+        'data': {
+            'type': 'profile-subscription-bulk-create-job',
+            'attributes': {
+                # Klaviyo surfaces this as the consent record's origin. It is the
+                # only audit trail for how a given profile came to be subscribed,
+                # so keep it specific enough to be useful in a dispute.
+                'custom_source': 'Storefront checkout',
+                'profiles': {'data': [{
+                    'type': 'profile',
+                    'attributes': {
+                        'email': email_norm,
+                        'subscriptions': {'email': {'marketing': {'consent': 'SUBSCRIBED'}}},
+                    },
+                }]},
+            },
+            'relationships': {'list': {'data': {'type': 'list', 'id': list_id}}},
+        }
+    }
+
+    try:
+        r = http_requests.post(
+            f'{KLAVIYO_API_BASE}/profile-subscription-bulk-create-jobs/',
+            json=payload,
+            headers=_klaviyo_headers(),
+            timeout=10,
+        )
+        # Asynchronous like the events endpoint: 202 Accepted with an empty body
+        # is the success case.
+        if r.status_code not in (200, 201, 202):
+            print(f'[Store API] Klaviyo subscribe failed for {email_norm}: {r.status_code} {r.text[:200]}')
+    except Exception as e:
+        print(f'[Store API] Klaviyo subscribe error for {email_norm}: {e}')
 
 
 def _send_email(from_addr, to_addr, subject, body):
@@ -729,6 +825,10 @@ def create_checkout_session():
     email   = (data.get('email') or '').strip()
     name    = (data.get('name') or '').strip()
     company = (data.get('company') or '').strip()
+    # Absent or false means no consent. Deliberately not in the required-field
+    # check below: a tick you cannot check out without is not consent, and it
+    # would put a marketing gate in front of a paying customer.
+    consent = bool(data.get('marketing_consent'))
 
     if not product or not email or not name:
         return _cors_response(jsonify({'error': 'Product, name, and email are required'}), 400)
@@ -791,6 +891,17 @@ def create_checkout_session():
             'restart_link': f'{STORE_URL}/?product={product}',
         },
     )
+
+    # Consent, if they asked for it. Runs after the event above so the profile
+    # already carries a name, and inside the same outside-the-try region so a
+    # Klaviyo failure cannot surface as "Failed to create checkout session".
+    #
+    # Granting it *here* rather than in the webhook is the whole point: checkout
+    # start is the only moment that covers someone who abandons, and abandoners
+    # are exactly who the L2 sequence exists to reach. A webhook-time grant would
+    # reach only the customers who completed — the ones least in need of it.
+    if consent:
+        _klaviyo_subscribe(email, list_id=KLAVIYO_LIST_CONSENT)
 
     return _cors_response(jsonify({'url': session.url}))
 

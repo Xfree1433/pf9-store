@@ -29,7 +29,8 @@ STORE_API=$STORE_DIR/store_api.py
 VENV=$STORE_DIR/venv
 UNIT=pf9-store-api.service
 PORT=5011
-EXPECT_MD5=01e45e4187644ae68e9ce68d176310cd   # trial start writes subscription_status=trialing
+EXPECT_MD5=4e2d690e869dc97e0d03cff6202a220e   # checkout consent tick -> _klaviyo_subscribe
+# previous: 01e45e4187644ae68e9ce68d176310cd   (trial start writes subscription_status=trialing)
 BRIDGR_ENV=/opt/bridgr/.env
 OVERRIDE_ENV=$STORE_DIR/pf9-store-api.env
 
@@ -55,25 +56,43 @@ fi
 say "Check: KLAVIYO_API_KEY (lifecycle emails are a no-op without it)"
 # Presence is NOT authorisation, and this check used to conflate them. On
 # 2026-08-02 the key was present here and reported "ACTIVE" while every
-# _klaviyo_event call was failing 403:
-#     "Your API key is missing required scopes: events:write"
-# Profile writes have their own scope and were working the whole time, which is
-# why profiles carry correct subscription_status while no PF9 metric exists.
-# _klaviyo_event fails soft (a print, by design — a Klaviyo outage must never
-# cost a sale), so this failed silently and nothing surfaced it.
+# _klaviyo_event call was failing 403 for a missing events:write scope. Every
+# Klaviyo helper in store_api.py fails soft (a print, by design — a Klaviyo
+# outage must never cost a sale), so it failed silently for a day.
 #
-# Verify with a real probe rather than trusting this line:
-#   curl -s -o /dev/null -w '%{http_code}\n' -X POST https://a.klaviyo.com/api/events/ \
+# Scope status as probed 2026-08-03 against the key in $OVERRIDE_ENV:
+#   events:write        PRESENT   (POST /api/events/ -> 400, not 403)
+#   subscriptions:write MISSING   (-> 403 "missing required scopes")
+#
+# The second one is what _klaviyo_subscribe needs, and Klaviyo does not allow
+# editing scopes on an existing private key — clone it, add Subscriptions, and
+# replace KLAVIYO_API_KEY in $OVERRIDE_ENV.
+#
+# Probe rather than trust this comment; it goes stale the moment the key changes:
+#   curl -s -o /dev/null -w '%{http_code}\n' -X POST \
+#     https://a.klaviyo.com/api/profile-subscription-bulk-create-jobs/ \
 #     -H "Authorization: Klaviyo-API-Key $KLAVIYO_API_KEY" -H 'revision: 2024-10-15' \
-#     -H 'content-type: application/json' --data '{...}'
-# 403 = still missing events:write; 202 = fixed. Note that a successful probe
-# CREATES a metric, and Klaviyo metrics cannot be deleted — so probe with a
-# metric name you actually want (see LIFECYCLE_STATUS.md), not a scratch one.
+#     -H 'content-type: application/json' --data '{}'
+# 403 = scope still missing; 400 = scope present, body rejected. Creates nothing
+# either way. (The equivalent probe against /api/events/ does NOT share that
+# property — a valid one creates a metric, and Klaviyo metrics cannot be
+# deleted, so only ever probe events with a metric name you actually want.)
 if grep -qhE '^KLAVIYO_API_KEY=.+' "$BRIDGR_ENV" "$OVERRIDE_ENV" 2>/dev/null; then
   echo "  present — profile sync (properties, list add/remove) will be ACTIVE"
-  echo "  NOTE: presence does not prove scope. As of 2026-08-02 this key lacks"
-  echo "  events:write, so Started Checkout / Placed Order / Cancelled Subscription"
-  echo "  are silently dropped and the L2/L6/L7 sequences cannot be built."
+  echo "  NOTE: presence does not prove scope. Run the probe in the comment above."
+  if grep -qhE '^KLAVIYO_LIST_CONSENT=.+' "$BRIDGR_ENV" "$OVERRIDE_ENV" 2>/dev/null; then
+    echo "  KLAVIYO_LIST_CONSENT overridden in env — verify it is single-opt-in with"
+    echo "  NO flow triggers (NOT the trial or paid list; both trigger live"
+    echo "  onboarding flows on Added to List)"
+  elif grep -qE "KLAVIYO_LIST_CONSENT', '[A-Za-z0-9]+'" "$STORE_API"; then
+    echo "  KLAVIYO_LIST_CONSENT using the built-in default (W7gYXU, single opt-in,"
+    echo "  no flow triggers) — the checkout consent tick will be honoured"
+  else
+    echo "  !! No consent list configured. The checkout checkbox will render and"
+    echo "  !! submit, and _klaviyo_subscribe will no-op — customers opt in and"
+    echo "  !! stay NEVER_SUBSCRIBED:"
+    echo "  !!     echo 'KLAVIYO_LIST_CONSENT=<list_id>' >> $OVERRIDE_ENV"
+  fi
 else
   echo "  NOT SET — trial/paid profiles will not reach Klaviyo and no lifecycle"
   echo "  email will ever send. Everything else works. To enable, add the key to"
@@ -99,9 +118,11 @@ say "Verify: confirm the new code is what got loaded"
 if grep -q KLAVIYO_API_KEY "$STORE_API" \
    && grep -q _owned_app_properties "$STORE_API" \
    && grep -q _klaviyo_event "$STORE_API" \
+   && grep -q _klaviyo_subscribe "$STORE_API" \
    && grep -q "'subscription_status': 'trialing'" "$STORE_API" \
    && ! grep -q _send_trial_ending_email "$STORE_API"; then
-  echo "  OK — Klaviyo sync + event emitter + trialing reset present, dup day-27 emailer gone"
+  echo "  OK — Klaviyo sync + event emitter + consent grant + trialing reset present,"
+  echo "       dup day-27 emailer gone"
 else
   echo "  !! loaded file is not the expected build"; exit 1
 fi
