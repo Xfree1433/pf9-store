@@ -11,8 +11,9 @@ Klaviyo flow filter and the `subscription_status: 'trialing'` write. See "Day-27
 with Events + Lists + Profiles access replaced the old Lists+Profiles-only one; Klaviyo does not
 allow editing an existing key's scopes, so the old key was replaced rather than amended. All three
 metrics — `Started Checkout`, `Placed Order`, `Cancelled Subscription` — now exist in the account
-and are selectable as flow triggers. **L2, L6 and L7 are no longer blocked on scope; they are now
-blocked only on flow-building**, which is ordinary work. Scope probe after the swap:
+and are selectable as flow triggers. **L2, L6 and L7 are no longer blocked on scope, and all three
+have since been built** — each is in Draft, gated only on the marketing-consent question. Scope
+probe after the swap:
 `profiles` / `metrics` / `lists` / `flows` all **200**, `POST /api/events/` **202**.
 
 `PLAYBOOK_LIFECYCLE.md` is the *spec* — what the sequences should say and why. It deliberately
@@ -52,7 +53,9 @@ in the env — the code defaults are what run. Both default list IDs were confir
 
 ## Flows that exist in Klaviyo
 
-**Two. That is the whole set** — the account was listed in full, not filtered.
+**Five**, as of 2026-08-02 — the account was listed in full, not filtered. Two were pre-existing and
+live; three (`RWvZ2m` L2, `VgquRn` L6, `RZQKa2` L7) were built on 2026-08-02 and are all in Draft,
+each documented in its own section below.
 
 ### `X2tesT` — PF9 Trial Onboarding · live · trigger: Added to List
 
@@ -94,7 +97,7 @@ Since 2026-08-02 it sits behind a conditional split on `app_count` — see "L5 �
 | L4 | Month-1 success | **Live** | Day-30 email in the Paid flow. Whether its content matches the spec's testimonial ask was NOT checked. |
 | L5 | Month-3 expansion | **Live + conditional** | Day-90 email in the Paid flow, gated on `app_count` since 2026-08-02. See below. |
 | L6 | Churn-save | **Half built 2026-08-02 — L6-E1 in Draft; L6-Page not started** | Flow `VgquRn` "PF9 Churn Save": `Cancelled Subscription` trigger → 1 day → L6-E1. Send-time `Placed Order` = 0 filter, Smart Sending off. Structure verified against `GET /api/flows/VgquRn?include=flow-actions`. The L6 *intercept page* is frontend code and is still not started — it is also what blocks L7-E1. **Turning the flow on is gated on the marketing-consent question below** — see "L6 — built 2026-08-02". |
-| L7 | Win-back | **Not built — L7-E2 unblocked, L7-E1 still blocked on data** | Same trigger as L6, and the scope block is cleared. L7-E2 is now buildable, but **L7-E1 is not** — its copy merges `{{reason}}` and `{{change}}`, and nothing collects either. That is a data gap, not a permissions one. See "L6 / L7 — 2026-08-02". |
+| L7 | Win-back | **Built 2026-08-02 — in Draft, not live** | Flow `RZQKa2` "PF9 Win-back": `Cancelled Subscription` trigger with a `remaining_app_count = 0` **trigger filter** → 30 days → L7-E1 → 14 days → L7-E2. Both emails carry a send-time `Placed Order` = 0 filter and have Smart Sending off. L7-E1's spec copy was unbuildable and was **rewritten generically** — see "L7 — built 2026-08-02". Structure verified against `GET /api/flows/RZQKa2`. **Turning it on is gated on the marketing-consent question below.** |
 
 ---
 
@@ -255,19 +258,21 @@ earlier the same day.
 
 ### What is still blocked
 
-**L7-E1 cannot be built as written.** Its body is "you mentioned `{{reason}}`. Since then:
-`{{change}}`." Neither exists:
+**L7-E1's original copy could not be built** — resolved 2026-08-02 by rewriting it. Its spec body was
+"you mentioned `{{reason}}`. Since then: `{{change}}`," and neither variable exists:
 
 - `reason` comes from the L6 intercept page, which is frontend code and does not exist;
 - `change` has no source at all — it is a per-customer claim someone has to author.
 
-Building it anyway renders "you mentioned ." to every recipient. Either write the intercept page
-first, or rewrite L7-E1 generically. This is a decision, not a task.
+Building that verbatim would render "you mentioned ." to every recipient. The decision taken was to
+**rewrite L7-E1 generically** around the two properties the event actually carries — `app_name` and
+`reactivate_link` — rather than wait on the intercept page. See "L7 — built 2026-08-02".
+
+**The L6 intercept page is still not built**, so the personalised version of L7-E1 remains
+unavailable. Building it later would be an upgrade to a shipped email, not an unblocking.
 
 **The `Cancelled Subscription` metric now exists** (created 2026-08-02 by the bootstrapper, after
-the key scope was fixed), so the chicken-and-egg that blocked both L6 and L7 is gone and the flow
-editor will offer it as a trigger. What remains blocking L7-E1 is the missing `reason` / `change`
-data above, which no amount of Klaviyo configuration solves.
+the key scope was fixed), so the chicken-and-egg that blocked both L6 and L7 is gone.
 
 **Consent.** A churned customer is still a contactable profile, but check their consent state before
 assuming L7 will deliver; Klaviyo silently skips non-consented profiles.
@@ -278,8 +283,9 @@ assuming L7 will deliver; Klaviyo silently skips non-consented profiles.
 
 **Only half of L6 was built.** The spec has two parts: L6-Page (a pre-cancel intercept asking why)
 and L6-E1 (the 24-hour follow-up email). L6-E1 is built and in **Draft**. L6-Page is storefront
-frontend code, does not exist, and is not a Klaviyo artifact — see "What is still blocked" above,
-where it is also the thing that keeps L7-E1 unbuildable.
+frontend code, does not exist, and is not a Klaviyo artifact — see "What is still blocked" above.
+Its absence no longer blocks anything: L7-E1 was rewritten around properties the event already
+carries, so the intercept page is now an upgrade path, not a prerequisite.
 
 **Flow `VgquRn` — "PF9 Churn Save".** Read back from
 `GET /api/flows/VgquRn?additional-fields[flow]=definition&include=flow-actions`, not from the canvas:
@@ -322,6 +328,65 @@ is what appears in the editor.
 **Still to do before it can go live:** the marketing-consent question below — it gates L6 exactly as
 it gates L2. A churned customer who is not consented means the flow appears to run and delivers
 nothing. Turning the flow on is a founder decision and was deliberately left undone.
+
+---
+
+## L7 — built 2026-08-02
+
+Both emails are built and the flow is in **Draft**.
+
+**Flow `RZQKa2` — "PF9 Win-back".** Read back from
+`GET /api/flows/RZQKa2?additional-fields[flow]=definition`, not from the canvas:
+
+| Node | Action id | Value |
+|---|---|---|
+| Trigger | metric `REutQc` | `Cancelled Subscription`, with a **trigger filter** `remaining_app_count equals 0`. `profile_filter: null`. |
+| Delay | `113497261` | `{unit: days, value: 30, timezone: profile}`, all seven weekdays |
+| Email | `113497604` | `L7-E1 - Win-back 30d`, message `WqSzAV`, template `R8kVqk` |
+| Delay | `113498192` | `{unit: days, value: 14, timezone: profile}`, all seven weekdays |
+| Email | `113498550` | `L7-E2 - Win-back 44d`, message `R2bqUN`, template `Rr6sCj` |
+
+Both emails: sender `PlainSpoken Foundry Nine <support@plainspokenfoundrynine.com>`,
+`smart_sending_enabled: false`, and an `additional_filters` condition on metric `XEMaYg`
+(`Placed Order`), `count equals 0`, timeframe `flow-start`. Subjects are
+`your {{ event.app_name|default:'PF9' }} data is still there` and
+`last one — unsubscribe or keep in touch?`.
+
+**Two different filters, for two different reasons.** This flow is the one place both kinds appear,
+so the distinction is worth stating plainly:
+
+- `remaining_app_count = 0` is a **trigger filter**, evaluated once at entry. That is correct
+  *because* it is an event property — its value is frozen at the moment of cancellation and cannot
+  change afterwards. A customer who cancelled one app of several never enters the flow at all,
+  which is exactly the requirement: no win-back copy to someone still paying.
+- `Placed Order = 0 since starting this flow` is a **send-time `additional_filters` condition on
+  each email**, because its truth *does* change after entry — someone who re-subscribes on day 12
+  must be dropped from the day-30 send. An entry-time version would pass for everyone at t=0 and
+  never re-check. Klaviyo does not inherit these down the chain, so both emails carry their own copy.
+
+**Smart Sending is deliberately off** on both, same as L6: a win-back suppressed because an
+unrelated lifecycle email went out sixteen hours earlier would silently drop the only two messages
+aimed at recovering a churned customer.
+
+**L7-E1 was rewritten generically — a decision, not an omission.** The playbook's copy merged
+`{{reason}}` (from the L6 intercept page, which does not exist) and `{{change}}` (no source at all),
+and shipping it verbatim would render "you mentioned ." to every recipient. Rather than block the
+flow on unbuilt frontend, E1 was rebuilt around the two properties `Cancelled Subscription` actually
+carries — `app_name` and `reactivate_link` — and now says the data is still there and reactivation
+is one click. The personalised version remains available later as an upgrade if the intercept page
+gets built. `PLAYBOOK_LIFECYCLE.md` §L7 has been updated to the shipped copy.
+
+**L7-E2's spec line "Thanks for the trial earlier this year" was corrected** to "Thanks for giving
+{{ event.app_name }} a run." This flow triggers on `Cancelled Subscription` — a paid customer — so
+thanking them for a trial would be wrong for most recipients.
+
+**Known gap, shared with L2 and L6:** the playbook's "send Tue–Thu, 9–11am recipient timezone" rule
+is not implemented anywhere. All delays in all three flows carry `delay_until_weekdays` set to all
+seven days. Left consistent rather than making L7 the lone exception; fixing it is a one-setting
+change per delay node whenever it is decided to be worth it.
+
+**Still to do before it can go live:** the marketing-consent question below, which gates L7 exactly
+as it gates L2 and L6. Turning the flow on is a founder decision and was deliberately left undone.
 
 ---
 

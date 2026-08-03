@@ -311,27 +311,33 @@ Before the Stripe cancel flow completes, show:
 
 ## L7 — Win-back (30 / 44 days post-cancel)
 
-**L7-E1 below is not buildable as written.** It merges `{{reason}}` and `{{change}}`. `reason` would
-come from the L6 intercept page, which does not exist; `change` has no source at all and is a
-per-customer claim someone has to write. Shipping it as-is renders "you mentioned ." to every
-recipient. Build the intercept page first, or rewrite this email generically. L7-E2 has no such
-dependency and is buildable today.
+**Built 2026-08-02 as Klaviyo flow `RZQKa2` "PF9 Win-back", in Draft.** See `LIFECYCLE_STATUS.md`
+§"L7 — built 2026-08-02" for the node-by-node record.
 
-Both L7 emails must also filter on `remaining_app_count = 0` from the `Cancelled Subscription`
-event. Without it, a customer who cancelled one app of several gets win-back copy while still
-paying.
+The `remaining_app_count = 0` requirement is a **trigger filter** on the flow — correct because it
+is an event property, frozen at cancellation time. The "no reactivation" guard is separate: a
+send-time `Placed Order = 0 since starting this flow` filter on each email, because that condition
+can change after entry.
 
 ### L7-E1 — Day 30
 
-**Subject:** we fixed {{thing_they_asked_for}}
+The original spec copy for this email merged `{{reason}}` (from the L6 intercept page, which does
+not exist) and `{{change}}` (no source at all), so it would have rendered "you mentioned ." to every
+recipient. It was **rewritten generically** around the properties `Cancelled Subscription` actually
+carries. Shipped copy:
+
+**Subject:** your {{app_name}} data is still there
 
 > {{first_name}},
 >
-> When you canceled {{app_name}}, you mentioned {{reason}}. Since then: {{change}}.
+> It's been a month since you closed {{app_name}}. No pitch — just so you know nothing was deleted.
 >
-> If it's worth a second look, reactivating takes one click: {{reactivate_link}}. Your data's still there.
+> If you want it back, it's one click: {{reactivate_link}}. Everything picks up where you left it.
 >
 > — {{founder_first}}
+
+If the L6 intercept page is ever built, the personalised "you mentioned {{reason}}" version becomes
+available as an upgrade to this email.
 
 ### L7-E2 — Day 44 (only if no reactivation)
 
@@ -342,9 +348,12 @@ paying.
 > - Unsubscribe (no hard feelings): {{unsub_link}}
 > - Stay on a quarterly note when we ship something big: no action needed
 >
-> Thanks for the trial earlier this year.
+> Thanks for giving {{app_name}} a run.
 >
 > — {{founder_first}}
+
+(The spec previously read "Thanks for the trial earlier this year." This flow triggers on
+`Cancelled Subscription` — a paying customer — so that line was wrong for most recipients.)
 
 **KPIs:** 5% win-back rate.
 
