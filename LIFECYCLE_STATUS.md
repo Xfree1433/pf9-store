@@ -1692,6 +1692,90 @@ YouTube) is permission-gated and waiting on the founder.** That is the honest to
 
 ---
 
+## The inbound funnel — instrumented 2026-08-04 (live in production)
+
+### Confirmed a second time, from a different source
+
+The finding above rests on Stripe. The lead table is independent of it, and says the same thing more
+starkly. `demo_requests` in `/opt/bridgr/store_leads.db` — read-only, 2026-08-04:
+
+| | |
+|---|---|
+| Rows, all time | **15**, spanning 2026-04-19 → 2026-08-01 |
+| From `@example.com` or our own domain | 12 |
+| From Mark's own addresses | 3 — `MARKUPR (waitlist)` ×2 and `STOREFRONT (email capture)` ×1 |
+| From anyone else | **zero** |
+
+**Nobody has ever asked.** Stripe said no one has bought; this says no one has enquired, downloaded,
+joined a waitlist, or requested a calculator PDF either. The funnel is not leaking at checkout —
+nothing enters it. That is worth stating separately because the two failures have different fixes,
+and only the second one is real.
+
+*(The DB lives under `/opt/bridgr/` — `STORE_DB_PATH` in `pf9-store-api.env` points there, left over
+from when the store API was served out of the bridgr deployment. Not a bug, but not guessable either.)*
+
+### `/demo-request` is eight forms wearing one endpoint
+
+Grepped 2026-08-04. Eight pages POST to it, and the only thing separating their intents is a
+convention in the `product` string that nothing enforced or read:
+
+| Page | `product` sent | What the visitor was promised |
+|---|---|---|
+| `contact.html` | bare key, e.g. `SHIFTLOG` | "We typically respond within 24 hours on business days" |
+| `index.html` | `X (waitlist)` | "We'll email you at launch" |
+| `tools/per-door-calculator.html` | `PROPERTY_SUITE (calculator lead)` | "PDF on its way within one business day" |
+| `tools/per-user-calculator.html` | `MANUFACTURING_SUITE (calculator lead)` | "PDF on its way within one business day" |
+| `lead-magnets/` ×3 | `X_LEAD_MAGNET (…)` | the template itself — **self-fulfils client-side**, link shown on success; all three `/templates/*.html` verified 200 live |
+| `refer/index.html` | `AFFILIATE_PROGRAM_SIGNUP` | agreement + code within one business day |
+
+Two of those promises — both calculator PDFs — have **no automated fulfilment at all**. A human has to
+notice the internal notification email and send a PDF. The waitlist promise has the same shape.
+
+**The affiliate one must stay manual.** `refer/index.html:148` says, to the visitor's face,
+*"No automated drip — actual founder review."* Automating it would make the page a lie. Recorded here
+because it is exactly the item a future pass would otherwise "fix".
+
+### What was shipped
+
+`/demo-request` previously ended at SQLite, one internal email, and HubSpot. The strongest intent
+signal the store can produce never reached the system that does the emailing — every Klaviyo flow
+hangs off a checkout or subscription event, so a person who raised a hand and did not buy got nothing.
+It now emits a **`Lead Captured`** metric carrying:
+
+| Property | Written when |
+|---|---|
+| `lead_type` | always — one of `question`, `waitlist`, `calculator`, `lead_magnet`, `affiliate`, `email_capture` |
+| `product_tag` | the raw string, when non-empty |
+| `vertical` | `manufacturing` / `property`, by the *same* matcher `_hubspot_list_for_product` uses, so a lead cannot be filed in one vertical in HubSpot and the other in Klaviyo |
+| `product` | only when the tag is a real `PRICE_MAP` key — `PROPERTY_SUITE`, `MANUFACTURING_SUITE` and `MARKUPR` are not sellable and are withheld |
+| `company` | when non-blank |
+| `has_question` | only for `question` leads, where the text is actually typed by a human |
+| `source_page` | the referrer **path only** |
+
+**It sends nothing.** `Lead Captured` did not exist among the account's 25 metrics before this, so no
+flow can already be listening; and `_klaviyo_event` upserts a profile *without* granting marketing
+consent, which is what makes it safe to fire for someone who only asked a question. It starts
+mattering when a flow is deliberately built on it — at which point `lead_type` is the branch, and the
+two unkept PDF promises become the obvious first thing to automate.
+
+Deliberately **not** forwarded: the free-text message. It is the most sensitive field on the form, it
+has no use in a marketing tool, and for seven of the eight surfaces it is boilerplate our own
+JavaScript wrote. The internal notification email already carries it to a human.
+
+### Two smaller things found on the way
+
+- **`contact.html` was the only page in the store spelling it `TENANTLINKR`.** Everywhere else — the
+  `PRICE_MAP` key, the index card, the schema.org listing — it is `TENANTLINK`, and `store_api.py`
+  carries a shim tolerating the split (search `TENANTLINKR`). The option `value` is a product key, not
+  a label, so it was corrected; the shim stays for old rows.
+- **The live storefront matches git exactly.** `index.html` md5 is identical in git and `/opt/pf9-store`;
+  the live copy differs only by Cloudflare's email-obfuscation rewriting of two `mailto:` links. So the
+  2026-08-01 `STOREFRONT (email capture)` row came from a stale browser tab of a modal since removed,
+  **not** from prod drift. Checked because an unexplained tag from code that no longer exists is
+  exactly what drift looks like.
+
+---
+
 ## L5 — closed 2026-08-02
 
 The day-90 expansion email is live and **now gated on a conditional split**, so a subscriber who

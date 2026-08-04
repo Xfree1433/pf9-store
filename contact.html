@@ -175,7 +175,12 @@
                             <option value="REPORTR">REPORTR</option>
                             <option value="INSPECTR">INSPECTR</option>
                             <option value="LANDLORDR">LANDLORDR</option>
-                            <option value="TENANTLINKR">TENANTLINKR</option>
+                            <!-- TENANTLINK, not TENANTLINKR: this was the only page in the
+                                 store using the R spelling, and the value is a product key
+                                 (PRICE_MAP, index.html cards, the schema.org listing) rather
+                                 than a label. store_api.py has a shim tolerating the
+                                 split (search TENANTLINKR); nothing new should need it. -->
+                            <option value="TENANTLINK">TENANTLINK</option>
                             <option value="PROPERTY_BUNDLE">Property Bundle</option>
                             <option value="PERMITR">PERMITR</option>
                             <option value="TASKFLOW">TASKFLOW</option>

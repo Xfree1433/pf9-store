@@ -40,6 +40,7 @@ import string
 import secrets
 import time
 import html
+from urllib.parse import urlparse
 import requests as http_requests
 
 try:
@@ -108,6 +109,61 @@ KLAVIYO_LIST_PAID  = os.environ.get('KLAVIYO_LIST_PAID', 'SfBnvH')
 # a list created without specifying it inherits double and consent silently
 # becomes pending-confirmation instead of granted.
 KLAVIYO_LIST_CONSENT = os.environ.get('KLAVIYO_LIST_CONSENT', 'W7gYXU')
+
+
+# /demo-request is not one form. Eight pages post to it (grepped 2026-08-04),
+# and the only thing distinguishing their intents is a convention in the
+# `product` string:
+#
+#   'SHIFTLOG' and other bare keys           contact.html — someone asking us a question
+#   'MARKUPR (waitlist)'                     index.html — pre-launch signup
+#   'PROPERTY_SUITE (calculator lead)'       tools/*-calculator.html — wants a PDF
+#   'PROPERTY_LEAD_MAGNET (…)'               lead-magnets/*.html — wants a template
+#   'AFFILIATE_PROGRAM_SIGNUP'               refer/ — wants to resell
+#   'STOREFRONT (email capture)'             a modal since removed from index.html;
+#                                            kept because rows carrying it still exist
+#
+# Those intents are not interchangeable, and two of them carry an explicit
+# promise ("PDF on its way within one business day", "we'll email you at
+# launch") that nothing automated currently keeps. Collapsing them into one
+# undifferentiated "lead" is what makes that invisible, so the type is derived
+# here and sent as a property a Klaviyo flow can branch on.
+_LEAD_TYPE_MARKERS = [
+    ('(waitlist)',           'waitlist'),
+    ('(calculator lead)',    'calculator'),
+    ('_LEAD_MAGNET',         'lead_magnet'),
+    ('AFFILIATE_PROGRAM',    'affiliate'),
+    ('(email capture)',      'email_capture'),
+]
+
+
+def _lead_type_for(product):
+    """Classify a /demo-request submission by the surface it came from.
+
+    Falls back to 'question' rather than 'unknown': contact.html sends a bare
+    product name with no marker, and it is the surface where a human actually
+    typed something. A new caller that forgets the convention lands there too,
+    which errs toward "a person is waiting on a reply" — the safe direction.
+    """
+    p = (product or '').upper()
+    for marker, lead_type in _LEAD_TYPE_MARKERS:
+        if marker.upper() in p:
+            return lead_type
+    return 'question'
+
+
+def _lead_vertical_for(product):
+    """The vertical, by the same rule that picks the HubSpot list.
+
+    Deliberately shares _hubspot_list_for_product's matching so a lead cannot be
+    filed under Property in HubSpot and Manufacturing in Klaviyo.
+    """
+    p = (product or '').upper()
+    if 'MANUFACTURING' in p or any(app in p for app in _MANUFACTURING_APPS):
+        return 'manufacturing'
+    if 'PROPERTY' in p or any(app in p for app in _PROPERTY_APPS):
+        return 'property'
+    return None
 
 
 def _hubspot_list_for_product(product):
@@ -818,12 +874,14 @@ def demo_request():
     if not name or not email:
         return _cors_response(jsonify({'success': False, 'error': 'Name and email are required'}), 400)
 
+    lead_id = None
     try:
         with get_db() as conn:
-            conn.execute(
+            cur = conn.execute(
                 'INSERT INTO demo_requests (name, company, email, message, product, created_at) VALUES (?, ?, ?, ?, ?, ?)',
                 (name, company, email, message, product, datetime.utcnow().isoformat())
             )
+            lead_id = cur.lastrowid
             conn.commit()
     except Exception as e:
         print(f'[Store API] DB error: {e}')
@@ -843,6 +901,76 @@ def demo_request():
         )
     except Exception as e:
         print(f'[Store API] HubSpot push error: {e}')
+
+    # Until now this endpoint ended at SQLite, one internal email, and HubSpot,
+    # so the strongest intent signal the store can produce — a named person
+    # asking for something by name — never reached the system that does the
+    # emailing. Every Klaviyo flow hangs off checkout or subscription events, so
+    # someone who raised a hand and did not buy got nothing at all.
+    #
+    # This records the fact and sends nothing. 'Lead Captured' did not exist as a
+    # metric on the account before this (checked against the live metrics list on
+    # 2026-08-04, 25 metrics, no such name), and a flow triggers on a metric
+    # someone bound it to — so nothing can already be listening. It starts
+    # mattering when a flow is built on it, which is a deliberate act.
+    #
+    # _klaviyo_event also upserts the profile WITHOUT granting marketing consent,
+    # which is what makes this safe to call for a person who only asked a
+    # question: they become addressable by a flow someone chooses to build, not
+    # subscribed to marketing they never asked for.
+    try:
+        lead_type = _lead_type_for(product)
+        lead_properties = {
+            'lead_type': lead_type,
+            'vertical': _lead_vertical_for(product),
+        }
+        # `product` is defaulted to 'General' upstream, but a payload of all
+        # whitespace survives that and strips to ''. Writing an empty property
+        # is worse than writing none: it satisfies Klaviyo's `|default:` and
+        # prints a blank where the fallback should have been.
+        if product:
+            lead_properties['product_tag'] = product   # raw, as the page sent it
+        # Only when it names something we can actually sell. PROPERTY_SUITE and
+        # MANUFACTURING_SUITE are marketing groupings, and MARKUPR is pre-launch;
+        # none are in PRICE_MAP, and writing them here would make `product` mean
+        # two different things depending on the surface.
+        if product in PRICE_MAP:
+            lead_properties['product'] = product
+        if company:
+            lead_properties['company'] = company
+        # The free text is deliberately not forwarded. It is the most sensitive
+        # field on the form, it has no use in a marketing tool, and for every
+        # surface except contact.html it is boilerplate our own JS wrote. The
+        # internal notification email already carries it to a human.
+        if lead_type == 'question':
+            lead_properties['has_question'] = bool(message)
+
+        # Path only, never the query string: a referrer's query can carry
+        # anything, and this one is written to a third party.
+        referer = request.headers.get('Referer') or ''
+        if referer:
+            try:
+                path = urlparse(referer).path
+                if path:
+                    lead_properties['source_page'] = path
+            except Exception:
+                pass
+
+        _klaviyo_event(
+            metric='Lead Captured',
+            email=email,
+            name=name,
+            # The row id, so a Klaviyo event can be traced back to the row a
+            # human replies from. The submit button is disabled for the duration
+            # of the request on every surface, so a double click cannot produce
+            # two rows to begin with.
+            unique_id=f'lead-{lead_id}' if lead_id else None,
+            properties=lead_properties,
+        )
+    except Exception as e:
+        # Belt and braces: _klaviyo_event is already fail-soft, but this runs in
+        # the visitor's request path and nothing here is worth a 500.
+        print(f'[Store API] Klaviyo lead event error: {e}')
 
     return _cors_response(jsonify({'success': True, 'message': 'Demo request received!'}))
 
