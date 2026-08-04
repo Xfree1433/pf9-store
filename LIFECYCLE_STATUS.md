@@ -11,11 +11,23 @@ DB on xfree143.
 > `subscriptions:write` scope to make it stick. That closes the structural blocker this file spent
 > two days describing.
 >
-> **What did not change:** the fix is not retroactive and nobody has used it yet. Every profile
-> created before this deploy is still `NEVER_SUBSCRIBED`, and no live customer has ticked the box, so
-> the population that can receive a lifecycle email is **zero today and grows only from new checkouts
-> forward**. Three flows remain in Draft, two are live. Treat "consent is fixed" as a statement about
-> the mechanism, not about the audience.
+> ✅ **The mechanism was proven end-to-end on 2026-08-04** — see "Consent path proven end-to-end".
+> One *further* profile now reads `SUBSCRIBED`, and it is a deliberate internal test address, not a
+> customer.
+>
+> **What did not change:** the fix is not retroactive and no *customer* has used it. No live customer
+> has ticked the box, so the audience still grows only from new checkouts forward. Three flows remain
+> in Draft, two are live. Treat "consent is fixed" as a statement about the mechanism, not about the
+> audience — that distinction is now narrower than it was, but it is the same distinction.
+>
+> ⚠️ **Correction, 2026-08-04.** This callout used to say the deliverable population was "zero today".
+> That was wrong when written, and the contradiction was sitting in this same file: the profile table
+> under "Consent — audited 2026-08-03" lists `xfree143@gmail.com` and `mark.pierce@outlook.com` as
+> **SUBSCRIBED and deliverable** since 2026-05-30. Re-read 2026-08-04 across the whole account —
+> **five profiles, three deliverable**: those two plus the new `xfree143+consenttest@gmail.com`.
+> `test@example.com` is SUBSCRIBED but `USER_SUPPRESSED`, and `metric-bootstrap@` is
+> `NEVER_SUBSCRIBED`. All five are internal addresses, so "no customer audience" was the true claim
+> and "nobody is reachable" was the overstatement. **Activating any flow sends to real inboxes today.**
 >
 > **The day-27 pre-charge notice is CLOSED (2026-08-04, live) — but it needs one manual step.** The
 > send moved back into `_handle_trial_will_end` and now goes out on the Stripe `trial_will_end`
@@ -156,8 +168,11 @@ Since 2026-08-02 it sits behind a conditional split on `app_count` — see "L5 �
 
 > **Superseded 2026-08-04 as to the code, kept as the evidence for the finding.** The mechanism
 > described below was fixed and deployed the next day — see "Consent — shipped 2026-08-04". Read this
-> section in the past tense. One of its conclusions still holds verbatim: the four existing profiles
-> are still `NEVER_SUBSCRIBED` (the fix is not retroactive). The other — the day-27
+> section in the past tense. One of its conclusions still holds verbatim: the fix is not retroactive,
+> so no pre-existing profile gained consent from it. ⚠️ **But "the four existing profiles are still
+> `NEVER_SUBSCRIBED`" — which this note used to say — was never true**, and the table immediately
+> below disproves it: only `metric-bootstrap@` was. The defensible claim is the narrower one about
+> retroactivity. The other conclusion — the day-27
 > `transactional: false` exposure — was closed later the same day, but **not** by setting that flag,
 > which proved unreachable on this account. See "Day-27 pre-charge notice — moved in-house 2026-08-04".
 
@@ -520,6 +535,13 @@ probe returns **400** (authenticated, scope present, creates nothing), `GET /api
 **The rollback key stays until the Full Access key has been observed working on a real checkout** —
 it is the only other key carrying `events:write`.
 
+> **That condition was met on 2026-08-04**, with one qualification: the checkout was synthetic, driven
+> by a `POST` to the live endpoint rather than by a customer. It ran the identical code path and all
+> three scopes were observed producing effects — profile created, **Started Checkout** event landed,
+> consent stuck. See "Consent path proven end-to-end". **`…70ee` has NOT been deleted**; deleting it is
+> irreversible and Klaviyo's confirmation dialog does not name the key, so that is a decision to take
+> deliberately, not a loose end to tidy. Keeping it costs nothing.
+
 ### Deploy order matters — and the sequence as actually executed
 
 `index.html` ships on push (GitHub Pages, `.github/workflows/deploy.yml`); `store_api.py` only on a
@@ -566,10 +588,79 @@ both were what caught it.
   same day by moving the send into `_handle_trial_will_end`, which is exactly why it no longer depends
   on whether the box was ticked. Not fix 1 — that route proved unreachable.
 - **Existing profiles.** Nothing retroactive; consent cannot be granted on someone's behalf.
-- **Proof.** The code is live and the scope block is gone, but `_klaviyo_subscribe` has still never
-  executed — no checkout has yet carried `marketing_consent: true`, so no call has been watched
-  succeeding *or* failing. What the 2026-08-04 probe established is that the key **may** call the
-  endpoint; whether this payload is accepted is untested. See "Not verified".
+- ~~**Proof.**~~ ✅ **Resolved 2026-08-04** by an end-to-end run against production. This used to read
+  that `_klaviyo_subscribe` had never executed and that the probe proved only that the key *may* call
+  the endpoint. It has now executed and the payload was accepted. See "Consent path proven
+  end-to-end".
+
+---
+
+## Consent path proven end-to-end — 2026-08-04
+
+**Ran the real path against production and read the result back out of Klaviyo.** Everything above
+this section that says consent is "untested", "never executed", or "not round-tripped" was true when
+written and is superseded here.
+
+**What was run.** A single `POST` to the live
+`https://app.plainspokenfoundrynine.com/store-api/create-checkout-session` carrying
+`marketing_consent: true` and the address `xfree143+consenttest@gmail.com` — a plus-tagged internal
+address, chosen so the resulting profile is identifiable forever and separable from any customer.
+This is the production endpoint, production key, production Klaviyo account. Not a staging rehearsal
+and not a direct call to `_klaviyo_subscribe`; the HTTP body was parsed by `create_checkout_session`
+and the `if consent:` branch taken, which is the part that had never been exercised.
+
+**What came back**, read with `additional-fields[profile]=subscriptions` rather than trusting the
+202 — the endpoint is asynchronous and accepts before it applies:
+
+```json
+{"can_receive_email_marketing": true,
+ "consent": "SUBSCRIBED",
+ "consent_timestamp": "2026-08-04T12:29:35.584313+00:00",
+ "last_updated": "2026-08-04T12:29:35.584313+00:00",
+ "method": "API",
+ "method_detail": "5217",
+ "custom_method_detail": "Storefront checkout",
+ "double_optin": false,
+ "suppression": [],
+ "list_suppressions": []}
+```
+
+`W7gYXU` went from 0 members to 1. Three events landed on the profile: **Started Checkout**,
+**Subscribed to List**, **Subscribed to Email Marketing**.
+
+**That one read settles four things at once**, which is why it was worth doing before anything else:
+
+1. `_klaviyo_subscribe`'s payload is accepted — the schema guess for revision `2024-10-15` was right.
+2. `custom_method_detail: "Storefront checkout"` proves the audit-trail string survives to the consent
+   record, so a disputed subscription can actually be traced to its origin.
+3. `double_optin: false` proves the explicit `single_opt_in` at list creation held. Had it fallen back
+   to the account default, this profile would be sitting unconfirmed while the API reported success —
+   the exact silent failure `W7gYXU` exists to prevent.
+4. **`method_detail` reads `5217`, which is exactly the live key's last four.** Observed, not
+   documented: no Klaviyo doc was consulted, so "Klaviyo stamps the acting key's tail onto the consent
+   record" is the obvious reading of a 4-digit field matching the key in `/opt/pf9-store/pf9-store-api.env`,
+   not an established fact. If it holds, it is a useful read-only way to fingerprint which key
+   performed a write without ever reading the secret. Treat it as corroboration, not as the primary
+   check — the tail was already matched directly against the env file before the keys were deleted.
+
+**The three scopes are now each proven by an observed effect, not by a probe.** `profiles:write` (the
+profile was created carrying the name), `events:write` (Started Checkout landed), `subscriptions:write`
+(consent stuck). This is the condition the housekeeping note set for retiring the rollback key
+`…70ee` — with one honest qualification: this was a synthetic checkout, not a customer's. It took the
+identical code path, so the distinction is about who typed the address, not about what executed.
+**Retiring `…70ee` is a deletion and is left to a decision, not done here.**
+
+**Two things this deliberately did not prove.** A human clicking the rendered checkbox — the field was
+posted directly, so the last inch of browser JS is still unobserved. And that Klaviyo *skips* a
+non-consented profile, which still needs a send to a `NEVER_SUBSCRIBED` address and still sits under
+"Not verified".
+
+**Residue left behind, on purpose.** The profile stays subscribed rather than being cleaned up. It is
+not the only deliverable address — see the correction in the header callout, there are three — but it
+is the only one carrying a **Started Checkout** event, which is the L2 Cart Abandon trigger. That
+makes it the natural canary: **turning L2 Live would email it**, a real send test that costs nothing
+and lands in an inbox already owned. A dead Stripe Checkout session was also created and will expire
+on its own; no card, no charge.
 
 ---
 
@@ -1140,21 +1231,16 @@ Listed so they are not mistaken for "checked and fine":
   Klaviyo's documented behaviour applied to observed config, not on a send watched failing. No live
   send test was run. A single real send to a `NEVER_SUBSCRIBED` profile would settle it, and should
   be done before any fix is judged to have worked.
-- **That `_klaviyo_subscribe` works.** Deployed 2026-08-04 and no longer blocked on scope, but
-  **still never executed once** — no live checkout has carried `marketing_consent: true`, so not a
-  single call has reached a 2xx. The payload is built to the documented schema for revision
-  `2024-10-15` and has **not** been round-tripped against the live endpoint. Note what the cleared
-  probe does and does not prove: a 400 establishes the key may call the endpoint, and nothing about
-  whether this payload is accepted. Check the first real run by reading the profile back with
-  `additional-fields[profile]=subscriptions` and confirming `SUBSCRIBED`, rather than trusting the
-  202 — the endpoint is asynchronous and accepts before it applies.
-- **That the consent tick survives the round trip.** Both halves are live as of 2026-08-04, and the
-  checkbox is confirmed rendering on `store.plainspokenfoundrynine.com` unticked and not required.
-  What remains unobserved is a *ticked* box arriving as `marketing_consent: true` inside
-  `create_checkout_session`; the two halves have never been exercised together by a real submission.
-- **`W7gYXU` behaviour under a real subscribe.** Created 2026-08-03 with `single_opt_in` set
-  explicitly at creation (the account default is double, so this mattered), but no profile has been
-  added to it yet and no confirmation-email behaviour has been observed either way.
+- ~~**That `_klaviyo_subscribe` works.**~~ ✅ **Verified 2026-08-04** — executed against production and
+  read back `SUBSCRIBED`. See "Consent path proven end-to-end".
+- ~~**That the consent tick survives the round trip.**~~ ✅ **Verified 2026-08-04 at the API layer, not
+  the browser.** `marketing_consent: true` was posted to the live endpoint and arrived as consent. The
+  narrow gap left is the last inch: a human clicking the rendered checkbox. The JS that reads it is
+  three lines (`index.html` ~1053-1062) and the live page serves them, but no *ticked* box has been
+  observed producing that field.
+- ~~**`W7gYXU` behaviour under a real subscribe.**~~ ✅ **Verified 2026-08-04** — one profile added, and
+  `double_optin: false` on the resulting consent record confirms the explicit `single_opt_in` at
+  creation held. No confirmation email was expected and none was looked for.
 
 ---
 
