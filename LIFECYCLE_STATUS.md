@@ -1209,6 +1209,13 @@ add L6's missing trigger filter. On that reading both the L6 fix and the activat
 the UI is the founder's**. If someone later finds a definition-write endpoint, that changes the *how*,
 not the decision — activation still sends real mail and still needs a human to choose it.
 
+> **Probed and confirmed at activation time, 2026-08-04** — see the section below. Malformed-body
+> probes: `PATCH /api/flows/<id>` → **400** (exists), `PATCH /api/flow-messages/<id>` → **405** (read-only),
+> `PATCH /api/flow-actions/<id>` → **404 "No valid revisions found for method"** (does not exist).
+> The assumption held, and the gap it leaves turned out to matter — see "the trap that was avoided".
+> Note which one is missing: `flow-actions` is precisely where the Draft/Live state of each send is
+> stored, so the single writable endpoint is the one that cannot switch an email on.
+
 Two practical notes for whenever it happens:
 
 - **Fix L6's trigger filter before activating L6**, or activate L2 and L7 only. Activating L6 as built
@@ -1217,6 +1224,112 @@ Two practical notes for whenever it happens:
   already sitting on `xfree143+consenttest@gmail.com` will not pull it into a flow switched on
   afterwards. One `curl` against the checkout endpoint after activation produces a canary that
   actually qualifies.
+
+---
+
+## L2 and L7 activated — 2026-08-04 (live, sending)
+
+**`RWvZ2m` (Cart Abandon) and `RZQKa2` (Win-back) are Live. `VgquRn` (Churn Save) was deliberately
+left in Draft** until its missing trigger filter is added. Done in the Klaviyo UI on founder
+instruction, after the audit above.
+
+Final state, read back from the API rather than from the canvas. Flows activated at **12:52:16 UTC**
+(L2) and **12:54:09 UTC** (L7), per each flow's `updated` attribute:
+
+| Flow | flow status | send action | message | action status |
+|---|---|---|---|---|
+| L2 `RWvZ2m` | **live** | `113495627` | `UUGHrB` L2-E1 - Cart abandon 1h (resume link) | **live** |
+| | | `113495856` | `SuMhfB` L2-E2 - Cart abandon 48h (restart link) | **live** |
+| L7 `RZQKa2` | **live** | `113497604` | `WqSzAV` L7-E1 - Win-back 30d | **live** |
+| | | `113498550` | `R2bqUN` L7-E2 - Win-back 44d | **live** |
+| L6 `VgquRn` | draft | `113496376` | `SNHiyi` L6-E1 - Churn save 24h | draft |
+
+> **Read the status off the action, not the message.** The column above is deliberately titled
+> *action* status. A `flow-message` object carries no status at all — its attributes are exactly
+> `channel`, `content`, `created`, `name`, `updated`. The Draft/Live control the UI draws on the
+> message card is stored on the parent `SEND_EMAIL` **flow-action**. So `GET /api/flow-messages/<id>`
+> can never answer "will this send?"; `GET /api/flows/<id>/flow-actions` is the endpoint that can.
+> This was nearly recorded the wrong way round here — the first draft of this table called the column
+> "message status", which would have sent the next reader to the one endpoint that omits it.
+
+### The trap that was avoided, which is the real finding here
+
+**A Klaviyo flow has two independent status levels: the flow's, and each send action's.** A flow can
+read `live` while an individual send action sits at `draft`, in which case profiles enter it, wait out
+the delays, reach that step and are silently skipped. Nothing errors. The flow's analytics show
+recipients entering.
+
+This is not theoretical — **it is how the day-27 pre-charge notice was switched off.** Flow `X2tesT`
+(`PF9 Trial Onboarding`) is `live`; inside it, action `107908224` holding message `ReYNde`
+("Trial Day 27 — Pre-Charge Notice") is `draft`, while the other two send actions — `107907408`
+(`VpT7Fy`, Day 1) and `107907514` (`YpvAcX`, Day 3) — are `live`. That is the mechanism, and it was
+found by reading the reference flow rather than by being told.
+
+The consequence for activation: **the API can set flow status but not send-action status.** Had these
+flows been switched on with `PATCH /api/flows/<id>` — the obvious scripted route, and the one the
+audit above assumed was available — both would have gone `live` with all four sends still `draft`,
+reported success, and sent nothing. That is the identical shape to the `subscription_started` bug
+that sat undetected for two months: a green result with no delivery behind it. Worth stating plainly
+as the rule: **on a Klaviyo flow, "status: live" is not evidence that anything sends. Check each
+send action's own status.**
+
+### Two UI behaviours worth knowing
+
+- **Setting the first message to Live flips the whole flow to Live, silently.** The `Review and turn
+  on` button was never clicked; changing L2-E1's dropdown from Draft to Live turned the flow header
+  from `Draft` to `Live` on its own, with no confirmation dialog and no summary of what was about to
+  start sending. Whatever review that button offers, it is trivially bypassed by the control sitting
+  right next to it.
+- **The status dropdown opens downward and its `Live` option is clipped** below the viewport when the
+  card sits low on the canvas. Clicking an option you cannot see does nothing, and the menu stays open
+  looking as though the click registered. Zoom the canvas out until the whole menu fits before
+  clicking, and re-read the dropdown afterwards.
+
+### Canary
+
+Flows do not backfill, so a fresh trigger was fired after activation:
+
+```
+POST https://app.plainspokenfoundrynine.com/store-api/create-checkout-session
+{"product":"FLOWTRACK","email":"xfree143+consenttest@gmail.com", ...}   → HTTP 200
+```
+
+Confirmed landed in Klaviyo, read back from `GET /api/events`:
+
+```
+2026-08-04T12:55:25+00:00  xfree143+consenttest@gmail.com  app=FLOWTRACK
+   resume_link  = https://checkout.stripe.com/c/pay/cs_live_a1wT1ejg4P4CCK7NmMzPjg1Q033F…
+   restart_link = https://store.plainspokenfoundrynine.com/?product=FLOWTRACK
+```
+
+Both links populated, `app_name` set. L2's first step is a `TIME_DELAY` of `delay_seconds: 3600`
+(the second is `169200`, i.e. 47h more, making E2's "48h" the total elapsed since trigger).
+**L2-E1 is therefore due at approximately 13:55 UTC** into an inbox we own.
+
+The same profile also has an earlier `Started Checkout` at **12:29:35 UTC** for TASKFLOW, from a
+failed endpoint attempt. It predates L2's activation at 12:52:16, so by the no-backfill rule it did
+**not** enrol and should produce no mail — which makes it a free negative control. If a TASKFLOW
+cart-abandon email turns up around 13:29 UTC, the no-backfill assumption recorded throughout this
+document is wrong and much of the timing reasoning here needs revisiting. A dead Stripe Checkout session was created and will expire by itself — no card entered,
+no charge. That send is the first end-to-end proof that a PF9 lifecycle email actually reaches an
+inbox, and **it has not been observed yet** — do not record this as proven until the mail arrives.
+
+> **Endpoint gotcha, cost a couple of attempts.** The store API is on
+> `app.plainspokenfoundrynine.com/store-api`, **not** `store.plainspokenfoundrynine.com`, and the
+> Blueprint prefix is `/store-api`, not `/api/store`. Both wrong guesses return nginx's bare
+> **405 Not Allowed**, which reads like a method problem rather than a wrong host.
+
+### Still open after activation
+
+1. **L6's trigger filter** — unchanged, and it is why L6 is still Draft. Add
+   `remaining_app_count equals 0` to the trigger, matching L7, then it can be switched on.
+2. **L2-E1's subject line** — `Stripe hiccup on your {{ event.app_name }} subscription?` is now
+   **live copy going to real customers**, and it asserts a payment failure that usually did not
+   happen. This moved from "amber, cosmetic" to "amber, customer-facing" the moment the flow went on.
+   It is a text edit on one template and should be near the front of the queue.
+3. **Template names** — still three clones of `2026-08-02 <HH:MM> PF9 — Trial Day 3: Check-in`, one
+   `Untitled email template`, one `null`. Riskier now than it was an hour ago: editing the wrong one
+   now changes a live email.
 
 ---
 
