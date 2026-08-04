@@ -1319,17 +1319,45 @@ inbox, and **it has not been observed yet** — do not record this as proven unt
 > Blueprint prefix is `/store-api`, not `/api/store`. Both wrong guesses return nginx's bare
 > **405 Not Allowed**, which reads like a method problem rather than a wrong host.
 
-### Still open after activation
+### The three follow-ups — closed 2026-08-04, same day
 
-1. **L6's trigger filter** — unchanged, and it is why L6 is still Draft. Add
-   `remaining_app_count equals 0` to the trigger, matching L7, then it can be switched on.
-2. **L2-E1's subject line** — `Stripe hiccup on your {{ event.app_name }} subscription?` is now
-   **live copy going to real customers**, and it asserts a payment failure that usually did not
-   happen. This moved from "amber, cosmetic" to "amber, customer-facing" the moment the flow went on.
-   It is a text edit on one template and should be near the front of the queue.
-3. **Template names** — still three clones of `2026-08-02 <HH:MM> PF9 — Trial Day 3: Check-in`, one
-   `Untitled email template`, one `null`. Riskier now than it was an hour ago: editing the wrong one
-   now changes a live email.
+All three were raised above as open. Two were real and are fixed; the third turned out to rest on a
+false premise, which is recorded here rather than quietly dropped.
+
+**1. L6's trigger filter — FIXED.** Added in the UI; the API cannot write flow definitions either.
+L6's trigger condition is now byte-identical to L7's, verified by reading both back and comparing:
+
+```json
+{"type": "metric-property", "metric_id": "REutQc", "field": "remaining_app_count",
+ "filter": {"type": "numeric", "operator": "equals", "value": 0}}
+```
+
+Both flows hang off the same metric `REutQc` (Cancelled Subscription); the filter is what separates
+"cancelled one app of several" from "actually gone". **L6 is still Draft** — the fix removes the
+blocker but switching it on sends real mail, so that stays a founder decision.
+
+**2. L2-E1's subject — FIXED.** Now `still thinking about {{ event.app_name|default:'PF9' }}?`,
+preview `Your link's still live if you want it.` The `|default:` filter is preserved.
+
+Worth noting what the audit turned up on the way: **the email body was never the problem.** It reads
+*"Sometimes that's a card issue, sometimes it's second thoughts"* and then branches to cover both,
+which is honest. Only the subject and preview asserted a failure. So the fix was not "rewrite the
+email", it was "make the subject agree with the body it is attached to" — and the new subject matches
+the body's own second-thoughts branch. Had only the flagged subject been changed without reading the
+body, the change would have been right by luck rather than by knowing.
+
+**3. Template names — NOT a real issue; the earlier entry was wrong.** It claimed the risk was
+"editing the wrong one now changes a live email". That premise does not hold: **none of the five
+flow templates are in the template library.** `GET /api/templates` returns 6 templates, all cleanly
+named, and `QSsqvH` / `Vf7eMc` / `R8kVqk` / `Rr6sCj` / `WAn6mF` are not among them. They are
+message-embedded, reachable only by opening that specific message inside the flow editor — where the
+message name is already correct (`L2-E1 - Cart abandon 1h (resume link)` and so on).
+
+The tell was a write probe: `PATCH /api/templates/Rr6sCj` returns **404 "Template with id 'Rr6sCj'
+does not exist"** while `GET` on the same id returns it fine. A GET-visible, PATCH-invisible template
+is an embedded one. So the ugly `2026-08-02 19:48 PF9 — Trial Day 3: Check-in` names are clone
+artifacts on objects nobody browses, with no live-email risk attached. Renaming them would have been
+busywork justified by a hazard that was never there. **Closed as won't-fix.**
 
 ---
 
