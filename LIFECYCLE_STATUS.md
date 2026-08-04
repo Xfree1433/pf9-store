@@ -1244,6 +1244,10 @@ Final state, read back from the API rather than from the canvas. Flows activated
 | | | `113498550` | `R2bqUN` L7-E2 - Win-back 44d | **live** |
 | L6 `VgquRn` | draft | `113496376` | `SNHiyi` L6-E1 - Churn save 24h | draft |
 
+**↑ This table is a snapshot of ~12:55 UTC, kept as written.** L6's row is no longer current: its
+trigger filter was added and it was switched on later the same day. See *"L6 switched on — all three
+lifecycle flows now live"* below for the current state.
+
 > **Read the status off the action, not the message.** The column above is deliberately titled
 > *action* status. A `flow-message` object carries no status at all — its attributes are exactly
 > `channel`, `content`, `created`, `name`, `updated`. The Draft/Live control the UI draws on the
@@ -1333,8 +1337,7 @@ L6's trigger condition is now byte-identical to L7's, verified by reading both b
 ```
 
 Both flows hang off the same metric `REutQc` (Cancelled Subscription); the filter is what separates
-"cancelled one app of several" from "actually gone". **L6 is still Draft** — the fix removes the
-blocker but switching it on sends real mail, so that stays a founder decision.
+"cancelled one app of several" from "actually gone". **L6 was then switched on — see below.**
 
 **2. L2-E1's subject — FIXED.** Now `still thinking about {{ event.app_name|default:'PF9' }}?`,
 preview `Your link's still live if you want it.` The `|default:` filter is preserved.
@@ -1358,6 +1361,35 @@ does not exist"** while `GET` on the same id returns it fine. A GET-visible, PAT
 is an embedded one. So the ugly `2026-08-02 19:48 PF9 — Trial Day 3: Check-in` names are clone
 artifacts on objects nobody browses, with no live-email risk attached. Renaming them would have been
 busywork justified by a hazard that was never there. **Closed as won't-fix.**
+
+### L6 switched on — all three lifecycle flows now live
+
+Once the trigger filter was in, L6 was activated on founder instruction. Set via the **message**
+dropdown (Draft → Live), not the `Review and turn on` button; the flow header flipped to Live on its
+own again, confirming the silent-flip behaviour recorded above is repeatable and not a one-off.
+
+Full state, every field re-read from the API after the change:
+
+| Flow | flow | send action(s) | action status | trigger filter | converter exclusion |
+|---|---|---|---|---|---|
+| L2 `RWvZ2m` | live | `113495627`, `113495856` | live, live | none (correct — cart abandon) | present on both |
+| L7 `RZQKa2` | live | `113497604`, `113498550` | live, live | `remaining_app_count = 0` | present on both |
+| L6 `VgquRn` | live | `113496376` | live | `remaining_app_count = 0` | present |
+
+Two things checked deliberately rather than assumed:
+
+- **The trigger filter survived the status change.** Editing a definition and then flipping status are
+  separate writes; the filter was re-read afterwards, not before.
+- **All five send actions still carry the converter exclusion** (`profile-metric XEMaYg count = 0
+  since flow-start`). That is the guard which stops us emailing someone who already came back, and it
+  matters more now that all three flows are live at once.
+
+Note that L6 and L7 share a metric *and* now share a filter, so a fully-churned customer gets the L6
+churn-save at day 1 and then L7 at day 30 and day 44. That is the intended ladder, not a duplicate.
+
+**Smart Sending is off on all five** — unchanged, still the open amber from the original audit. With
+three live flows on overlapping audiences that is now the most likely source of a customer getting
+more mail than intended, so it is the next thing worth a decision.
 
 ---
 
