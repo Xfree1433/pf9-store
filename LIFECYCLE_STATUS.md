@@ -658,9 +658,16 @@ non-consented profile, which still needs a send to a `NEVER_SUBSCRIBED` address 
 **Residue left behind, on purpose.** The profile stays subscribed rather than being cleaned up. It is
 not the only deliverable address — see the correction in the header callout, there are three — but it
 is the only one carrying a **Started Checkout** event, which is the L2 Cart Abandon trigger. That
-makes it the natural canary: **turning L2 Live would email it**, a real send test that costs nothing
-and lands in an inbox already owned. A dead Stripe Checkout session was also created and will expire
-on its own; no card, no charge.
+makes it the natural canary for a first real send test, into an inbox already owned. A dead Stripe
+Checkout session was also created and will expire on its own; no card, no charge.
+
+> ⚠️ **Correction to the sentence that used to end that paragraph.** It said "turning L2 Live would
+> email it". **Almost certainly wrong.** Klaviyo flows act on events received *after* activation; they
+> do not backfill history, so an event from 12:29 today would not retroactively enter a flow switched
+> on this afternoon. Stated as the documented behaviour, not as something observed here. It does not
+> cost anything either way — firing a fresh checkout after activation takes one `curl` and gives a
+> canary that definitely qualifies. Worth flagging as a trap in its own right: "the trigger event
+> already exists" reads like readiness and is not.
 
 ---
 
@@ -1102,6 +1109,114 @@ not grant consent either, so the two live flows are in the same position. See "C
 Failures are logged, never raised — `[Store API] Klaviyo event "Started Checkout" ...` on the store
 API journal is the only place a broken send shows up. A silent absence of that line means
 `KLAVIYO_API_KEY` is unset, not that everything is fine.
+
+---
+
+## Draft flows — activation readiness audit, 2026-08-04
+
+L2, L6 and L7 have sat in Draft since 2026-08-02, blocked on consent. Consent is now proven (see
+"Consent path proven end-to-end"), so the only thing left is the decision to switch them on. Before
+putting that decision up, all three were re-read from the API — **read-only, nothing was changed** —
+because switching a flow Live is irreversible per send and there are three deliverable inboxes today.
+
+Read via `GET /api/flows/<id>?additional-fields[flow]=definition`, plus
+`GET /api/flows/<id>/flow-actions`, `GET /api/flow-actions/<id>/flow-messages` and
+`GET /api/templates/<id>`. Not from the canvas.
+
+> **Revision gotcha.** `additional-fields[flow]=definition` returns HTTP 400
+> `"additional-fields must be in []"` on revision `2024-10-15`. It needs `2025-01-15` or later;
+> `2025-07-15` was used here. The 400 does not say the revision is the problem, so this reads like a
+> malformed request and costs a while to spot.
+>
+> A second one: `include=flow-actions` returns the actions with `definition` **absent** — names,
+> subjects, templates and `additional_filters` all come back as `None`. That looks exactly like an
+> unbuilt flow. The populated copy is inside the *flow's* own `definition.actions`, not in `included`.
+
+### As built
+
+| | L2 `RWvZ2m` "PF9 Cart Abandon" | L6 `VgquRn` "PF9 Churn Save" | L7 `RZQKa2` "PF9 Win-back" |
+|---|---|---|---|
+| Status | draft | draft | draft |
+| Trigger metric | `RDTdMQ` Started Checkout | `REutQc` Cancelled Subscription | `REutQc` Cancelled Subscription |
+| Trigger filter | none | **none** | `remaining_app_count` numeric equals `0` |
+| `profile_filter` | null | null | null |
+| Ladder | 1h → E1 → 47h → E2 (48h) | 1d → E1 | 30d → E1 → 14d → E2 (44d) |
+| Messages | `UUGHrB`, `SuMhfB` | `SNHiyi` | `WqSzAV`, `R2bqUN` |
+| Templates | `QSsqvH`, `Vf7eMc` | `WAn6mF` | `R8kVqk`, `Rr6sCj` |
+
+All five sends agree on the things that matter mechanically: sender
+`support@plainspokenfoundrynine.com`, `is_transactional: false`, `use_smart_sending: false`, and an
+identical converter exclusion —
+
+```json
+{"type": "profile-metric", "metric_id": "XEMaYg", "measurement": "count",
+ "measurement_filter": {"type": "numeric", "operator": "equals", "value": 0},
+ "timeframe_filter": {"type": "date", "operator": "flow-start"}}
+```
+
+`XEMaYg` is `Placed Order`, integration `API`. So nobody who buys (or re-buys) during the delay gets
+the next email. On L2 that is the abandon guard; on L6/L7 it is the "they came back" guard.
+
+### Green — checked, correct
+
+- **Merge tags all resolve against real event payloads.** Every tag in every template, listed exhaustively
+  rather than spot-checked: `event.app_name`, `event.resume_link` (L2-E1 only), `event.restart_link`
+  (L2-E2 only), `event.reactivate_link` (L6-E1, L7-E1), `person.first_name`. `Started Checkout` emits
+  `app_name`/`resume_link`/`restart_link`; `Cancelled Subscription` emits `app_name`/`reactivate_link`.
+  Nothing references a property that is never sent.
+- **The resume/restart trap is avoided.** `QSsqvH` contains `resume_link` and no `restart_link`;
+  `Vf7eMc` contains `restart_link` and no `resume_link`. Swapping these is the failure `store_api.py`
+  emits both links to make possible, and it would be invisible in the UI.
+- **Every tag carries a `|default:`** — `app_name|default:'PF9'`, `first_name|default:'there'` — so a
+  missing property degrades to a generic word instead of rendering blank.
+- **Unsubscribe present in all five templates.**
+- L7's trigger filter is right, and matches what `store_api.py:1338-1341` says `remaining_app_count`
+  is for.
+- `person.first_name` really is populated, not just defaulted away: `_klaviyo_sync` (`:249-253`) and
+  `_klaviyo_event` (`:331-335`) both split the customer name and set `first_name`/`last_name` on the
+  profile. It falls back to `there` only when Stripe gave no name at all.
+
+### Amber — found, not fixed
+
+1. **L6 has no trigger filter, and needs the same one L7 has.** `trigger_filter` is `null`, so a
+   customer who cancels one app out of five enters the churn-save flow and is asked why they left —
+   while still paying for four. `store_api.py` emits `remaining_app_count` on the event *specifically*
+   to prevent this, and L7 uses it. L6 was simply not given it. **This is the one substantive build
+   defect and it is a customer-visible one.** It is a UI edit (see below).
+2. **Template names are useless and that is a live hazard.** Three of the five still carry the clone
+   artifact `2026-08-02 <HH:MM> PF9 — Trial Day 3: Check-in` (`QSsqvH`, `Vf7eMc`, `WAn6mF`), one reads
+   `2026-08-02 20:34 Untitled email template` (`R8kVqk`), and one has **no name at all** — `null`
+   (`Rr6sCj`). The Klaviyo template list is therefore three near-identical rows plus two blanks, none
+   describing its contents. Editing the wrong one later is a realistic mistake with no undo. The
+   *message* names are fine (`L2-E1 - Cart abandon 1h (resume link)` etc.); it is only the templates.
+3. **L2-E1's subject asserts a cause it cannot know.** `Stripe hiccup on your {{ event.app_name }}
+   subscription?` with preview `If it was a card issue, here's the link to retry.` The trigger is
+   `Started Checkout` with no purchase — which is *usually* hesitation, not a declined card. Telling
+   someone who chose not to buy that their payment failed is wrong and slightly alarming. Copy, not
+   mechanism; it changes nothing about whether the flow works.
+4. **Smart Sending is off on all five, deliberately** (documented under L2 — it would drop the
+   highest-intent email in the funnel). Worth re-stating as a live consequence rather than a setting:
+   with three flows on and no frequency cap, one person can legitimately receive several PF9 emails
+   in a short window. Acceptable at current volume; revisit if the flow count grows.
+
+### What activation cannot be done by
+
+Every flow read in this audit was a `GET`. **No write endpoint was tried**, deliberately — a probe
+against a live flow risks being the change it is testing. So the following is the working assumption,
+not an observation: Klaviyo exposes flow messages and flow definitions for reading, and the documented
+mutation is `PATCH /api/flows/<id>` carrying `status` only, which would switch a flow Live but cannot
+add L6's missing trigger filter. On that reading both the L6 fix and the activation are **UI work, and
+the UI is the founder's**. If someone later finds a definition-write endpoint, that changes the *how*,
+not the decision — activation still sends real mail and still needs a human to choose it.
+
+Two practical notes for whenever it happens:
+
+- **Fix L6's trigger filter before activating L6**, or activate L2 and L7 only. Activating L6 as built
+  ships a known defect.
+- **The canary needs a fresh checkout.** Flows do not backfill, so the `Started Checkout` event
+  already sitting on `xfree143+consenttest@gmail.com` will not pull it into a flow switched on
+  afterwards. One `curl` against the checkout endpoint after activation produces a canary that
+  actually qualifies.
 
 ---
 
