@@ -1391,6 +1391,52 @@ churn-save at day 1 and then L7 at day 30 and day 44. That is the intended ladde
 three live flows on overlapping audiences that is now the most likely source of a customer getting
 more mail than intended, so it is the next thing worth a decision.
 
+**↑ Superseded the same day.** That decision was taken within the hour — see *"Smart Sending turned
+on"* immediately below. This paragraph is kept as the statement of the problem that prompted it.
+
+### Smart Sending turned on — 2026-08-04, four of five
+
+Enabled on founder instruction, per send action, in each message's **Email details → Settings →
+"Skip recently emailed profiles"** — scroll past the template preview, it is below the fold. The
+setting is per-message; a guess at an account-level page (`/settings/account/emails`) returned a
+Klaviyo 404, which shows only that that URL is wrong, not that no account-level control exists.
+**The window is 16 hours**, read off the control's own caption rather than from documentation.
+
+Verified from the flow definition API afterwards, not from the canvas:
+
+| Send action | Message | `smart_sending_enabled` |
+|---|---|---|
+| `113495627` | L2-E1 - Cart abandon 1h | **false — deliberately, see below** |
+| `113495856` | L2-E2 - Cart abandon 48h | true |
+| `113497604` | L7-E1 - Win-back 30d | true |
+| `113498550` | L7-E2 - Win-back 44d | true |
+| `113496376` | L6-E1 - Churn save 24h | true |
+
+**The field is `smart_sending_enabled`, nested in `data.message` of a `send-email` action** — not
+`use_smart_sending`, and not on the action itself. A first check looked for the wrong key against the
+wrong node type (`SEND_EMAIL` rather than `send-email`), found nothing, and printed a clean-looking
+report with no rows in it. An empty result is not a negative result; it printed the flow status
+happily, which made it look like it had worked. Anything checking these flags should assert it found
+five actions before believing what it says about them.
+
+**Why L2-E1 was left off.** The canary send was in flight into
+`xfree143+consenttest@gmail.com`, due ~13:55 UTC from that exact action. Smart Sending is evaluated
+at send time, so enabling it first would have risked Klaviyo silently dropping the one email this
+whole workstream is trying to observe arriving. **As of this commit it is still off** — that is a
+loose end, not a decision: it is to be switched on once the canary is resolved, and this table's
+first row must be corrected to `true` when it is. If the row still reads `false` and the Canary
+section below is resolved, the follow-through was dropped.
+
+**What this trades away.** Smart Sending **skips, it does not delay**. If the recipient received any
+other email inside the 16 hours, the lifecycle email is dropped entirely, not sent late. So this buys
+protection against over-mailing overlapping audiences at the price of a *new* silent-non-send path —
+the same shape of failure as the day-27 email and the two-month `subscription_started` bug. It is the
+right trade with three flows live on overlapping audiences, and it is one checkbox to reverse, but
+"the email didn't send" now has two innocent explanations instead of one. Klaviyo is understood to
+surface these as *Skipped* in per-message analytics, which would be the place to look before assuming
+a flow is broken — **that is from the vendor's description, not observed here**, and no PF9 message
+has been skipped yet to confirm it. Worth confirming the first time a send goes missing.
+
 ---
 
 ## L5 — closed 2026-08-02
