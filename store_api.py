@@ -770,16 +770,30 @@ def init_db():
             )
         ''')
         # Lightweight migration: add later columns to pre-existing subscriptions tables.
+        #
+        # init_db() runs at import in wsgi_store.py, and gunicorn starts 2 workers
+        # without --preload, so on the restart that first ships a new column both
+        # workers can read the same PRAGMA and both attempt the ALTER. The loser
+        # gets "duplicate column name" and dies during boot. Tolerating exactly
+        # that error — and nothing else — makes the migration safe to race.
+        def add_column(name, decl):
+            if name in cols:
+                return
+            try:
+                conn.execute(f'ALTER TABLE subscriptions ADD COLUMN {name} {decl}')
+            except sqlite3.OperationalError as e:
+                if 'duplicate column name' not in str(e).lower():
+                    raise
+                print(f'[Store API] Column {name} already added by another worker')
+
         cols = {row['name'] for row in conn.execute("PRAGMA table_info(subscriptions)").fetchall()}
-        if 'trial_end' not in cols:
-            conn.execute('ALTER TABLE subscriptions ADD COLUMN trial_end TEXT')
+        add_column('trial_end', 'TEXT')
         # Claim-marker for the day-27 pre-charge email. Holds the trial_end the
         # notice was sent FOR, not a send timestamp, so that extending a trial
         # re-arms the notice for the new date instead of being swallowed as a
         # duplicate. Existing rows get NULL = "not yet sent", which is correct:
         # no row predating this column was ever sent one.
-        if 'trial_notice_sent_for' not in cols:
-            conn.execute('ALTER TABLE subscriptions ADD COLUMN trial_notice_sent_for TEXT')
+        add_column('trial_notice_sent_for', 'TEXT')
         conn.commit()
 
 

@@ -50,8 +50,9 @@ STORE_API=$STORE_DIR/store_api.py
 VENV=$STORE_DIR/venv
 UNIT=pf9-store-api.service
 PORT=5011
-EXPECT_MD5=4e2d690e869dc97e0d03cff6202a220e   # checkout consent tick -> _klaviyo_subscribe
-# previous: 01e45e4187644ae68e9ce68d176310cd   (trial start writes subscription_status=trialing)
+EXPECT_MD5=6628991de9ce300ba05dfa038c6b0b17   # day-27 pre-charge notice sends from the webhook
+# previous: 4e2d690e869dc97e0d03cff6202a220e   (checkout consent tick -> _klaviyo_subscribe)
+# before:   01e45e4187644ae68e9ce68d176310cd   (trial start writes subscription_status=trialing)
 BRIDGR_ENV=/opt/bridgr/.env
 OVERRIDE_ENV=$STORE_DIR/pf9-store-api.env
 
@@ -146,18 +147,28 @@ echo "  new MainPID=$NEW_PID"
   echo "  !! service did not come back. journalctl -u $UNIT -n 40"; exit 1; }
 
 say "Verify: confirm the new code is what got loaded"
-# The trialing marker is this build's distinguishing feature. It pairs with the
-# Klaviyo-side day-27 profile filter (subscription_status not-equals cancelled
-# OR not-set): without this write, a returning customer stays labelled
-# 'cancelled' through their whole second trial.
+# _send_trial_ending_email is this build's distinguishing feature, and note that
+# the sense of that check is INVERTED from every previous version of this script.
+# It used to assert the emailer was ABSENT — back when the day-27 notice had been
+# handed to Klaviyo and a local copy would have double-sent. As of 2026-08-04 the
+# send is deliberately back in _handle_trial_will_end, because the Klaviyo message
+# is marketing-classified and therefore never reaches a customer who declined the
+# checkout consent tick: they would be charged unwarned. So its presence is now
+# the thing to confirm, and its absence means an old build is loaded.
+#
+# The duplicate risk that the old check guarded against is real but has moved to
+# Klaviyo's side: message ReYNde (flow X2tesT, action 107908224) must be switched
+# OFF, or a consented customer gets both notices. That is a UI-only change — the
+# public API exposes flow messages read-only — so this script cannot assert it.
 if grep -q KLAVIYO_API_KEY "$STORE_API" \
    && grep -q _owned_app_properties "$STORE_API" \
    && grep -q _klaviyo_event "$STORE_API" \
    && grep -q _klaviyo_subscribe "$STORE_API" \
    && grep -q "'subscription_status': 'trialing'" "$STORE_API" \
-   && ! grep -q _send_trial_ending_email "$STORE_API"; then
+   && grep -q _send_trial_ending_email "$STORE_API" \
+   && grep -q trial_notice_sent_for "$STORE_API"; then
   echo "  OK — Klaviyo sync + event emitter + consent grant + trialing reset present,"
-  echo "       dup day-27 emailer gone"
+  echo "       in-house day-27 emailer present with its idempotency claim column"
 else
   echo "  !! loaded file is not the expected build"; exit 1
 fi
@@ -188,31 +199,38 @@ say "bridgr.service untouched"
 systemctl is-active bridgr.service || true
 
 echo
-echo "Rollback if needed — the day-27 fix has TWO halves and this script owns only one."
+echo "Rollback if needed — the day-27 notice has TWO halves and this script owns only one."
 echo
 echo "  1. Code (here):"
-echo "       cd $STORE_DIR && git checkout 12e1eef -- store_api.py && systemctl restart $UNIT"
-echo "     12e1eef = the build before the subscription_status=trialing write. Rolling back"
+echo "       cd $STORE_DIR && git checkout c203ec7 -- store_api.py && systemctl restart $UNIT"
+echo "     c203ec7 = the build before the day-27 send moved back in-house. Rolling back"
 echo "     also invalidates EXPECT_MD5 above, so this script refuses to run again until you"
-echo "     restore the old sum f0e2b689c0249214803d6b2a81770809."
+echo "     restore the old sum 4e2d690e869dc97e0d03cff6202a220e — and its verify block"
+echo "     asserts _send_trial_ending_email is ABSENT, so the two must be restored together."
 echo
-echo "  2. Klaviyo, flow X2tesT (PF9 Trial Onboarding), profile filter added 2026-08-02:"
+echo "     The DB column trial_notice_sent_for is left in place by a rollback and does no"
+echo "     harm: nothing in c203ec7 reads it. Do NOT drop it — rolling forward again would"
+echo "     otherwise re-race the migration for no reason."
+echo
+echo "  2. Klaviyo message ReYNde (flow X2tesT, action 107908224) — the OTHER half."
+echo
+echo "     READ THIS BEFORE ROLLING BACK. Exactly one of the two must be sending:"
+echo "       ReYNde ON  + rolled-forward code = consented customers get the notice TWICE"
+echo "       ReYNde OFF + rolled-back  code = NOBODY gets it, and every converting trial"
+echo "                                        is charged with no warning at all"
+echo "     So if ReYNde has been switched off, switch it back ON as part of any code"
+echo "     rollback — not afterwards. The second row is the worse failure and it is silent:"
+echo "     nothing errors, no log line appears, the charge simply lands unannounced."
+echo
+echo "     Note what ReYNde alone cannot do, which is why the code moved in the first"
+echo "     place: it is marketing-classified, so it only reaches profiles with marketing"
+echo "     consent. Customers who declined the checkout tick are unreachable that way."
+echo "     Rolling back accepts that gap; it does not fix it."
+echo
+echo "     UI only — https://www.klaviyo.com/flow/X2tesT/edit — the public API exposes"
+echo "     flow messages read-only, so this cannot be scripted here."
+echo
+echo "  3. Unrelated to the above, still current: flow X2tesT's profile filter"
 echo "       subscription_status not-equals 'cancelled'  OR  subscription_status not-set"
-echo
-echo "     Step 1 does NOT disable it, and usually should not. The day-27 guard keeps"
-echo "     working after a code rollback because 12e1eef ALSO writes"
-echo "     subscription_status='cancelled' on the cancel path — that write is what the"
-echo "     filter reads, and both builds make it."
-echo
-echo "     What a code rollback does lose is the 'trialing' reset at trial start, so a"
-echo "     returning customer stays labelled 'cancelled' through their entire second"
-echo "     trial. That is dormant today: X2tesT is No-re-entry, so they never re-enter"
-echo "     and the filter never judges them. It turns into a silent suppression of the"
-echo "     whole onboarding sequence the moment re-entry is switched on. Rolled-back"
-echo "     code + re-entry enabled = a flow that sends nothing and logs nothing."
-echo
-echo "     So: leave the filter alone for an ordinary rollback. Remove it only if you are"
-echo "     abandoning the property-based approach, or before enabling re-entry on a"
-echo "     rolled-back build. To remove: https://www.klaviyo.com/flow/X2tesT/edit"
-echo "     -> flow settings -> Profile filters. UI only — the public API exposes flows"
-echo "     read-only, so there is no curl for this and it cannot be scripted here."
+echo "     governs the MARKETING sequence, not the billing notice. Leave it alone for an"
+echo "     ordinary rollback — both builds write subscription_status, so it keeps working."
