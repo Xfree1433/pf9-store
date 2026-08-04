@@ -84,8 +84,11 @@ _PROPERTY_APPS      = {'LANDLORDR', 'TENANTLINK', 'TENANTLINKR', 'PROPERTY_BUNDL
 
 
 # ── Klaviyo lifecycle-email config ──
-# Drives the trial/paid onboarding flows. Klaviyo owns the day-27 pre-charge
-# notice, which is why _handle_trial_will_end no longer emails directly.
+# Drives the trial/paid onboarding flows — marketing only, as of 2026-08-04.
+# The day-27 pre-charge notice moved back into _handle_trial_will_end: it is a
+# billing notice, and routing it through Klaviyo made it consent-gated, so
+# anyone who declined the checkout tick would have been charged unwarned.
+# Klaviyo message ReYNde must stay OFF to avoid double-sending it.
 KLAVIYO_API_KEY    = os.environ.get('KLAVIYO_API_KEY', '')
 KLAVIYO_API_BASE   = 'https://a.klaviyo.com/api'
 KLAVIYO_REVISION   = os.environ.get('KLAVIYO_REVISION', '2024-10-15')
@@ -192,12 +195,39 @@ def _klaviyo_headers():
     }
 
 
-def _klaviyo_format_trial_end(trial_end_iso):
-    """Render the billing date the way the day-27 email reads it: 'August 30, 2026'."""
+def _format_trial_end(trial_end_iso):
+    """Render the billing date as the customer reads it: 'August 30, 2026'.
+
+    Shared: it feeds both the Klaviyo `trial_end_date` profile property and the
+    store's own day-27 pre-charge email, so the two can never disagree about
+    the date. (Named _klaviyo_format_trial_end until the day-27 send moved back
+    in-house on 2026-08-04.)
+    """
     if not trial_end_iso:
         return None
     try:
         return datetime.fromisoformat(trial_end_iso).strftime('%B %-d, %Y')
+    except Exception:
+        return None
+
+
+def _trial_price_display(sub):
+    """Dollars the customer will actually be charged, as a bare string: '49', '49.50'.
+
+    Read off the subscription's own line item rather than any stored or
+    hardcoded figure, so the pre-charge email cannot quote a price that differs
+    from the invoice. Returns None if the shape isn't what we expect — callers
+    must handle that rather than printing 'None' at the customer.
+    """
+    try:
+        items = ((sub.get('items') or {}).get('data')) or []
+        if not items:
+            return None
+        unit_amount = ((items[0].get('price') or {}).get('unit_amount'))
+        if unit_amount is None:
+            return None
+        dollars = unit_amount / 100
+        return f'{dollars:.0f}' if dollars == int(dollars) else f'{dollars:.2f}'
     except Exception:
         return None
 
@@ -207,8 +237,9 @@ def _klaviyo_sync(email, name='', properties=None, add_list=None, remove_list=No
     Upsert a Klaviyo profile and move it between lifecycle lists.
 
     Fail-soft like _hubspot_push_contact: never raises, never blocks the webhook.
-    Klaviyo drives the day-27 pre-charge notice, so a failure here is logged
-    loudly — a trial that never lands on the list gets no billing warning.
+    Since 2026-08-04 this carries marketing onboarding only — the day-27 billing
+    notice is sent directly by _handle_trial_will_end — so a failure here costs
+    onboarding email, not a billing warning.
     """
     if not KLAVIYO_API_KEY or not email:
         return
@@ -734,13 +765,21 @@ def init_db():
                 temp_password           TEXT,
                 created_at              TEXT NOT NULL,
                 cancelled_at            TEXT,
-                trial_end               TEXT
+                trial_end               TEXT,
+                trial_notice_sent_for   TEXT
             )
         ''')
-        # Lightweight migration: add trial_end to pre-existing subscriptions tables.
+        # Lightweight migration: add later columns to pre-existing subscriptions tables.
         cols = {row['name'] for row in conn.execute("PRAGMA table_info(subscriptions)").fetchall()}
         if 'trial_end' not in cols:
             conn.execute('ALTER TABLE subscriptions ADD COLUMN trial_end TEXT')
+        # Claim-marker for the day-27 pre-charge email. Holds the trial_end the
+        # notice was sent FOR, not a send timestamp, so that extending a trial
+        # re-arms the notice for the new date instead of being swallowed as a
+        # duplicate. Existing rows get NULL = "not yet sent", which is correct:
+        # no row predating this column was ever sent one.
+        if 'trial_notice_sent_for' not in cols:
+            conn.execute('ALTER TABLE subscriptions ADD COLUMN trial_notice_sent_for TEXT')
         conn.commit()
 
 
@@ -1072,12 +1111,7 @@ def _handle_checkout_completed(session):
             trial_end_iso = datetime.utcfromtimestamp(int(te)).isoformat()
         # Read the amount actually being charged rather than a hardcoded figure,
         # so the pre-charge email can never quote a price that differs from the bill.
-        items = ((sub.get('items') or {}).get('data')) or []
-        if items:
-            unit_amount = ((items[0].get('price') or {}).get('unit_amount'))
-            if unit_amount is not None:
-                dollars = unit_amount / 100
-                price_display = f'{dollars:.0f}' if dollars == int(dollars) else f'{dollars:.2f}'
+        price_display = _trial_price_display(sub)
     except Exception as e:
         print(f'[Store API] Could not retrieve subscription {subscription_id}: {e}')
 
@@ -1132,12 +1166,13 @@ def _handle_checkout_completed(session):
     except Exception as e:
         print(f'[Store API] HubSpot subscriber push error: {e}')
 
-    # Enroll in the Klaviyo trial flow. trial_end_date is what the day-27
-    # pre-charge email renders, so it has to be on the profile from day 0.
+    # Enroll in the Klaviyo trial flow. trial_end_date/app_price are kept on the
+    # profile for the onboarding copy; the day-27 pre-charge email no longer
+    # reads them — it takes both straight off the Stripe subscription instead.
     trial_properties = {
         'app_name': product,
         'app_price': price_display,
-        'trial_end_date': _klaviyo_format_trial_end(trial_end_iso),
+        'trial_end_date': _format_trial_end(trial_end_iso),
         'manage_subscription_url': f'{STORE_URL}/login.html',
         # Starting a trial clears any earlier 'cancelled'. The property is
         # account-level and nothing else resets it on the way back up:
@@ -1342,12 +1377,27 @@ def _handle_subscription_updated(sub):
 
 
 def _handle_trial_will_end(sub):
-    """Stripe fires this ~3 days before a trial ends. Refresh the billing date
-    everywhere so the day-27 pre-charge email quotes the date Stripe will
-    actually charge on. The email itself is sent by Klaviyo, not here."""
+    """Stripe fires this 3 days before a trial ends — day 27 of a 30-day trial.
+
+    Sends the pre-charge notice, and refreshes the billing date in Klaviyo so
+    anything else keyed off the profile still agrees with Stripe.
+
+    The send lives here rather than in Klaviyo (where it lived until
+    2026-08-04) because it is a billing notice, not marketing. The Klaviyo path
+    could only reach a profile with marketing consent, so a customer who
+    declined the checkout tick — or later unsubscribed — would have been
+    charged with no warning at all. Marking the Klaviyo message transactional
+    would have fixed that, but it needs a paid plan, a metric-triggered flow and
+    Klaviyo's approval, none of which apply here. Stripe's own trial reminder is
+    not a substitute either: it fires at 7 days, not 3.
+
+    Fail-soft on everything except the send, which is the point of the handler.
+    """
     subscription_id = sub.get('id', '')
     te = sub.get('trial_end')
     trial_end_iso = datetime.utcfromtimestamp(int(te)).isoformat() if te else None
+    trial_end_display = _format_trial_end(trial_end_iso)
+    price_display = _trial_price_display(sub)
 
     # Look up who this is from our own records (avoids an extra Stripe call).
     row = None
@@ -1359,12 +1409,14 @@ def _handle_trial_will_end(sub):
             )
             conn.commit()
         row = conn.execute(
-            'SELECT email, name, product FROM subscriptions WHERE stripe_subscription_id = ?',
+            'SELECT email, name, product, status FROM subscriptions '
+            'WHERE stripe_subscription_id = ?',
             (subscription_id,)
         ).fetchone()
 
     print(f'[Store API] Trial ending soon for {subscription_id} (ends {trial_end_iso})')
     if not row or not row['email']:
+        print(f'[Store API] No local record for {subscription_id}; cannot send pre-charge notice')
         return
 
     _klaviyo_sync(
@@ -1372,9 +1424,82 @@ def _handle_trial_will_end(sub):
         name=row['name'],
         properties={
             'app_name': row['product'],
-            'trial_end_date': _klaviyo_format_trial_end(trial_end_iso),
+            'trial_end_date': trial_end_display,
         },
     )
+
+    # A trial that won't convert must not be told its card is about to be
+    # charged. Read cancellation off the Stripe object, not our status column:
+    # a customer who cancels during the trial via the billing portal gets
+    # cancel_at_period_end=True and arrives here as a `customer.subscription
+    # .updated`, which leaves our status at 'trialing'. Checking only the DB
+    # would send them a false charge notice.
+    if sub.get('cancel_at_period_end') or sub.get('canceled_at') or row['status'] == 'cancelled':
+        print(f'[Store API] {subscription_id} is cancelling; no pre-charge notice')
+        return
+
+    # Refuse to send a billing notice that cannot name the amount or the date.
+    # Silence is recoverable; a notice reading "charged $None" is not.
+    if not price_display or not trial_end_display:
+        print(
+            f'[Store API] ALERT: cannot build pre-charge notice for {subscription_id} '
+            f'(price={price_display!r}, date={trial_end_display!r}) — not sending'
+        )
+        try:
+            _send_email(
+                EMAIL_FROM_INTERNAL, NOTIFY_EMAIL,
+                f'[PF9 Store] Pre-charge notice NOT sent — {subscription_id}',
+                f'<p>{html.escape(row["email"])} is charged in 3 days and could not be told.</p>'
+                f'<p>price={html.escape(str(price_display))}, '
+                f'date={html.escape(str(trial_end_display))}</p>'
+            )
+        except Exception as e:
+            print(f'[Store API] Pre-charge alert error: {e}')
+        return
+
+    # Claim the send before making it. Stripe retries webhooks on any non-2xx,
+    # and gunicorn runs two workers, so without an atomic claim a retry or a
+    # concurrent delivery would email the customer twice. Claiming on the
+    # trial_end being notified about — rather than a bare "sent" flag — means a
+    # retry for the same date is suppressed while a genuinely new date (an
+    # extended trial) is allowed through. rowcount 0 = someone else has it.
+    with get_db() as conn:
+        claimed = conn.execute(
+            'UPDATE subscriptions SET trial_notice_sent_for = ? '
+            'WHERE stripe_subscription_id = ? '
+            '  AND (trial_notice_sent_for IS NULL OR trial_notice_sent_for <> ?)',
+            (trial_end_iso, subscription_id, trial_end_iso)
+        ).rowcount
+        conn.commit()
+
+    if not claimed:
+        print(f'[Store API] Pre-charge notice already sent for {subscription_id}; skipping')
+        return
+
+    try:
+        sent = _send_trial_ending_email(
+            email=row['email'],
+            name=row['name'],
+            product=row['product'],
+            price_display=price_display,
+            trial_end_display=trial_end_display,
+        )
+    except Exception as e:
+        print(f'[Store API] Pre-charge notice error for {subscription_id}: {e}')
+        sent = False
+
+    if not sent:
+        # Release the claim so Stripe's retry gets a real second attempt. Worst
+        # case this ends in a duplicate; for a billing warning that is the
+        # better failure than never arriving.
+        with get_db() as conn:
+            conn.execute(
+                'UPDATE subscriptions SET trial_notice_sent_for = NULL '
+                'WHERE stripe_subscription_id = ?',
+                (subscription_id,)
+            )
+            conn.commit()
+        print(f'[Store API] ALERT: pre-charge notice FAILED for {row["email"]} ({subscription_id})')
 
 
 def _handle_payment_failed(invoice):
@@ -1588,6 +1713,58 @@ def _send_welcome_email(email, name, product, password, provisioned):
     """
     if _send_email(EMAIL_FROM_CUSTOMER, email, subject, body):
         print(f'[Store API] Welcome email sent to {email}')
+
+
+def _send_trial_ending_email(email, name, product, price_display, trial_end_display):
+    """The day-27 pre-charge notice. Returns True only if Resend accepted it.
+
+    Copy is ported from Klaviyo template TGNJvL so the wording the customer gets
+    is the wording that was written and reviewed. The difference is delivery:
+    this goes out on the `customer.subscription.trial_will_end` webhook, which
+    is billing infrastructure, so it does not depend on marketing consent and
+    reaches customers who never ticked the box. See _handle_trial_will_end.
+
+    Both price_display and trial_end_display are required. A billing notice that
+    cannot state the amount or the date is worse than no notice, so the caller
+    checks for them before getting here.
+    """
+    first_name = html.escape(name.split()[0]) if name else 'there'
+    bundle_products = BUNDLE_MAP.get(product)
+    # `product` reaches us from checkout metadata, so escape it for the HTML
+    # body. The subject is plain text and takes the raw label — escaping there
+    # would show a literal '&amp;' in the inbox.
+    plain_label = 'Property Bundle' if bundle_products else product
+    app_label = html.escape(plain_label)
+    e_price = html.escape(str(price_display))
+    e_date = html.escape(str(trial_end_display))
+    manage_url = f'{STORE_URL}/login.html'
+
+    subject = f'Your {plain_label} trial ends {trial_end_display}'
+    body = f"""
+    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,sans-serif; max-width:600px; color:#1a1a1a;">
+        <p style="font-size:12px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; margin:0 0 24px;">Plainspoken Foundry Nine</p>
+        <p style="font-size:15px; line-height:1.65;">Hi {first_name},</p>
+        <p style="font-size:15px; line-height:1.65;">Your {app_label} trial ends on <strong>{e_date}</strong>. Here's exactly what happens:</p>
+        <div style="border:1px solid #1a1a1a; border-radius:4px; padding:16px 20px; margin:20px 0;">
+            <p style="margin:0; font-size:15px; line-height:1.6;"><strong>Your card is charged ${e_price} on {e_date}</strong>, then monthly after that. It's the card you entered at checkout.</p>
+        </div>
+        <table style="width:100%; border-collapse:collapse; border:1px solid #e8e8e8; margin:20px 0; font-size:14px; line-height:1.5;">
+            <tr><td style="padding:14px 20px; border-bottom:1px solid #f0f0f0;"><strong>Nothing changes in the app.</strong> Everything you've set up stays exactly as it is.</td></tr>
+            <tr><td style="padding:14px 20px; border-bottom:1px solid #f0f0f0;"><strong>Flat pricing.</strong> ${e_price}/mo, unlimited users — adding your team doesn't change the bill.</td></tr>
+            <tr><td style="padding:14px 20px;"><strong>Cancel any time</strong>, including before {e_date} if you'd rather not continue. Takes about 15 seconds, and you won't be charged.</td></tr>
+        </table>
+        <p style="font-size:15px; line-height:1.65;">You don't need to do anything to keep going.</p>
+        <p><a href="{manage_url}" style="display:inline-block; background:#1a1a1a; color:#fff; text-decoration:none; padding:12px 24px; border-radius:4px; font-size:14px; font-weight:600;">Manage your subscription →</a></p>
+        <p style="font-size:15px; line-height:1.65;">Questions about pricing or adding more apps? Reply here — I read this inbox.</p>
+        <p style="font-size:15px; line-height:1.65;">Mark</p>
+        <hr style="border:none; border-top:1px solid #e8e8e8; margin:24px 0;"/>
+        <p style="font-size:13px; color:#888; margin:0;">This is a billing notice about your {app_label} subscription, sent because your trial is ending. It isn't marketing, and there's nothing to unsubscribe from — it stops when your subscription does.</p>
+    </div>
+    """
+    sent = _send_email(EMAIL_FROM_CUSTOMER, email, subject, body)
+    if sent:
+        print(f'[Store API] Trial-ending email sent to {email} (charges {trial_end_display})')
+    return sent
 
 
 def _cors_response(response, status=200):
