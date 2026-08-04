@@ -2,10 +2,22 @@
 #
 # Restart-only deploy for pf9-store-api.service.
 #
-# Something root-side syncs /opt/pf9-store from the repo — NOT a GitHub Actions
-# runner, despite what this comment used to claim: the only workflows in this
-# repo are Pages and CodeQL. Confirm the tree is actually current before
-# restarting — `git -C /opt/pf9-store diff HEAD origin/main` should be empty.
+# /opt/pf9-store is synced from the repo by /opt/pf9-store-pull.sh — a root cron
+# job that runs EVERY MINUTE. Identified 2026-08-04; this comment previously said
+# only "something root-side", which was true but useless. It is not a GitHub
+# Actions runner: the only workflows in this repo are Pages and CodeQL. In full:
+#
+#     git fetch origin main
+#     if HEAD != origin/main: git pull --quiet && systemctl reload nginx
+#
+# Note what that last command reloads. NGINX — never pf9-store-api. That single
+# detail is the reason this script exists. Static files under /opt/pf9-store go
+# live by themselves within 60s of a push; Python never does, because nothing in
+# the automated path signals gunicorn. So a push looks like a deploy, the site
+# visibly updates, and the API keeps serving whatever it imported hours ago.
+#
+# Confirm the tree is current before restarting — `git -C /opt/pf9-store diff
+# HEAD origin/main` should be empty. Within a minute of a push it already will be.
 #
 # The restart is needed because gunicorn does not hot-reload: the workers keep
 # serving whatever code they imported at start. A healthy /health therefore
@@ -21,6 +33,15 @@
 # `ssh ... sudo ...`. Log in first, then run it:
 #   ssh -t xfree143.taile2beaa.ts.net
 #   sudo bash /opt/pf9-store/restart_store_api.sh
+#
+# If you are ALREADY on xfree143, skip the ssh line. The host holds no
+# authorized_key for itself, so that command fails with "Permission denied
+# (publickey)". On 2026-08-04 that failure scrolled past unnoticed, the sudo
+# prompt underneath it went unanswered, and the restart was reported as done
+# while the 10h-old process kept serving — every health check green throughout.
+# Trust the MainPID change and the mtime comparison below, never the impression
+# that the command ran. `grep sudo /var/log/auth.log | tail` settles it: this
+# script's invocations are logged there by name.
 #
 set -euo pipefail
 
@@ -60,13 +81,27 @@ say "Check: KLAVIYO_API_KEY (lifecycle emails are a no-op without it)"
 # Klaviyo helper in store_api.py fails soft (a print, by design — a Klaviyo
 # outage must never cost a sale), so it failed silently for a day.
 #
-# Scope status as probed 2026-08-03 against the key in $OVERRIDE_ENV:
+# Scope status as probed 2026-08-04 against the key in $OVERRIDE_ENV:
 #   events:write        PRESENT   (POST /api/events/ -> 400, not 403)
-#   subscriptions:write MISSING   (-> 403 "missing required scopes")
+#   subscriptions:write PRESENT   (POST /api/profile-subscription-bulk-create-jobs/
+#                                  -> 400 body error, not 403)
 #
-# The second one is what _klaviyo_subscribe needs, and Klaviyo does not allow
-# editing scopes on an existing private key — clone it, add Subscriptions, and
-# replace KLAVIYO_API_KEY in $OVERRIDE_ENV.
+# Both are satisfied by a Full Access key created 2026-08-04. It replaced a clone
+# that had failed to widen anything (see below), which had itself replaced the
+# events-scoped key minted on 2026-08-02 — three keys in the env in three days,
+# which is why this one is Full Access.
+#
+# Klaviyo will not let you edit an existing key's scopes, and —
+# the part that cost an hour — the row's ⋮ > Clone action copies them verbatim
+# with no opportunity to change anything. Cloning in order to "add a scope"
+# silently yields a byte-for-byte-equivalent key, same name and all. The only
+# path with a per-scope matrix is the "Create Private API Key" button.
+#
+# Beware its default if you go narrower than Full Access: a Custom Key starts at
+# No Access for EVERY scope, so a key created to add Subscriptions will silently
+# drop Events, List and Profiles unless you set all four. That would break
+# _klaviyo_sync and _klaviyo_event — the two helpers that currently work — in
+# exchange for fixing the one that does not.
 #
 # Probe rather than trust this comment; it goes stale the moment the key changes:
 #   curl -s -o /dev/null -w '%{http_code}\n' -X POST \

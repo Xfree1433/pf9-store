@@ -1,27 +1,33 @@
 # Lifecycle Status — what is actually wired
 
-**Last verified: 2026-08-03** against Klaviyo (live API), `store_api.py` @ `6f94c01` (the build
-running in production since the 2026-08-02 18:19 UTC restart), and the production DB on xfree143.
+**Last verified: 2026-08-04** against Klaviyo (live API), `store_api.py` @ `b93baa2` (the build
+running in production since the 2026-08-04 01:25:48 UTC restart, MainPID 637400), and the production
+DB on xfree143.
 
-> ## ⛔ Read first — the whole lifecycle programme delivers nothing today (2026-08-03)
+> ## ⛔ Read first — consent is wired now, but the programme has still delivered nothing (2026-08-04)
 >
-> No code path grants marketing consent **in production**, so every profile the storefront creates is
-> `NEVER_SUBSCRIBED`. Three flows are in Draft and two are live, and **none of the five can deliver
-> to a real customer.** The sharp end is the **day-27 pre-charge notice**: it is flagged
-> `transactional: false`, and `store_api.py` deleted its own sender on the assumption Klaviyo owned
-> it — so a trial converts to a charge with no warning email. That is a billing exposure, and it is
-> invisible because the flow reports healthy. See **"Consent — audited 2026-08-03"**.
+> **What changed:** as of 2026-08-04 the storefront can grant marketing consent. A customer who ticks
+> the box at checkout is subscribed through `_klaviyo_subscribe`, and the key finally carries the
+> `subscriptions:write` scope to make it stick. That closes the structural blocker this file spent
+> two days describing.
 >
-> **Status 2026-08-03:** a checkout consent step is now written and committed (`b93baa2`, `73e1fef`)
-> but **not pushed, not deployed, and inert even once deployed** — the Klaviyo key is missing the
-> `subscriptions:write` scope it needs. See **"Consent — fix built 2026-08-03"**. The day-27 exposure
-> is a *separate* fix and is still completely open: it needs `transactional: true` on that message,
-> and no amount of consent work closes it.
+> **What did not change:** the fix is not retroactive and nobody has used it yet. Every profile
+> created before this deploy is still `NEVER_SUBSCRIBED`, and no live customer has ticked the box, so
+> the population that can receive a lifecycle email is **zero today and grows only from new checkouts
+> forward**. Three flows remain in Draft, two are live. Treat "consent is fixed" as a statement about
+> the mechanism, not about the audience.
+>
+> **Still fully open — the day-27 pre-charge notice.** It is flagged `transactional: false`, and
+> `store_api.py` deleted its own sender on the assumption Klaviyo owned it, so a trial converts to a
+> charge with no warning email. Consent work does not touch this. It needs `transactional: true` on
+> that message — a UI-only change. It is a billing exposure and it stays invisible because the flow
+> reports healthy. See **"⛔ The day-27 notice has no fallback"**.
 
-⚠️ **Local is 2 commits ahead of `origin/main` and production** as of 2026-08-03 (`b93baa2`,
-`73e1fef` — the consent change). `origin/main` and production remain in sync with each other at
-`13a60bf`. Both halves of the day-27 *filter* fix are live: the Klaviyo flow filter and the
-`subscription_status: 'trialing'` write. See "Day-27 filter — 2026-08-02".
+✅ **Local, `origin/main` and production are all at `bc431e9`** (2026-08-04). The consent change went
+out as two deliberately separate pushes — `b93baa2` (API) first, restart, then `73e1fef` (checkbox) —
+because the two halves deploy on different clocks and shipping the checkbox first would have meant
+customers ticking a box the server ignored. Both halves of the day-27 *filter* fix remain live: the
+Klaviyo flow filter and the `subscription_status: 'trialing'` write. See "Day-27 filter — 2026-08-02".
 
 ✅ **The `events:write` blocker is CLEARED (2026-08-02, later the same day).** A new private key
 with Events + Lists + Profiles access replaced the old Lists+Profiles-only one; Klaviyo does not
@@ -31,6 +37,16 @@ and are selectable as flow triggers. **L2, L6 and L7 are no longer blocked on sc
 have since been built** — each is in Draft, gated on the marketing-consent question. Scope
 probe after the swap:
 `profiles` / `metrics` / `lists` / `flows` all **200**, `POST /api/events/` **202**.
+
+✅ **The `subscriptions:write` blocker is CLEARED (2026-08-04)** — the same problem a second time,
+for a second helper. See "Consent — shipped 2026-08-04" for the probe result and the two-attempt
+detour it took to get there.
+
+**The pattern behind both, worth naming once:** every key in this account was minted with exactly the
+scopes the code needed on the day it was minted, and Klaviyo does not allow editing scopes
+afterwards. So each new Klaviyo helper has cost a full key rotation, and each rotation failed
+*silently* first, because every helper in `store_api.py` fails soft by design. The 2026-08-04 key is
+Full Access specifically to end that cycle. If a future helper still 403s, the cause is not scope.
 
 `PLAYBOOK_LIFECYCLE.md` is the *spec* — what the sequences should say and why. It deliberately
 carries no implementation state, because a spec that also tracks build status stops being
@@ -128,6 +144,12 @@ Since 2026-08-02 it sits behind a conditional split on `app_count` — see "L5 �
 ---
 
 ## Consent — audited 2026-08-03
+
+> **Superseded 2026-08-04 as to the code, kept as the evidence for the finding.** The mechanism
+> described below was fixed and deployed the next day — see "Consent — shipped 2026-08-04". Read this
+> section in the past tense. Two of its conclusions still hold verbatim: the four existing profiles
+> are still `NEVER_SUBSCRIBED` (the fix is not retroactive), and the day-27 `transactional: false`
+> exposure is untouched.
 
 **Finding: nothing in the codebase ever grants marketing consent, so every profile the storefront
 creates lands `NEVER_SUBSCRIBED`. This does not only gate the three Draft flows — it means the two
@@ -228,15 +250,20 @@ deliverability, not consent, and is not evidence the send would land.
 
 ---
 
-## Consent — fix built 2026-08-03 (committed, NOT deployed, currently inert)
+## Consent — shipped 2026-08-04 (live in production)
 
-Fix 2 above. Two commits on `main`, **neither pushed at time of writing**, and the code is a
-deliberate no-op until two account-side things are done.
+Fix 2 above. Built 2026-08-03, deployed 2026-08-04 in two ordered pushes. Live and functional; see
+the "Read first" callout for why *live* still does not mean *anyone has received anything*.
 
-| | |
-|---|---|
-| `b93baa2` | API side — `_klaviyo_subscribe`, `KLAVIYO_LIST_CONSENT`, restart-script guards |
-| `73e1fef` | Storefront side — the checkbox in the subscribe modal |
+| | | |
+|---|---|---|
+| `b93baa2` | API side — `_klaviyo_subscribe`, `KLAVIYO_LIST_CONSENT`, restart-script guards | pushed, restarted 01:25:48 UTC |
+| `73e1fef` | Storefront side — the checkbox in the subscribe modal | pushed, Pages run `30868771729` success |
+
+Verified live after deploy: `store.plainspokenfoundrynine.com` returns 200 and serves
+`id="subConsent"` with **no** `checked` and **no** `required` attribute; the API rejects a probe at
+product validation rather than at required-fields, so it parses a body containing `marketing_consent`;
+`MainPID 637400` started `01:25:48 UTC` against code written `01:22:02 UTC`.
 
 ### What the code does
 
@@ -272,55 +299,103 @@ opt-in settings, read 2026-08-03). The profile would then sit unconfirmed pendin
 list-level, so this one grant is what makes *every* flow deliverable to that person, not just flows
 reading `W7gYXU`.
 
-### ⛔ Why it does nothing yet — the key is missing `subscriptions:write`
+### The scope block, and how it was cleared
 
-Probed 2026-08-03 against the key in `/opt/pf9-store/pf9-store-api.env`:
+The code shipped inert on 2026-08-03 because the key lacked `subscriptions:write`. Probed against the
+key then in `/opt/pf9-store/pf9-store-api.env`:
 
-| Endpoint | Result |
-|---|---|
-| `GET /api/lists/` (control) | **200** — key is valid |
-| `POST /api/events/` | **400** — `events:write` present |
-| `POST /api/profile-subscription-bulk-create-jobs/` | **403** — `"missing required scopes: subscriptions:write"` |
+| Endpoint | 2026-08-03 | 2026-08-04 |
+|---|---|---|
+| `GET /api/lists/` (control) | **200** — key valid | **200** |
+| `POST /api/events/` | **400** — `events:write` present | **400** |
+| `POST /api/profile-subscription-bulk-create-jobs/` | **403** — `"missing required scopes: subscriptions:write"` | **400** — scope present, body rejected |
 
-Key scopes as shown in the UI: *Read: Flows and Metrics / Full Access: Events, List, and Profiles.*
-No Subscriptions scope at all.
-
-**This is the same failure shape as the events:write incident**, one day later: the helper fails soft
-by design, so without the scope the customer ticks the box, sees a normal checkout, and stays
+**This was the same failure shape as the events:write incident**, one day later: the helper fails soft
+by design, so without the scope a customer would tick the box, see a normal checkout, and stay
 `NEVER_SUBSCRIBED`. That is worse than the events gap — a silently broken promise rather than a
 silently skipped email — which is why every branch of `_klaviyo_subscribe` logs.
 
-Klaviyo does not allow editing scopes on an existing private key (⋮ offers only Disable / Clone /
-Delete), so the fix is **clone → add Subscriptions → replace `KLAVIYO_API_KEY`**, exactly as was done
-for events on 2026-08-02.
+**The detour is the part worth remembering.** Klaviyo does not allow editing scopes on an existing
+private key, and the row's ⋮ menu offers only Disable / Clone / Delete. The obvious reading — clone
+it and add a scope — is wrong: **Clone copies the scope set verbatim with no opportunity to change
+it.** The first attempt produced a key identical to its parent, same name and same scopes, and probed
+403 again. The only path with a per-scope matrix is the **"Create Private API Key"** button.
+
+That form has its own trap: a **Custom Key starts at No Access for every scope**, so building one to
+add Subscriptions will silently drop Events / List / Profiles unless all four are set — trading two
+working helpers for one. The key in production is therefore a **Full Access key created 2026-08-04**,
+chosen deliberately to end the rotation cycle rather than to be minimal.
 
 **The probe is safe to repeat and should be, since any comment about scopes goes stale the moment the
 key changes.** A malformed POST returns 403 for a missing scope and 400 once present, and creates
 nothing either way. Note the events endpoint does **not** share that property — a valid probe there
 creates a metric, and Klaviyo metrics cannot be deleted.
 
-### Deploy order matters
+**Housekeeping still owed — and read the Last Used column, not the name.** The account now holds five
+private keys, and **three of them are named `PF9 Store2`**, because Clone copies the name too. The
+listing as read 2026-08-04:
+
+| Name | Created | Last used | Standing |
+|---|---|---|---|
+| `pf9 store lifecycle sync` | 08/01 | 8/2 6:14 PM | dead — Lists+Profiles only, pre-dates `events:write` |
+| `PF9 Store2` | 08/02 | **never used** | dead — a spare that was never put in the env |
+| `PF9 Store2` | 08/02 | 8/3 9:32 AM | **superseded, and the rollback** — the events-scoped key that ran production until 08/04 |
+| `PF9 Store2` | 08/04 | 8/3 8:11 PM | dead — the failed clone; its only use is my probe |
+| Full Access key | 08/04 | — | **live, in `pf9-store-api.env`** |
+
+Delete the three dead rows, but **keep the 08/02 8/3-9:32 key until the Full Access key has been
+observed working on a real checkout** — it is the only rollback that still carries `events:write`.
+Since three rows share a name, identify them by Created/Last Used before deleting anything.
+
+### Deploy order matters — and the sequence as actually executed
 
 `index.html` ships on push (GitHub Pages, `.github/workflows/deploy.yml`); `store_api.py` only on a
 manual restart. Pushed together, there is a window where the checkbox is live against a server that
-ignores the field. Hence the split:
+ignores the field. Hence the split, which is what was run on 2026-08-04:
 
-1. Clone the key, add Subscriptions, put the new value in `/opt/pf9-store/pf9-store-api.env`.
-   The list id is baked as a code default, so this is the only env change.
-2. `git push origin b93baa2:main`
+1. New key into `/opt/pf9-store/pf9-store-api.env` line 5 — **replaced, not appended**; the file is
+   `xfree143:xfree143 600`, so no sudo needed, and `/opt/bridgr/.env` carries no `KLAVIYO*` line to
+   compete with it. The list id is baked as a code default, so this is the only env change.
+2. `git push origin b93baa2:main` — API commit alone.
 3. `git -C /opt/pf9-store diff HEAD origin/main` empty; restart aborts on md5 mismatch regardless
    (`EXPECT_MD5=4e2d690e869dc97e0d03cff6202a220e`, bumped in the same commit).
-4. `ssh -t xfree143.taile2beaa.ts.net` → `sudo bash /opt/pf9-store/restart_store_api.sh`.
-   Needs an interactive sudo password — `pf9-store-api` is not on the NOPASSWD list.
-5. Re-probe. **400 = scope landed.** Still 403 means the checkbox would be a lie.
+4. `sudo bash /opt/pf9-store/restart_store_api.sh` — interactive password, `pf9-store-api` is not on
+   the NOPASSWD list.
+5. Re-probe. **400 = scope landed.** Still 403 would have meant the checkbox was a lie.
 6. `git push origin main` to ship the checkbox.
+
+**How `/opt/pf9-store` actually gets its code — identified 2026-08-04.** `/opt/pf9-store-pull.sh`, a
+root cron job running **every minute**:
+
+```bash
+git fetch origin main --quiet
+if HEAD != origin/main: git pull --quiet && systemctl reload nginx
+```
+
+It reloads **nginx, never `pf9-store-api`.** That is the entire reason a manual restart step exists:
+static files go live on their own within 60s of a push, Python never does, and the push therefore
+*looks* like a complete deploy. Earlier notes in this repo said only "something root-side syncs it".
+
+**⚠️ Incident, 2026-08-04 — a restart reported as done that never happened.** The restart was believed
+complete; verification showed `MainPID` unchanged at `279263` with an `ActiveEnterTimestamp` 10 hours
+older than `store_api.py`'s mtime, and the unit journal had no entry after the previous day's restart.
+`/var/log/auth.log` settled it — no `sudo` invocation at all in the window. Cause: the operator was
+already logged into xfree143, and the documented `ssh -t xfree143.taile2beaa.ts.net` fails there with
+`Permission denied (publickey)` because the host holds no authorized_key for itself; that error
+scrolled past and the sudo prompt beneath it went unanswered. **Throughout, all three health checks
+returned 200 / 200 / 401.** Health proves the service is up, never which code it is running. The
+decisive checks are the `MainPID` change and start-time-vs-mtime — both already in the script, and
+both were what caught it.
 
 ### What this does not fix
 
 - **The day-27 billing exposure.** Untouched. A customer converting to paid is still charged with no
   warning email whether or not they ticked the box. That remains fix 1, UI-only, and open.
 - **Existing profiles.** Nothing retroactive; consent cannot be granted on someone's behalf.
-- **Proof.** See "Not verified" — no send has been watched succeeding *or* failing.
+- **Proof.** The code is live and the scope block is gone, but `_klaviyo_subscribe` has still never
+  executed — no checkout has yet carried `marketing_consent: true`, so no call has been watched
+  succeeding *or* failing. What the 2026-08-04 probe established is that the key **may** call the
+  endpoint; whether this payload is accepted is untested. See "Not verified".
 
 ---
 
@@ -891,15 +966,18 @@ Listed so they are not mistaken for "checked and fine":
   Klaviyo's documented behaviour applied to observed config, not on a send watched failing. No live
   send test was run. A single real send to a `NEVER_SUBSCRIBED` profile would settle it, and should
   be done before any fix is judged to have worked.
-- **That `_klaviyo_subscribe` works.** Written and committed 2026-08-03, never executed once — the
-  key returns 403 for lack of `subscriptions:write`, so not a single call has reached a 2xx. The
-  payload shape is built to the documented schema for revision `2024-10-15` and has **not** been
-  round-tripped against the live endpoint. First real run should be checked by reading the profile
-  back with `additional-fields[profile]=subscriptions` and confirming `SUBSCRIBED`, rather than
-  trusting the 202 — the endpoint is asynchronous and accepts before it applies.
-- **That the consent tick survives the round trip.** The checkbox and the API field were written in
-  separate commits and have never run together; nothing has yet confirmed a ticked box arrives as
-  `marketing_consent: true` in `create_checkout_session`.
+- **That `_klaviyo_subscribe` works.** Deployed 2026-08-04 and no longer blocked on scope, but
+  **still never executed once** — no live checkout has carried `marketing_consent: true`, so not a
+  single call has reached a 2xx. The payload is built to the documented schema for revision
+  `2024-10-15` and has **not** been round-tripped against the live endpoint. Note what the cleared
+  probe does and does not prove: a 400 establishes the key may call the endpoint, and nothing about
+  whether this payload is accepted. Check the first real run by reading the profile back with
+  `additional-fields[profile]=subscriptions` and confirming `SUBSCRIBED`, rather than trusting the
+  202 — the endpoint is asynchronous and accepts before it applies.
+- **That the consent tick survives the round trip.** Both halves are live as of 2026-08-04, and the
+  checkbox is confirmed rendering on `store.plainspokenfoundrynine.com` unticked and not required.
+  What remains unobserved is a *ticked* box arriving as `marketing_consent: true` inside
+  `create_checkout_session`; the two halves have never been exercised together by a real submission.
 - **`W7gYXU` behaviour under a real subscribe.** Created 2026-08-03 with `single_opt_in` set
   explicitly at creation (the account default is double, so this mattered), but no profile has been
   added to it yet and no confirmation-email behaviour has been observed either way.
@@ -923,9 +1001,31 @@ Listed so they are not mistaken for "checked and fine":
 #   Klaviyo MCP: get_lists
 
 # is Klaviyo sync actually on?
+# NOTE: this is a PRESENCE check and presence is NOT authorisation. It reported
+# healthy through both the events:write and subscriptions:write outages. Always
+# pair it with the scope probe below.
 ssh xfree143.taile2beaa.ts.net \
   'P=$(systemctl show pf9-store-api.service -p MainPID --value); \
    tr \\0 \\n < /proc/$P/environ | grep -c "^KLAVIYO_API_KEY=.\+"'
+
+# does the key still carry subscriptions:write?  403 = missing, 400 = present.
+# Malformed body on purpose — creates nothing. Run it server-side so the key
+# never lands in a transcript. Do NOT use /api/events/ this way: a valid probe
+# there creates a metric, and Klaviyo metrics cannot be deleted.
+ssh xfree143.taile2beaa.ts.net \
+  'set -a; . /opt/pf9-store/pf9-store-api.env; set +a; \
+   curl -s -o /dev/null -w "%{http_code}\n" -X POST \
+     https://a.klaviyo.com/api/profile-subscription-bulk-create-jobs/ \
+     -H "Authorization: Klaviyo-API-Key $KLAVIYO_API_KEY" \
+     -H "revision: 2024-10-15" -H "content-type: application/json" --data "{}"'
+
+# WHICH BUILD IS LIVE — the check the health endpoints cannot make.
+# gunicorn does not hot-reload, so /health returns 200 for stale code just as
+# happily as for fresh. If the start time predates the file mtime, the restart
+# never happened, whatever anyone reports. (Incident: 2026-08-04.)
+ssh xfree143.taile2beaa.ts.net \
+  'systemctl show pf9-store-api.service -p MainPID -p ActiveEnterTimestamp; \
+   stat -c "code mtime: %y" /opt/pf9-store/store_api.py'
 
 # multi-app customer count
 ssh xfree143.taile2beaa.ts.net "/opt/pf9-store/venv/bin/python -c \"
