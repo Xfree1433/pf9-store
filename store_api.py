@@ -40,6 +40,7 @@ import string
 import secrets
 import time
 import html
+import re
 from urllib.parse import urlparse
 import requests as http_requests
 
@@ -164,6 +165,63 @@ def _lead_vertical_for(product):
     if 'PROPERTY' in p or any(app in p for app in _PROPERTY_APPS):
         return 'property'
     return None
+
+
+# The three lead-magnet pages promise, verbatim (lead-magnets/*.html:57):
+# "we'll show you the template right after and email it so you can find it
+# later." The page keeps the first half — it reveals the template inline on
+# success — and nothing has ever kept the second.
+#
+# This one is worth keeping precisely because, unlike the calculator's PDF, the
+# deliverable is not a document a human has to make. It is a URL that already
+# exists and already serves 200 (checked 2026-08-04), so an email carrying the
+# link keeps the promise exactly as written.
+#
+# Keyed on the product tag, and deliberately NOT derived from the Referer path
+# by string substitution. The tag is still client-supplied, but here it can only
+# ever select a row from this fixed table: an unrecognised tag yields no
+# property at all. Nothing that is not written below can become a link we put
+# in an email.
+_LEAD_MAGNET_ASSETS = {
+    'MANUFACTURING_LEAD_MAGNET (NCR-CAPA Log)': (
+        'NCR / CAPA Log Template',
+        'https://store.plainspokenfoundrynine.com/templates/ncr-capa-log-template.html',
+    ),
+    'MANUFACTURING_LEAD_MAGNET (Shift Handoff)': (
+        'Shift Handoff Template',
+        'https://store.plainspokenfoundrynine.com/templates/shift-handoff-template.html',
+    ),
+    'PROPERTY_LEAD_MAGNET (Inspection Checklist)': (
+        'Property Inspection Checklist',
+        'https://store.plainspokenfoundrynine.com/templates/property-inspection-checklist.html',
+    ),
+}
+
+# 'Per-door calculator PDF request at 250 units.' / '... at 40 users.'
+# Both strings are composed by our own JS from the slider position
+# (tools/per-door-calculator.html:364, tools/per-user-calculator.html:367).
+_CALCULATOR_SIZE_RE = re.compile(r'\bat\s+(\d{1,7})\s+(units|users)\b', re.IGNORECASE)
+
+
+def _calculator_size_from(message):
+    """The one number that makes a calculator lead worth anything.
+
+    The message body is otherwise never forwarded to Klaviyo, and that rule
+    still holds: what comes back here is an int and a noun from a closed set,
+    not the visitor's prose. On this surface the message is not free text at
+    all — the page builds the sentence and the only variable in it is the unit
+    count the visitor dialled in, which is the entire substance of the request.
+
+    Bounded at seven digits so an absurd payload cannot put an unbounded string
+    on a third-party profile. Returns (count, noun) or (None, None).
+    """
+    m = _CALCULATOR_SIZE_RE.search(message or '')
+    if not m:
+        return None, None
+    try:
+        return int(m.group(1)), m.group(2).lower()
+    except (TypeError, ValueError):
+        return None, None
 
 
 def _hubspot_list_for_product(product):
@@ -945,6 +1003,49 @@ def demo_request():
         if lead_type == 'question':
             lead_properties['has_question'] = bool(message)
 
+        # The bare product name, for copy that has to read as a sentence.
+        # index.html:964 sends 'MARKUPR (waitlist)', and "You're on the MARKUPR
+        # (waitlist) waitlist" is not a sentence. Only emitted here, where the
+        # marker is a known suffix and stripping it leaves exactly the thing
+        # being waited on — the other tags carry no name worth extracting.
+        #
+        # Shape-checked before it is emitted, and this is the one property here
+        # that genuinely needs it. Unlike every other value in this block it is
+        # BOTH attacker-controlled AND rendered into an email body — and the
+        # submitter also chooses the recipient, so a free-form pass-through would
+        # let anyone put arbitrary prose in front of a third party over our
+        # domain and our sending reputation. Klaviyo does escape it (verified
+        # 2026-08-04: a `<script>` tag renders as `&lt;script&gt;`), so this is
+        # not about markup; it is about the sentence.
+        #
+        # `^[A-Z0-9]{2,20}$` is not a guess at what looks safe — it is exactly
+        # what the two live callers send. index.html has precisely two:
+        # openWaitlist('MARKUPR') and openWaitlist('FIELDVIEWR'). Anything else
+        # falls through to the template's `|default:'PF9'`, which reads fine.
+        if lead_type == 'waitlist' and product:
+            bare = product.split(' (')[0].strip()
+            if re.fullmatch(r'[A-Z0-9]{2,20}', bare):
+                lead_properties['product_name'] = bare
+
+        # The asset this person was promised by email, resolved server-side so
+        # a flow can render one link instead of branching three ways on a
+        # source page. Absent for any tag not in the table, which is what the
+        # template's `|default:` is for.
+        if lead_type == 'lead_magnet':
+            asset = _LEAD_MAGNET_ASSETS.get(product)
+            if asset:
+                lead_properties['lead_magnet_name'] = asset[0]
+                lead_properties['lead_magnet_url'] = asset[1]
+
+        # What they were actually comparing. Without it the PDF request says
+        # nothing beyond "someone wants a PDF", and the person making that PDF
+        # by hand has to go back to the row to find the number.
+        if lead_type == 'calculator':
+            size, noun = _calculator_size_from(message)
+            if size:
+                lead_properties['calculator_size'] = size
+                lead_properties['calculator_unit'] = noun
+
         # Path only, never the query string: a referrer's query can carry
         # anything, and this one is written to a third party.
         referer = request.headers.get('Referer') or ''
@@ -956,10 +1057,26 @@ def demo_request():
             except Exception:
                 pass
 
+        # contact.html is the ONLY one of the eight surfaces with a name field.
+        # The other seven send `name: email.split('@')[0]` (index.html:960,
+        # per-door-calculator.html:361, per-user-calculator.html:364, the three
+        # lead magnets, refer/). Passing that through would write `j.smith` into
+        # person.first_name — and EVERY live template greets with
+        # `{{ person.first_name|default:'there' }}`, so one calculator lead would
+        # permanently downgrade that person's greeting from "Hi there," to
+        # "Hi j.smith," in every email they ever get from us, including the paid
+        # lifecycle ones. The default is the better copy; let it win.
+        #
+        # Compared against the local part rather than switched on lead_type,
+        # because that is the fact that actually matters and it does not depend
+        # on the classifier being right about a surface added later.
+        local_part = email.split('@')[0] if '@' in email else email
+        real_name = name if (name or '').strip().lower() != local_part.strip().lower() else None
+
         _klaviyo_event(
             metric='Lead Captured',
             email=email,
-            name=name,
+            name=real_name,
             # The row id, so a Klaviyo event can be traced back to the row a
             # human replies from. The submit button is disabled for the duration
             # of the request on every surface, so a double click cannot produce

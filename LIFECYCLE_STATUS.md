@@ -1550,6 +1550,11 @@ waits forever and looks patient.
 The file's oldest open item ("Email bodies. Still unread") is closed. All ten templates were pulled
 and their merge tags cross-checked against what `store_api.py` actually sets.
 
+> **The account holds fifteen templates as of 2026-08-04, not ten.** Five were added that day —
+> `Y6uLec`, `V6D3Fk`, `Wmp8Wq`, `UKqgdr`, `VRnkQB` — and **none of them is attached to any message,
+> flow or campaign.** They are inert until someone builds the flow described under "Lead Captured
+> flow". The map below covers the original ten and is still correct for them; it is not a census.
+
 ### The template ↔ message map
 
 Recorded because this file already flags template names as *"a live hazard… editing the wrong one
@@ -1692,7 +1697,22 @@ YouTube) is permission-gated and waiting on the founder.** That is the honest to
 
 ---
 
-## The inbound funnel — instrumented 2026-08-04 (live in production)
+## The inbound funnel — instrumented 2026-08-04 (**on disk at prod, NOT running**)
+
+> **Heading corrected 2026-08-04.** This section said *"live in production"*. It was not, and the
+> check that proves it is the one already written at the bottom of this file:
+>
+> ```
+> ActiveEnterTimestamp=Tue 2026-08-04 14:53:12 UTC
+> code mtime:          2026-08-04 15:08:02 UTC
+> md5:                 e11c3c6d5bea0a1a41e9f90373587a6d
+> ```
+>
+> The cron `git pull` landed the new file **15 minutes after** the last restart, so gunicorn is still
+> executing the pre-`Lead Captured` build. `grep -c "Lead Captured"` returns 2 against the file and 0
+> against reality. `/health` returns 200 either way — that is the whole reason the mtime check exists.
+> Nothing below this line has ever emitted an event in production. It becomes true at the next
+> restart, which needs interactive sudo and is therefore Mark's to run.
 
 ### Confirmed a second time, from a different source
 
@@ -1751,6 +1771,9 @@ It now emits a **`Lead Captured`** metric carrying:
 | `company` | when non-blank |
 | `has_question` | only for `question` leads, where the text is actually typed by a human |
 | `source_page` | the referrer **path only** |
+| `product_name` | `waitlist` only — the tag with the ` (waitlist)` suffix stripped, because *"You're on the MARKUPR (waitlist) waitlist"* is not a sentence |
+| `lead_magnet_name`, `lead_magnet_url` | `lead_magnet` only, and **only** for a tag present in `_LEAD_MAGNET_ASSETS`. Resolved from a fixed server-side table, never by substituting the referrer path, so no client-supplied string can become a URL we put in an email. An unrecognised tag writes neither key |
+| `calculator_size`, `calculator_unit` | `calculator` only — an `int` (≤7 digits) and a noun from `{units, users}`, parsed out of the sentence *our own JS* composed from the slider position. This is the one number that makes the lead actionable, and it is still not free text |
 
 **It sends nothing.** `Lead Captured` did not exist among the account's 25 metrics before this, so no
 flow can already be listening; and `_klaviyo_event` upserts a profile *without* granting marketing
@@ -1761,6 +1784,16 @@ two unkept PDF promises become the obvious first thing to automate.
 Deliberately **not** forwarded: the free-text message. It is the most sensitive field on the form, it
 has no use in a marketing tool, and for seven of the eight surfaces it is boilerplate our own
 JavaScript wrote. The internal notification email already carries it to a human.
+
+Also **not** forwarded: the fake name. `contact.html` is the only one of the eight surfaces with a
+name field; the other seven send `name: email.split('@')[0]`. Passing that through would write
+`j.smith` into `person.first_name` — and every live template greets with
+`{{ person.first_name|default:'there' }}`, so one calculator lead would permanently downgrade that
+person's greeting from *"Hi there,"* to *"Hi j.smith,"* in **every** email they ever get from us,
+including the paid lifecycle ones. It is compared against the local part case- and
+whitespace-insensitively rather than switched on `lead_type`, so a surface added later cannot quietly
+reintroduce it. A genuinely-typed name that happens to match the local part is the only false
+positive, and losing it costs nothing the default doesn't already cover.
 
 ### Two smaller things found on the way
 
@@ -1773,6 +1806,103 @@ JavaScript wrote. The internal notification email already carries it to a human.
   2026-08-01 `STOREFRONT (email capture)` row came from a stale browser tab of a modal since removed,
   **not** from prod drift. Checked because an unexplained tag from code that no longer exists is
   exactly what drift looks like.
+
+---
+
+## Lead Captured flow — templates built, flow NOT built, 2026-08-04
+
+### Why this is a spec and not a flow
+
+The Klaviyo MCP surface **cannot create a flow.** The available verbs are `get_flows`, `get_flow`,
+`get_flow_action`, `get_flow_message`, `get_flow_report` and the three `get_flows_triggered_by_*` —
+all reads. There is no `create_flow` and no `update_flow`. So "draft the flow" is not a thing that
+can be done from here even as a draft; what can be done is everything the flow needs in order to be
+assembled in the UI in about ten minutes, which is what follows.
+
+It could not be built in the UI right now either, and this is the part worth understanding before
+anyone tries. A Klaviyo flow triggers on a metric that **exists**. `Lead Captured` still does not —
+25 metrics in the account, none named that, re-checked 2026-08-04. It comes into existence when the
+first event fires, the first event fires when the new code runs, and the new code runs after the
+restart above. The order is forced:
+
+```
+restart the service  →  submit one form  →  metric appears  →  flow can be built  →  flow can be activated
+        ^ Mark's                ^ anyone          ^ automatic          ^ 10 min UI          ^ Mark's
+```
+
+### 🛑 The thing that will silently break this: consent
+
+`_klaviyo_event` upserts profiles **without** granting marketing consent — deliberately, because it
+fires for someone who only asked a question. Klaviyo flow messages default to **marketing**, and a
+marketing message to a profile with no marketing consent is documented to skip, recording
+`Skipped Send` (`R9tyrh`) instead of sending. The flow would look built, look active, and do nothing
+— the worst available failure mode, because it reports success.
+
+**Every message in this flow must be set to transactional** (message settings → *Transactional*).
+That is legitimate here and not a loophole: each one is a receipt for an action the person just
+took, and each says so in its own footer.
+
+> **Unverified.** Klaviyo's skip-on-no-consent behaviour is documented, and `R9tyrh` exists in this
+> account, but **it has not been observed on this account with a non-consented profile.** Treat the
+> transactional setting as required, and confirm from the flow analytics after the first real lead
+> rather than assuming either way. This is on the *Not verified* list below.
+
+### Templates — built and render-tested
+
+All five exist in the account now. Every one was rendered through the template-render API against
+both a populated and an empty context, so no tag is trusted on inspection alone.
+
+| Template | ID | Branch | Renders on empty context as |
+|---|---|---|---|
+| Lead: Question received | `Y6uLec` | `lead_type == question` | drops the *"about X"* clause |
+| Lead: Template delivery | `V6D3Fk` | `lead_type == lead_magnet` | falls back to `/lead-magnets/` |
+| Lead: Calculator PDF ack | `Wmp8Wq` | `lead_type == calculator` | drops the *", at N units"* clause |
+| Lead: Waitlist confirmed | `UKqgdr` | `lead_type == waitlist` | says "PF9" instead of the app name |
+| Paid Day 100 (L5-E2) | `VRnkQB` | *(not this flow — see below)* | switches to a generic second-app paragraph |
+
+**A plaintext bug was found and fixed in all five while testing.** `{% unsubscribe 'Label' %}` emits
+an HTML `<a>` tag. That is correct in the HTML body and wrong in the plaintext body, where it renders
+literally as `<a class="unsubscribe-link" href="…">Unsubscribe</a>` in the reader's eye. The
+plaintext tag is `{% unsubscribe_link %}`, which emits a bare URL. Verified by round-tripping both
+tags through one template and reading the output, not from documentation. Worth remembering: the one
+live template that predates this (`VZFUx6`) has `text: null` and lets Klaviyo auto-generate its
+plaintext, so it never had the bug and is not evidence either way.
+
+### Build order in the UI
+
+1. **Trigger:** Metric → `Lead Captured`.
+2. **No delay before the first send.** These are receipts; a receipt that arrives an hour later is a
+   worse receipt.
+3. **Conditional split** on `Lead Captured` → `lead_type`, four branches, each → its template above.
+4. **Set every message to transactional.** See the red block. This is the step that gets skipped.
+5. **Leave `affiliate` and `email_capture` with no email at all.**
+
+### 🛑 The `affiliate` branch must never get an automated email
+
+`refer/index.html:148` promises the visitor, in as many words: *"No automated drip — actual founder
+review."* An automated acknowledgement on that branch makes the page a lie. This is recorded twice in
+this file on purpose, because it is precisely the gap a future pass would tidy up without reading the
+page it came from.
+
+`email_capture` gets nothing for a duller reason: the only row that ever carried the tag came from a
+stale browser tab of a modal that no longer exists.
+
+### What this flow still cannot keep
+
+The two calculator PDFs. `Wmp8Wq` acknowledges the request and sets an honest expectation — it does
+not deliver a PDF, because the PDF is a document a human makes. The page promises *"the PDF and one
+follow-up"*, which caps this branch at two emails no matter what, so there is no version of this
+where automation quietly finishes the job.
+
+That leaves a founder decision, unchanged by anything built today: **automate the PDF, or change the
+page copy to promise what the system actually does.** Both are defensible; the current state — a
+promise with no mechanism behind it — is the only option that isn't.
+
+The lead-magnet promise, by contrast, **is** now keepable, and that is the substantive win here. The
+page says *"we'll show you the template right after and email it so you can find it later"*
+(`lead-magnets/*.html:57`). It has always kept the first half and never the second. Unlike the PDF,
+the deliverable is a URL that already exists and already serves 200 — so `V6D3Fk` closes it exactly
+as written, with no human in the loop.
 
 ---
 
@@ -1887,9 +2017,17 @@ Listed so they are not mistaken for "checked and fine":
   `XtS2ji`. See "Template bodies read — 2026-08-04".
 - ~~**`{{current_spend}}`**~~ ✅ **Moot, 2026-08-04.** It is referenced by **zero templates** and set
   by zero code paths, so there is nothing to render empty. Closed rather than carried.
-- **L5-E2**, the day-100 follow-up (spec line 223). The Paid flow ends after day 90 — so it
+- **L5-E2**, the day-100 follow-up (spec line 260). The Paid flow ends after day 90 — so it
   isn't built, but no separate flow was searched for beyond the full account list, which showed
-  only two flows.
+  only two flows. **Template now exists** (`VRnkQB`, 2026-08-04) and needs no new properties: it
+  reuses `related_app_name` / `related_app_detail` / `related_app_url`, which `_cross_sell_properties`
+  (`store_api.py:726`) already sets on both the trial and paid paths. Adding it is a delay + send
+  appended to the existing Paid flow after day 90, behind the *same* "owns fewer than 2 apps" filter
+  the day-90 send uses — without that filter it pitches a second app to someone who bought one.
+  **The spec's copy is wrong and the template deliberately departs from it:** spec line 264 says
+  *"No card change."* Adding an app goes through Stripe Checkout again
+  (`store_api.py:1125-1140`, `subscription_data={'trial_period_days': 30}`) which collects a card up
+  front and auto-charges on day 31. The template says that plainly instead.
 - **Flow performance.** No open/click/conversion data pulled. The 8% KPI on spec line 235 has
   never been measured. **And open rate is not a safe basis for it** — both opens on the only
   observed send were Gmail proxy artefacts that Klaviyo tagged `machine_open: False` (see Canary).
@@ -1909,7 +2047,16 @@ Listed so they are not mistaken for "checked and fine":
 - **That Klaviyo actually skips a non-consented profile.** The 2026-08-03 consent finding rests on
   Klaviyo's documented behaviour applied to observed config, not on a send watched failing. No live
   send test was run. A single real send to a `NEVER_SUBSCRIBED` profile would settle it, and should
-  be done before any fix is judged to have worked.
+  be done before any fix is judged to have worked. **This is now load-bearing for the Lead Captured
+  flow**, whose messages must be marked *transactional* precisely because every lead profile is
+  non-consented by design. If the documented behaviour holds, an un-marked flow sends nothing while
+  reporting itself healthy.
+- **That the `Lead Captured` metric exists at all.** It does not, as of 2026-08-04 — and it cannot
+  until the service is restarted and one form is submitted. Everything downstream of it (the flow,
+  its four branches, all four lead templates) is therefore built against a metric whose property
+  names have been proven only by local test, never by a real event landing in Klaviyo. First real
+  lead should be opened in the Klaviyo event feed and its properties read back against the table
+  above before the flow is activated.
 - ~~**That `_klaviyo_subscribe` works.**~~ ✅ **Verified 2026-08-04** — executed against production and
   read back `SUBSCRIBED`. See "Consent path proven end-to-end".
 - ~~**That the consent tick survives the round trip.**~~ ✅ **Verified 2026-08-04 at the API layer, not

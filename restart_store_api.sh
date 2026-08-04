@@ -50,8 +50,9 @@ STORE_API=$STORE_DIR/store_api.py
 VENV=$STORE_DIR/venv
 UNIT=pf9-store-api.service
 PORT=5011
-EXPECT_MD5=e11c3c6d5bea0a1a41e9f90373587a6d   # /demo-request emits Lead Captured
-# previous: a0892470ad7473c7e5511f8f8010468e   (Stripe cancel reason -> Cancelled Subscription event)
+EXPECT_MD5=1955a2f49ad01743feefdcad04b71d01   # Lead Captured carries per-branch flow properties
+# previous: e11c3c6d5bea0a1a41e9f90373587a6d   (/demo-request emits Lead Captured)
+# before:   a0892470ad7473c7e5511f8f8010468e   (Stripe cancel reason -> Cancelled Subscription event)
 # before:   6628991de9ce300ba05dfa038c6b0b17   (day-27 pre-charge notice sends from the webhook)
 # before:   4e2d690e869dc97e0d03cff6202a220e   (checkout consent tick -> _klaviyo_subscribe)
 # before:   01e45e4187644ae68e9ce68d176310cd   (trial start writes subscription_status=trialing)
@@ -173,11 +174,21 @@ if grep -q KLAVIYO_API_KEY "$STORE_API" \
    && grep -q _send_trial_ending_email "$STORE_API" \
    && grep -q trial_notice_sent_for "$STORE_API" \
    && grep -q _cancel_reason_properties "$STORE_API" \
-   && grep -q "metric='Lead Captured'" "$STORE_API"; then
+   && grep -q "metric='Lead Captured'" "$STORE_API" \
+   && grep -q _LEAD_MAGNET_ASSETS "$STORE_API" \
+   && grep -q _calculator_size_from "$STORE_API" \
+   && grep -q "name=real_name" "$STORE_API"; then
   echo "  OK — Klaviyo sync + event emitter + consent grant + trialing reset present,"
   echo "       in-house day-27 emailer present with its idempotency claim column,"
   echo "       Stripe cancel-reason capture present (inert until the portal question is on),"
-  echo "       inbound leads emit Lead Captured (inert until a flow is built on it)"
+  echo "       inbound leads emit Lead Captured (inert until a flow is built on it),"
+  echo "       with the per-branch properties the lead templates render from."
+  # That last grep is the one worth explaining. `name=real_name` is the guard that
+  # stops the seven surfaces WITHOUT a name field from writing email.split('@')[0]
+  # into person.first_name. If it regresses, nothing errors and no send fails —
+  # affected people are simply greeted "Hi j.smith," forever, in every email
+  # including the paid ones, because Klaviyo keeps the first profile write. Asserted
+  # here because the failure is permanent, silent, and invisible in any health check.
 else
   echo "  !! loaded file is not the expected build"; exit 1
 fi
