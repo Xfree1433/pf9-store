@@ -157,9 +157,12 @@ say "Verify: confirm the new code is what got loaded"
 # the thing to confirm, and its absence means an old build is loaded.
 #
 # The duplicate risk that the old check guarded against is real but has moved to
-# Klaviyo's side: message ReYNde (flow X2tesT, action 107908224) must be switched
-# OFF, or a consented customer gets both notices. That is a UI-only change — the
-# public API exposes flow messages read-only — so this script cannot assert it.
+# Klaviyo's side: message ReYNde (flow X2tesT, action 107908224) would otherwise
+# send a second copy to a consented customer. It was set to Draft on 2026-08-04
+# (verified by API read-back: action 107908224 reports status "draft"), so the
+# store is now the only sender. That is a UI-only change — the public API exposes
+# flow messages read-only — so this script cannot assert or restore it; the
+# pairing rule in the rollback notes below is the only guard.
 if grep -q KLAVIYO_API_KEY "$STORE_API" \
    && grep -q _owned_app_properties "$STORE_API" \
    && grep -q _klaviyo_event "$STORE_API" \
@@ -215,12 +218,14 @@ echo
 echo "  2. Klaviyo message ReYNde (flow X2tesT, action 107908224) — the OTHER half."
 echo
 echo "     READ THIS BEFORE ROLLING BACK. Exactly one of the two must be sending:"
-echo "       ReYNde ON  + rolled-forward code = consented customers get the notice TWICE"
-echo "       ReYNde OFF + rolled-back  code = NOBODY gets it, and every converting trial"
-echo "                                        is charged with no warning at all"
-echo "     So if ReYNde has been switched off, switch it back ON as part of any code"
-echo "     rollback — not afterwards. The second row is the worse failure and it is silent:"
-echo "     nothing errors, no log line appears, the charge simply lands unannounced."
+echo "       ReYNde Live  + rolled-forward code = consented customers get the notice TWICE"
+echo "       ReYNde Draft + rolled-back  code = NOBODY gets it, and every converting trial"
+echo "                                          is charged with no warning at all"
+echo "     ReYNde was set to Draft on 2026-08-04, so the SECOND row is the one you are"
+echo "     one rollback away from. Set it back to Live as part of any code rollback —"
+echo "     not afterwards. That row is the worse failure and it is silent: nothing"
+echo "     errors, no log line appears, the charge simply lands unannounced."
+echo "     Draft, not Manual: Manual still queues recipients for a human to release."
 echo
 echo "     Note what ReYNde alone cannot do, which is why the code moved in the first"
 echo "     place: it is marketing-classified, so it only reaches profiles with marketing"

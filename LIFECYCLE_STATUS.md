@@ -23,11 +23,11 @@ DB on xfree143.
 > flagging the Klaviyo message `transactional: true` — turned out to be **unreachable on this
 > account**, for three separate reasons. See **"Day-27 pre-charge notice — moved in-house 2026-08-04"**.
 >
-> ⚠️ **Outstanding manual step: Klaviyo message `ReYNde` must be switched OFF.** Until it is, a
-> customer who *did* tick the consent box receives the notice twice — once from Klaviyo, once from the
-> store. UI only; the API exposes flow messages read-only. No live exposure yet: the `subscriptions`
-> table holds 3 test rows from Mar/Apr, all with `trial_end` NULL, so no customer has ever reached
-> day 27.
+> ✅ **Klaviyo message `ReYNde` was set to Draft on 2026-08-04**, so the store is now the only sender
+> and no consented customer gets it twice. Verified by API read-back, not by the UI: action
+> `107908224` reports `"status": "draft"` while Day 1 (`VpT7Fy`) and Day 3 (`YpvAcX`) remain `live`
+> and the flow itself stays `live`. Chosen over Manual deliberately — Manual would have kept queueing
+> recipients for a human to release, which is a different thing from not sending.
 
 ✅ **Local, `origin/main` and production are all at `2c31dbc`** (2026-08-04). The consent change went
 out as two deliberately separate pushes — `b93baa2` (API) first, restart, then `73e1fef` (checkbox) —
@@ -117,8 +117,9 @@ Day 27 is the pre-charge notice, on a 30-day trial (`TRIAL_PERIOD_DAYS=30`).
 
 ⚠️ **No longer true as of 2026-08-04:** this used to read that Klaviyo — not the app — owned that
 email, and that `_send_trial_ending_email` had been removed so the two could not both fire. The send
-is now back in `_handle_trial_will_end`, so **this Klaviyo message is the duplicate** and must be
-switched off. See "Day-27 pre-charge notice — moved in-house 2026-08-04".
+is now back in `_handle_trial_will_end`, which made **this Klaviyo message the duplicate**, so
+`ReYNde` was **set to Draft on 2026-08-04** and no longer sends. Day 1 and Day 3 are untouched and
+still Live, as is the flow. See "Day-27 pre-charge notice — moved in-house 2026-08-04".
 
 **Filtering:** as of 2026-08-02 this flow carries a `profile_filter` that drops anyone whose
 `subscription_status` is `cancelled`, so a cancelled trial no longer receives the day-27 charge
@@ -217,9 +218,11 @@ Read back from `GET /api/flows/{id}?additional-fields[flow]=definition`:
 | `VuD82q` Paid Onboarding | Month 1 — Check-in | false | on |
 | `VuD82q` Paid Onboarding | Month 3 — Expansion | false | on |
 
-*Still the live Klaviyo config as read — none of these flags changed. What changed is that the
-day-27 row no longer matters for delivery: that notice is sent by `store_api.py` now, and this
-message needs switching off. The other four are unaffected.*
+*Still the live Klaviyo config as read — none of these **flags** changed. What changed is that the
+day-27 row no longer matters for delivery: that notice is sent by `store_api.py` now, and the
+message (`ReYNde`) was set to **Draft** on 2026-08-04, so it does not send at all. Its
+`transactional: false` is recorded above as found, not as something still in effect. The other four
+are unaffected and still Live.*
 
 Four of those are marketing and correctly flagged. **The day-27 notice is not marketing** — its
 preview text is "Your card is charged on that date. Cancel any time before then." It is a billing
@@ -359,17 +362,28 @@ was **absent** (written when Klaviyo owned the send), which would have aborted e
 sense is now inverted. `EXPECT_MD5` is hand-maintained and must be bumped on every `store_api.py`
 change — `62d03e9b…` for `b11797e`, `6628991d…` for `2c31dbc`.
 
-### ⚠️ Outstanding — exactly one of the two must be sending
+### ✅ Done 2026-08-04 — exactly one of the two is sending
+
+The invariant is that exactly one sender is live at a time. Both ways of breaking it are silent:
 
 | | |
 |---|---|
-| `ReYNde` **ON** + current code | consented customers get the notice **twice** |
-| `ReYNde` **OFF** + rolled-back code | **nobody** is warned before their card is charged, silently |
+| `ReYNde` **Live** + current code | consented customers get the notice **twice** |
+| `ReYNde` **Draft** + rolled-back code | **nobody** is warned before their card is charged, silently |
 
-**Switch Klaviyo message `ReYNde` OFF** (flow `X2tesT`, send-email action `107908224`). UI only — the
-public API exposes flow messages read-only, so this cannot be scripted. If the code is ever rolled
-back, switch `ReYNde` back ON *as part of* the rollback, not after; the rollback notes at the foot of
-`restart_store_api.sh` spell this out.
+**Klaviyo message `ReYNde` was set to Draft on 2026-08-04** (flow `X2tesT`, send-email action
+`107908224`), leaving the store as the only sender. This is UI-only — the public API exposes flow
+messages read-only, so it could not be scripted, and `restart_store_api.sh` cannot assert it either.
+Confirmed afterwards by reading the flow definition back through the API rather than trusting the
+editor: action `107908224` reports `"status": "draft"`, while Day 1 (`VpT7Fy`) and Day 3 (`YpvAcX`)
+still report `"live"` and the flow itself is still `live`.
+
+Draft rather than Manual, deliberately: Manual keeps queueing recipients for a human to release,
+which is not the same as not sending.
+
+**The pairing rule still applies to rollback.** If the code is ever rolled back, switch `ReYNde` back
+to Live *as part of* the rollback, not after; the rollback notes at the foot of `restart_store_api.sh`
+spell this out.
 
 Note what `ReYNde` alone cannot do, which is the whole reason the code moved: it is
 marketing-classified, so it only ever reaches profiles with marketing consent. Customers who declined
