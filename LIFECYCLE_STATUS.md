@@ -1,7 +1,7 @@
 # Lifecycle Status — what is actually wired
 
-**Last verified: 2026-08-04** against Klaviyo (live API), `store_api.py` @ `b93baa2` (the build
-running in production since the 2026-08-04 01:25:48 UTC restart, MainPID 637400), and the production
+**Last verified: 2026-08-04** against Klaviyo (live API), `store_api.py` @ `2c31dbc` (the build
+running in production since the 2026-08-04 11:37:06 UTC restart, MainPID 1108356), and the production
 DB on xfree143.
 
 > ## ⛔ Read first — consent is wired now, but the programme has still delivered nothing (2026-08-04)
@@ -17,13 +17,19 @@ DB on xfree143.
 > forward**. Three flows remain in Draft, two are live. Treat "consent is fixed" as a statement about
 > the mechanism, not about the audience.
 >
-> **Still fully open — the day-27 pre-charge notice.** It is flagged `transactional: false`, and
-> `store_api.py` deleted its own sender on the assumption Klaviyo owned it, so a trial converts to a
-> charge with no warning email. Consent work does not touch this. It needs `transactional: true` on
-> that message — a UI-only change. It is a billing exposure and it stays invisible because the flow
-> reports healthy. See **"⛔ The day-27 notice has no fallback"**.
+> **The day-27 pre-charge notice is CLOSED (2026-08-04, live) — but it needs one manual step.** The
+> send moved back into `_handle_trial_will_end` and now goes out on the Stripe `trial_will_end`
+> webhook, which is billing infrastructure and does not consult marketing consent. The intended fix —
+> flagging the Klaviyo message `transactional: true` — turned out to be **unreachable on this
+> account**, for three separate reasons. See **"Day-27 pre-charge notice — moved in-house 2026-08-04"**.
+>
+> ⚠️ **Outstanding manual step: Klaviyo message `ReYNde` must be switched OFF.** Until it is, a
+> customer who *did* tick the consent box receives the notice twice — once from Klaviyo, once from the
+> store. UI only; the API exposes flow messages read-only. No live exposure yet: the `subscriptions`
+> table holds 3 test rows from Mar/Apr, all with `trial_end` NULL, so no customer has ever reached
+> day 27.
 
-✅ **Local, `origin/main` and production are all at `bc431e9`** (2026-08-04). The consent change went
+✅ **Local, `origin/main` and production are all at `2c31dbc`** (2026-08-04). The consent change went
 out as two deliberately separate pushes — `b93baa2` (API) first, restart, then `73e1fef` (checkbox) —
 because the two halves deploy on different clocks and shipping the checkbox first would have meant
 customers ticking a box the server ignored. Both halves of the day-27 *filter* fix remain live: the
@@ -107,10 +113,12 @@ Order confirmed by walking each action's explicit `next` pointer, not inferred f
 email (day 0) → wait 3d → email (day 3) → wait 24d → email (day 27)
 ```
 
-Day 27 is the pre-charge notice, on a 30-day trial (`TRIAL_PERIOD_DAYS=30`). This confirms the
-claim in `store_api.py`'s header comment that Klaviyo — not the app — owns that email. The app
-deliberately has no day-27 sender; `_send_trial_ending_email` was removed precisely so the two
-could not both fire.
+Day 27 is the pre-charge notice, on a 30-day trial (`TRIAL_PERIOD_DAYS=30`).
+
+⚠️ **No longer true as of 2026-08-04:** this used to read that Klaviyo — not the app — owned that
+email, and that `_send_trial_ending_email` had been removed so the two could not both fire. The send
+is now back in `_handle_trial_will_end`, so **this Klaviyo message is the duplicate** and must be
+switched off. See "Day-27 pre-charge notice — moved in-house 2026-08-04".
 
 **Filtering:** as of 2026-08-02 this flow carries a `profile_filter` that drops anyone whose
 `subscription_status` is `cancelled`, so a cancelled trial no longer receives the day-27 charge
@@ -147,9 +155,10 @@ Since 2026-08-02 it sits behind a conditional split on `app_count` — see "L5 �
 
 > **Superseded 2026-08-04 as to the code, kept as the evidence for the finding.** The mechanism
 > described below was fixed and deployed the next day — see "Consent — shipped 2026-08-04". Read this
-> section in the past tense. Two of its conclusions still hold verbatim: the four existing profiles
-> are still `NEVER_SUBSCRIBED` (the fix is not retroactive), and the day-27 `transactional: false`
-> exposure is untouched.
+> section in the past tense. One of its conclusions still holds verbatim: the four existing profiles
+> are still `NEVER_SUBSCRIBED` (the fix is not retroactive). The other — the day-27
+> `transactional: false` exposure — was closed later the same day, but **not** by setting that flag,
+> which proved unreachable on this account. See "Day-27 pre-charge notice — moved in-house 2026-08-04".
 
 **Finding: nothing in the codebase ever grants marketing consent, so every profile the storefront
 creates lands `NEVER_SUBSCRIBED`. This does not only gate the three Draft flows — it means the two
@@ -208,15 +217,22 @@ Read back from `GET /api/flows/{id}?additional-fields[flow]=definition`:
 | `VuD82q` Paid Onboarding | Month 1 — Check-in | false | on |
 | `VuD82q` Paid Onboarding | Month 3 — Expansion | false | on |
 
+*Still the live Klaviyo config as read — none of these flags changed. What changed is that the
+day-27 row no longer matters for delivery: that notice is sent by `store_api.py` now, and this
+message needs switching off. The other four are unaffected.*
+
 Four of those are marketing and correctly flagged. **The day-27 notice is not marketing** — its
 preview text is "Your card is charged on that date. Cancel any time before then." It is a billing
 notification carrying a marketing flag.
 
-### ⛔ The day-27 notice has no fallback
+### ✅ RESOLVED 2026-08-04 — the day-27 notice had no fallback
 
-`store_api.py` line 87 states it: *"Klaviyo owns the day-27 pre-charge notice, which is why
-`_handle_trial_will_end` no longer emails directly."* The in-app sender was removed on purpose so the
-two could not double-fire. So for a real customer under current code:
+**Kept as the evidence for the finding; the state below is no longer current.** The resolution is not
+the one proposed in "Two fixes" — see "Day-27 pre-charge notice — moved in-house 2026-08-04".
+
+`store_api.py` line 87 stated it *at the time*: *"Klaviyo owns the day-27 pre-charge notice, which is
+why `_handle_trial_will_end` no longer emails directly."* The in-app sender had been removed on
+purpose so the two could not double-fire. So for a real customer under that code:
 
 1. Trial starts → `_klaviyo_sync` adds them to `RKeAnZ` without consent → `NEVER_SUBSCRIBED`
 2. Day 27 → flow is live, profile filter passes, Smart Sending already off on this message
@@ -230,10 +246,11 @@ hardest kind to notice, because the flow reports as live and healthy throughout.
 
 ### Two fixes, deliberately kept separate
 
-1. **Flag day-27 `transactional: true`** — one setting in the Klaviyo UI, no code. Defensible on the
-   merits: a pre-charge billing notice genuinely is transactional, which is the same reasoning that
-   already turned Smart Sending off on that message alone. Closes the billing exposure independently
-   of any consent work.
+1. **Flag day-27 `transactional: true`** — believed at the time to be one setting in the Klaviyo UI,
+   no code. Defensible on the merits: a pre-charge billing notice genuinely is transactional, which is
+   the same reasoning that already turned Smart Sending off on that message alone. **❌ This turned out
+   to be impossible on this account — the setting does not exist here. See the next-but-one section
+   for the three gates. The billing exposure was closed in code instead.**
 2. **Add a consent step at checkout** — the real fix, and a code change. Unblocks L2/L6/L7 and makes
    the other four live emails legitimate rather than dormant. **Built 2026-08-03 — see the next
    section. Committed, not yet deployed, and inert until the API key gains a scope it lacks today.**
@@ -247,6 +264,132 @@ documented behaviour applied to observed config, not something watched happening
 to a `NEVER_SUBSCRIBED` profile would settle it. Note also that `metric-bootstrap@` reports
 `can_receive_email_marketing: true` *while* `NEVER_SUBSCRIBED` — that field tracks suppression and
 deliverability, not consent, and is not evidence the send would land.
+
+---
+
+## Day-27 pre-charge notice — moved in-house 2026-08-04 (live in production)
+
+Closes the exposure recorded two sections above. **The fix is not the one that section proposed.**
+
+### Why `transactional: true` was never available
+
+Three independent gates, each sufficient on its own to block it. Established by exhausting five UI
+locations, searching the page accessibility tree, then confirming against Klaviyo's own
+documentation (article `360003165732`) and a live API re-read:
+
+| Gate | Requirement | This account | How observed |
+|---|---|---|---|
+| Plan | Paid plan | **Free** | Klaviyo billing UI |
+| Trigger | Metric-triggered flow only | `X2tesT` is `trigger_type: "Added to List"` | `GET /api/flows/X2tesT` |
+| Mode | Message must be in Manual mode | Day 27 is **Live** | flow definition |
+
+And clearing all three would only earn the right to *apply*: Klaviyo reviews the request (~24h), and
+any later content edit strips the designation. That is not a dependency a billing notice should have.
+
+**Stripe's built-in trial-ending email is not a substitute either.** It fires **7 days** before trial
+end — day 23 of a 30-day trial — not 3. Three different clocks are in play and they are easy to
+conflate: Stripe's built-in reminder (day 23), the `customer.subscription.trial_will_end` webhook
+(day 27), and the Klaviyo flow's day-27 step (27 days after *list add*, not after trial start).
+
+*Not observed:* whether that Stripe email is currently enabled. The setting is dashboard-only —
+`GET /v1/account` returns no `billing` block (`settings` carries `bacs_debit_payments, branding,
+card_issuing, card_payments, dashboard, invoices, payments, payouts, sepa_debit_payments`). Reading it
+needs a dashboard login. Enabling it would be *additive*, not a replacement.
+
+### What the code does now
+
+`_handle_trial_will_end` sends directly via Resend (`_send_trial_ending_email`), on the Stripe
+`customer.subscription.trial_will_end` webhook. Copy is ported verbatim from Klaviyo template
+`TGNJvL`, so the wording customers get is the wording that was written and reviewed — only the
+delivery path changed. Price and billing date are read **off the Stripe subscription object**, not
+from stored profile properties, so the email cannot quote a figure that differs from the invoice.
+
+Guards, each there for a specific failure:
+
+- **Cancellation** is read from `cancel_at_period_end` / `canceled_at` on the webhook payload, *not*
+  from our `status` column. A portal cancellation during trial arrives as
+  `customer.subscription.updated`, and `_handle_subscription_updated` writes only `status` and
+  `trial_end` — so `cancel_at_period_end` is never persisted and local status stays `trialing`. A
+  DB-only check would have told a cancelling customer their card was about to be charged.
+- **Refuses to send** if it cannot name both the amount and the date; alerts `NOTIFY_EMAIL` instead.
+  A notice reading "charged $None" is worse than silence.
+- **Idempotency** via an atomic `UPDATE … WHERE` claim checked on `rowcount` — Stripe retries on any
+  non-2xx and gunicorn runs 2 workers. The claim column `trial_notice_sent_for` holds *the `trial_end`
+  the notice was sent for*, not a timestamp, so a retry for the same date is suppressed while an
+  extended trial re-arms.
+- **A failed send releases the claim**, so Stripe's retry gets a real second attempt. For a billing
+  warning a possible duplicate is the better failure than a possible silence.
+
+Verified by execution, not inspection: 13 behavioural groups against a real temp SQLite DB with only
+the two outbound edges stubbed, plus a migration test against a copy of the live table shape. All pass.
+
+### Three defects found by auditing the diff, not by tests
+
+All three were in newly written code and all three passed a green suite:
+
+1. **False charge notice to a cancelling customer** — the `cancel_at_period_end` case above.
+   Customer-facing billing error; no test would have surfaced it.
+2. **Extended trial swallowed** — a bare "sent" flag suppressed a legitimate second notice. Fixed by
+   claiming on the date rather than on a boolean.
+3. **Subject-line over-escaping** — HTML-escaping a plain-text subject renders a literal `&amp;` in
+   the inbox. Split escaped body label from raw subject label.
+
+### Deploy record
+
+| | |
+|---|---|
+| Commits | `b11797e` (the move), `2c31dbc` (migration race + restart-script guards) |
+| Restart | 2026-08-04 11:37:06 UTC, MainPID `637400` → `1108356` |
+| Migration | `trial_notice_sent_for` added to `subscriptions`; 14 columns, no duplicates |
+| Health | 200 direct `:5011`, 200 via nginx, 401 `/subscription-status` |
+
+**The migration race was not hypothetical.** `init_db()` runs at import in `wsgi_store.py`
+(server-only, *not in this repo*) and gunicorn starts 2 workers without `--preload`, so both workers
+read the same `PRAGMA` and both attempted the `ALTER`. The journal for this restart shows it firing:
+
+```
+[Store API] Column trial_notice_sent_for already added by another worker
+```
+
+Without the duplicate-column tolerance added in `2c31dbc`, that worker would have died at boot — on a
+restart that had just reported success. **Any future column follows the same path; use `add_column`.**
+
+`restart_store_api.sh` also had to be corrected: its verify block asserted `_send_trial_ending_email`
+was **absent** (written when Klaviyo owned the send), which would have aborted every restart. The
+sense is now inverted. `EXPECT_MD5` is hand-maintained and must be bumped on every `store_api.py`
+change — `62d03e9b…` for `b11797e`, `6628991d…` for `2c31dbc`.
+
+### ⚠️ Outstanding — exactly one of the two must be sending
+
+| | |
+|---|---|
+| `ReYNde` **ON** + current code | consented customers get the notice **twice** |
+| `ReYNde` **OFF** + rolled-back code | **nobody** is warned before their card is charged, silently |
+
+**Switch Klaviyo message `ReYNde` OFF** (flow `X2tesT`, send-email action `107908224`). UI only — the
+public API exposes flow messages read-only, so this cannot be scripted. If the code is ever rolled
+back, switch `ReYNde` back ON *as part of* the rollback, not after; the rollback notes at the foot of
+`restart_store_api.sh` spell this out.
+
+Note what `ReYNde` alone cannot do, which is the whole reason the code moved: it is
+marketing-classified, so it only ever reaches profiles with marketing consent. Customers who declined
+the checkout tick are unreachable that way.
+
+### Infrastructure coupling discovered en route
+
+`pf9-store-api.service` carries **two** `EnvironmentFile=` lines — `/opt/bridgr/.env` (which holds
+`STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`) and `/opt/pf9-store/pf9-store-api.env`. The store DB
+is also `STORE_DB_PATH=/opt/bridgr/store_leads.db`.
+
+**The store's secrets and its database both live inside legacy BRIDGR.** That is undocumented
+elsewhere and matters because BRIDGR-on-xfree143 is otherwise treated as read-only legacy: a BRIDGR
+cleanup that removed `/opt/bridgr` would take the store's Stripe keys and every subscription record
+with it.
+
+### Blast radius at time of change
+
+3 rows in `subscriptions`, all test data (Mar/Apr 2026), all `trial_end` NULL. **No customer has ever
+run the trial flow**, so the exposure this closed was prospective, not active.
 
 ---
 
@@ -277,7 +420,9 @@ product validation rather than at required-fields, so it parses a body containin
   "Failed to create checkout session".
 - **Checkbox is unticked by default and not `required`.** A pre-ticked box is not affirmative
   consent. Its wording separates marketing from billing email, so declining does not read as opting
-  out of the day-27 notice.
+  out of the day-27 notice. **As of 2026-08-04 that separation is real rather than just promised:**
+  the day-27 notice is sent by the webhook handler and never consults consent, so a customer who
+  declines still gets warned before their card is charged.
 
 ### Three decisions worth not re-litigating
 
@@ -389,8 +534,9 @@ both were what caught it.
 
 ### What this does not fix
 
-- **The day-27 billing exposure.** Untouched. A customer converting to paid is still charged with no
-  warning email whether or not they ticked the box. That remains fix 1, UI-only, and open.
+- **The day-27 billing exposure.** Untouched *by the consent work*. ✅ Closed separately later the
+  same day by moving the send into `_handle_trial_will_end`, which is exactly why it no longer depends
+  on whether the box was ticked. Not fix 1 — that route proved unreachable.
 - **Existing profiles.** Nothing retroactive; consent cannot be granted on someone's behalf.
 - **Proof.** The code is live and the scope block is gone, but `_klaviyo_subscribe` has still never
   executed — no checkout has yet carried `marketing_consent: true`, so no call has been watched
