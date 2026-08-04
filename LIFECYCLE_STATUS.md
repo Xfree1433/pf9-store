@@ -1545,6 +1545,87 @@ waits forever and looks patient.
 
 ---
 
+## Template bodies read — 2026-08-04
+
+The file's oldest open item ("Email bodies. Still unread") is closed. All ten templates were pulled
+and their merge tags cross-checked against what `store_api.py` actually sets.
+
+### The template ↔ message map
+
+Recorded because this file already flags template names as *"a live hazard… editing the wrong one
+later is a realistic mistake with no undo"* — and the live names are worse than that warning implies.
+**Four** templates are named `… PF9 — Trial Day 3: Check-in`, and only one of them *is* Trial Day 3;
+the other three are L2-E1, L2-E2 and L6-E1, cloned from it on 2026-08-02 and never renamed. One more
+is `Untitled email template` (L7-E1), and two have a `null` name (Trial Day 27, L7-E2). **A name
+match is not evidence you have the right template. This map is.**
+
+| Flow | Message | msg id | template | status |
+|---|---|---|---|---|
+| Paid `VuD82q` | Paid Month 1 — Power Feature Check-in | `VQkDuG` | `RXA7h3` | live |
+| Paid `VuD82q` | Paid Month 3 — Expansion / Second App | `V8t6ve` | `XtS2ji` | live |
+| Trial `X2tesT` | Trial Day 1 — Welcome + First Steps | `VpT7Fy` | `V7YkuR` | live |
+| Trial `X2tesT` | Trial Day 3 — Check-in | `YpvAcX` | `Sz4DN3` | live |
+| Trial `X2tesT` | Trial Day 27 — Pre-Charge Notice | `ReYNde` | `TGNJvL` | **draft** |
+| L2 `RWvZ2m` | L2-E1 - Cart abandon 1h (resume link) | `UUGHrB` | `QSsqvH` | live |
+| L2 `RWvZ2m` | L2-E2 - Cart abandon 48h (restart link) | `SuMhfB` | `Vf7eMc` | live |
+| L6 `VgquRn` | L6-E1 - Churn save 24h | `SNHiyi` | `WAn6mF` | live |
+| L7 `RZQKa2` | L7-E1 - Win-back 30d | `WqSzAV` | `R8kVqk` | live |
+| L7 `RZQKa2` | L7-E2 - Win-back 44d | `R2bqUN` | `Rr6sCj` | live |
+
+> **A near-miss worth keeping.** `XtS2ji` was read out of order and its body is month-3 expansion
+> copy ("You've been on X for three months…"), which looked like month-3 content sitting in a
+> *trial day 1* template — a serious-looking bug. It was not: the mislabel was in the reading script,
+> which had `XtS2ji` hardcoded as "Trial Day 1" from this file's old wording. `XtS2ji` is the Paid
+> Month 3 template and is correct. Trial Day 1 is `V7YkuR` and reads correctly. **Third false alarm
+> of the day from a script's own assumption rather than the system** — build the map from the API,
+> never from a guess.
+
+### No email can ship a dead call-to-action
+
+Every merge tag in every template carries a `|default:` **except three** — and those three are the
+CTA links, the one place an empty render would actually break the email:
+
+| Tag | Template(s) | Set by code? |
+|---|---|---|
+| `event.resume_link` | L2-E1 | ✅ `store_api.py:943` |
+| `event.restart_link` | L2-E2 | ✅ `store_api.py:944` |
+| `event.reactivate_link` | L6-E1, L7-E1 | ✅ `store_api.py:1342` |
+
+All three are set on the events that trigger those flows, and L2's two were seen populated on the
+canary's real `Started Checkout`. So the un-defaulted tags are exactly the ones guaranteed present.
+`person.first_name` is set natively at `store_api.py:251` from the name Stripe supplies, and defaults
+to `there`. L7-E2 has no link tag at all — it is deliberately a plain sign-off with one hardcoded
+store URL, not a broken CTA.
+
+### The real finding: personalisation is inert
+
+**Ten properties referenced by live templates are set by no code path at all**, so every recipient
+receives the identical default copy:
+
+| Property | Used by | Renders as |
+|---|---|---|
+| `onboarding_step1_title` / `_detail` | Trial Day 1 | "Add your first item" + generic detail |
+| `onboarding_step2_title` / `_detail` | Trial Day 1 | "Configure your first alert or rule" |
+| `day3_feature_title` / `_detail` | Trial Day 3 | generic |
+| `month1_feature_title` / `_detail` | Paid Month 1 | generic |
+| `app_login_url` | Trial Day 3 | default URL |
+| `add_team_url` | Paid Month 1 | default URL |
+
+Confirmed by counting references in `store_api.py`: each is `0`. For contrast these *are* set and do
+personalise — `app_name`, `related_app_name` (623), `related_app_detail` (624), `related_app_url`
+(630), `app_price` (1188), `manage_subscription_url` (1190), `trial_end_date`, `app_count`.
+
+**This is not a bug and nothing renders broken** — the defaults are well-written and the emails read
+coherently. It is a gap between design and delivery: the templates were built to tell a FLOWTRACK
+trialist what to do *in FLOWTRACK*, and instead tell the buyer of any product in `PRICE_MAP` to "add
+your first item". The per-app onboarding value the templates were shaped for is not delivered, and
+nothing anywhere reports that, because a `|default:` renders silently. Closing it means either
+populating these per product at enrolment (the `_cross_sell_properties` pattern at line 612 is the
+model) or simplifying the templates to stop implying personalisation that never arrives. **Not
+attempted — recorded as a decision for the founder, not a defect to fix quietly.**
+
+---
+
 ## L5 — closed 2026-08-02
 
 The day-90 expansion email is live and **now gated on a conditional split**, so a subscriber who
@@ -1652,14 +1733,10 @@ outcomes once a customer owns 2+ apps.
 
 Listed so they are not mistaken for "checked and fine":
 
-- **Email bodies.** Still unread — template contents (`RXA7h3`, `XtS2ji`) were never pulled, so
-  whether the body copy matches `PLAYBOOK_LIFECYCLE.md` is unknown. *Partially resolved
-  2026-08-02:* the **subject lines** do use `b4d80e0`'s merge tags, with defaults —
-  day-30 renders `{{ person.Properties.app_name|default:'PF9' }}` and day-90 renders
-  `{{ person.Properties.related_app_name|default:'another PF9 app' }}`. So the tags are wired at
-  least in the subjects, and degrade safely when absent.
-- **`{{current_spend}}`** (spec line 213/215). Nothing in `store_api.py` sets it. If the live
-  day-90 email uses it, it renders empty or falls to a default.
+- ~~**Email bodies.**~~ ✅ **Read 2026-08-04** — all ten templates pulled, including `RXA7h3` and
+  `XtS2ji`. See "Template bodies read — 2026-08-04".
+- ~~**`{{current_spend}}`**~~ ✅ **Moot, 2026-08-04.** It is referenced by **zero templates** and set
+  by zero code paths, so there is nothing to render empty. Closed rather than carried.
 - **L5-E2**, the day-100 follow-up (spec line 223). The Paid flow ends after day 90 — so it
   isn't built, but no separate flow was searched for beyond the full account list, which showed
   only two flows.
@@ -1668,11 +1745,11 @@ Listed so they are not mistaken for "checked and fine":
   observed send were Gmail proxy artefacts that Klaviyo tagged `machine_open: False` (see Canary).
   Any open-based number must be filtered on `Client Name` / user agent by hand, or the KPI will be
   measured against inflated data.
-- **Whether the five raw-tag subject lines in `VuD82q` and `X2tesT` render for a customer.** They are
-  authored `{{ person.Properties.app_name }}` and were nearly reported as a live bug. The
-  template-vs-render trap (see Canary) is the likely explanation, but the only mail actually read by
-  a human was L2-E1, which uses `event.app_name` — a different variable from a different source, so
-  it does not clear these. Needs one delivered email from either flow, read in an inbox.
+- ~~**Whether the five raw-tag subject lines in `VuD82q` and `X2tesT` render for a customer.**~~
+  ✅ **Closed 2026-08-04 — they are safe, and cannot render raw or empty.** Every one of the five
+  carries a `|default:`, so the worst case a customer sees is `PF9` / `another PF9 app`. The
+  underlying property *is* set by production code on the trial path (`store_api.py` ~1183-1218), and
+  the canary proved Klaviyo renders this exact tag syntax. See "Template bodies read — 2026-08-04".
 - **That Smart Sending actually skips, and that skips are visible.** All five sends now have it on,
   but no PF9 message has been skipped yet. The behaviour and the `Skipped Send` visibility are
   vendor-documented, not observed here. First missing send should be checked against `R9tyrh`
