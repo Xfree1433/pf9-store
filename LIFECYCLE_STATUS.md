@@ -1342,10 +1342,13 @@ body        "Hi Canary, Saw you started checkout for FLOWTRACK but didn't finish
 ```
 
 Subject and body both fully rendered — `app_name` resolved to `FLOWTRACK`, no raw tags, and the
-`|default:` filter was not needed. Klaviyo recorded two `Opened Email` events at 13:56:51 and
-13:56:55 against message `UUGHrB`, which is L2-E1. **The negative control held**: the 12:29:35
-TASKFLOW checkout, fired before L2 went live at 12:52:16, produced no mail. The no-backfill rule
-this document leans on throughout is therefore observed, not just assumed.
+`|default:` filter was not needed. Klaviyo's own `Received Email` event confirms it independently,
+timestamped **13:56:50**, message `UUGHrB`, flow `RWvZ2m`, `Inbox Provider: Gmail`, sent from
+`k3.marketing.plainspokenfoundrynine.com` via IP `170.203.20.36` (pool `high_3`).
+
+**The negative control held**: the 12:29:35 TASKFLOW checkout, fired before L2 went live at 12:52:16,
+produced no mail — the full profile event stream contains exactly one `Received Email`. The
+no-backfill rule this document leans on throughout is therefore observed, not just assumed.
 
 > **Trap: Klaviyo's event `Subject` property stores the TEMPLATE, not the delivered text.** Proven
 > for this send and only this send: the event data reads `{{ event.app_name|default:'PF9' }}` while
@@ -1361,9 +1364,29 @@ this document leans on throughout is therefore observed, not just assumed.
 > no alarm raised, and no clean bill of health either. Confirming it needs a delivered email from
 > `VuD82q` or `X2tesT` opened in an inbox. Until then treat those five as unverified, not fixed.
 
-> **`Received Email` lags `Opened Email`.** At 13:59 the canary profile had two `Opened Email`
-> events and no `Received Email` event at all, and the account-wide `Received Email` count was still
-> 2. Absence of `Received Email` shortly after a send is not evidence of non-delivery.
+> **`Received Email` becomes queryable *late*, and this is an indexing lag, not an event-ordering
+> one.** At 13:59 the canary profile showed two `Opened Email` events and no `Received Email` at all,
+> and the account-wide count was still 2 — which is what prompted an earlier note here that "Received
+> Email lags Opened Email". **That framing was wrong and is corrected:** when it did appear, its
+> timestamp was **13:56:50 — earlier than both opens** (13:56:51, 13:56:55). The event existed all
+> along; the API just wasn't serving it yet. Absence of `Received Email` shortly after a send is not
+> evidence of non-delivery, and the events are not out of order.
+
+> **Both `Opened Email` events are Gmail proxy artefacts, not human opens — and Klaviyo's
+> `machine_open` flag says `False` on both.** Checked because the doc had cited them as
+> corroboration, which they are not:
+>
+> | Time | Evidence it is a machine | `machine_open` |
+> |---|---|---|
+> | 13:56:55 | `Client Name: Gmail image proxy`, UA `…via ggpht.com GoogleImageProxy` | `False` |
+> | 13:56:51 | `_ip 66.249.91.233` (Google range), stitched synthetic UA, `Client OS: Windows` | `False` |
+>
+> The recipient was on a Mac and had not opened anything at 13:56:51. **So `machine_open` cannot be
+> trusted to exclude proxy opens on this account, and any open-rate figure here is inflated by an
+> unknown amount.** This matters for the never-measured 8% KPI (spec line 235): if that KPI is
+> open-based it is not measurable from this data without filtering on `Client Name` / user agent by
+> hand. Clicks and `Received Email` are unaffected. None of this weakens the delivery proof — that
+> rests on the inbox read and `Received Email`, never on the opens.
 
 > **A watcher that was never running looked exactly like a watcher reporting nothing.** The previous
 > canary poller's log was 0 bytes and the script was gone from `/tmp`. Trusting it would have
@@ -1641,12 +1664,15 @@ Listed so they are not mistaken for "checked and fine":
   isn't built, but no separate flow was searched for beyond the full account list, which showed
   only two flows.
 - **Flow performance.** No open/click/conversion data pulled. The 8% KPI on spec line 235 has
-  never been measured.
+  never been measured. **And open rate is not a safe basis for it** — both opens on the only
+  observed send were Gmail proxy artefacts that Klaviyo tagged `machine_open: False` (see Canary).
+  Any open-based number must be filtered on `Client Name` / user agent by hand, or the KPI will be
+  measured against inflated data.
 - **Whether the five raw-tag subject lines in `VuD82q` and `X2tesT` render for a customer.** They are
   authored `{{ person.Properties.app_name }}` and were nearly reported as a live bug. The
-  template-vs-render trap (see Canary) is the likely explanation, but the only mail actually opened
-  was L2-E1, which uses `event.app_name` — a different variable from a different source, so it does
-  not clear these. Needs one delivered email from either flow, opened in an inbox.
+  template-vs-render trap (see Canary) is the likely explanation, but the only mail actually read by
+  a human was L2-E1, which uses `event.app_name` — a different variable from a different source, so
+  it does not clear these. Needs one delivered email from either flow, read in an inbox.
 - **That Smart Sending actually skips, and that skips are visible.** All five sends now have it on,
   but no PF9 message has been skipped yet. The behaviour and the `Skipped Send` visibility are
   vendor-documented, not observed here. First missing send should be checked against `R9tyrh`
