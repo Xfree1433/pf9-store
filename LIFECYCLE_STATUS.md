@@ -110,12 +110,20 @@ and inheriting it would have made consent pending-confirmation instead of grante
 ## Flows that exist in Klaviyo
 
 **Five**, as of 2026-08-02 — the account was listed in full, not filtered. Two were pre-existing and
-live; three (`RWvZ2m` L2, `VgquRn` L6, `RZQKa2` L7) were built on 2026-08-02 and are all in Draft,
-each documented in its own section below.
+live; three (`RWvZ2m` L2, `VgquRn` L6, `RZQKa2` L7) were built on 2026-08-02, and **all three were
+switched on 2026-08-04**, so all five are now live. Each is documented in its own section below.
 
-⚠️ **"Live" here means the flow is switched on, not that it delivers.** All six messages across the
-two live flows are `transactional: false`, and no code path grants marketing consent, so a real
-customer would enter these flows and be skipped at every send. See "Consent — audited 2026-08-03".
+⚠️ **"Live" here meant the flow is switched on, not that it delivers.** All six messages across the
+two originally-live flows are `transactional: false`, and at the time of that audit no code path
+granted marketing consent, so a real customer would enter these flows and be skipped at every send.
+See "Consent — audited 2026-08-03".
+
+✅ **That gap is closed, and delivery is now observed rather than assumed.** Consent is granted in
+code and proven end-to-end (2026-08-04), and on the same day an L2-E1 cart-abandon email was watched
+arriving in a real inbox — the first PF9 lifecycle email whose delivery was directly watched rather
+than assumed. See "Canary". The caveat still standing: only L2-E1 has been observed. Flows have been
+live since 2026-05-30 so other messages have very likely delivered, but none were checked, and
+Smart Sending (on for all five since 08-04) adds a second reason a send can go silently missing.
 
 ### `X2tesT` — PF9 Trial Onboarding · live · trigger: Added to List
 
@@ -155,12 +163,12 @@ Since 2026-08-02 it sits behind a conditional split on `app_count` — see "L5 �
 | # | Spec | Built? | Detail |
 |---|---|---|---|
 | L1 | Video viewer, no subscribe | **No flow** | Needs a `video_play` event. Nothing in `store_api.py` emits one; no flow exists to consume it. |
-| L2 | Cart abandon | **Built 2026-08-02 — in Draft, not live** | Flow `RWvZ2m` "PF9 Cart Abandon": `Started Checkout` trigger → 1h → L2-E1 (`resume_link`) → 47h → L2-E2 (`restart_link`). Both emails carry a send-time `Placed Order` = 0 filter and have Smart Sending off. Structure verified against `GET /api/flows/RWvZ2m?include=flow-actions`. **Turning it on is gated on the marketing-consent question below** — see "L2 — built 2026-08-02". |
+| L2 | Cart abandon | **LIVE 2026-08-04** (built 08-02) | Flow `RWvZ2m` "PF9 Cart Abandon": `Started Checkout` trigger → 1h → L2-E1 (`resume_link`) → 47h → L2-E2 (`restart_link`). Both emails carry a send-time `Placed Order` = 0 filter; **Smart Sending on since 08-04** (was off at build). Structure verified against `GET /api/flows/RWvZ2m?include=flow-actions`. **L2-E1 is the only PF9 lifecycle email whose arrival has been directly observed** (others have very likely delivered since flows went live 2026-05-30 — none were watched) — see "Canary". |
 | L3 | New subscriber onboarding | **Partial; day-27 defect closed** | Trial flow (3 emails @ 0/3/27) + Paid flow both live. Spec says 4 emails over 14 days; actual trial cadence is 0/3/27 — still unresolved. **The day-27 defect is fixed:** a profile filter on `X2tesT` now drops cancelled trials before the charge notice. See "Day-27 filter — 2026-08-02". |
 | L4 | Month-1 success | **Live** | Day-30 email in the Paid flow. Whether its content matches the spec's testimonial ask was NOT checked. |
 | L5 | Month-3 expansion | **Live + conditional** | Day-90 email in the Paid flow, gated on `app_count` since 2026-08-02. See below. |
-| L6 | Churn-save | **Half built 2026-08-02 — L6-E1 in Draft; L6-Page not started** | Flow `VgquRn` "PF9 Churn Save": `Cancelled Subscription` trigger → 1 day → L6-E1. Send-time `Placed Order` = 0 filter, Smart Sending off. Structure verified against `GET /api/flows/VgquRn?include=flow-actions`. The L6 *intercept page* is frontend code and is still not started — it is also what blocks L7-E1. **Turning the flow on is gated on the marketing-consent question below** — see "L6 — built 2026-08-02". |
-| L7 | Win-back | **Built 2026-08-02 — in Draft, not live** | Flow `RZQKa2` "PF9 Win-back": `Cancelled Subscription` trigger with a `remaining_app_count = 0` **trigger filter** → 30 days → L7-E1 → 14 days → L7-E2. Both emails carry a send-time `Placed Order` = 0 filter and have Smart Sending off. L7-E1's spec copy was unbuildable and was **rewritten generically** — see "L7 — built 2026-08-02". Structure verified against `GET /api/flows/RZQKa2`. **Turning it on is gated on the marketing-consent question below.** |
+| L6 | Churn-save | **L6-E1 LIVE 2026-08-04; L6-Page still not started** | Flow `VgquRn` "PF9 Churn Save": `Cancelled Subscription` trigger (+ `remaining_app_count = 0` filter, added 08-04) → 1 day → L6-E1. Send-time `Placed Order` = 0 filter; **Smart Sending on since 08-04** (was off at build). Structure verified against `GET /api/flows/VgquRn?include=flow-actions`. The L6 *intercept page* is frontend code and is still not started — it is also what blocks L7-E1. |
+| L7 | Win-back | **LIVE 2026-08-04** (built 08-02) | Flow `RZQKa2` "PF9 Win-back": `Cancelled Subscription` trigger with a `remaining_app_count = 0` **trigger filter** → 30 days → L7-E1 → 14 days → L7-E2. Both emails carry a send-time `Placed Order` = 0 filter; **Smart Sending on since 08-04** (was off at build). L7-E1's spec copy was unbuildable and was **rewritten generically** — see "L7 — built 2026-08-02". Structure verified against `GET /api/flows/RZQKa2`. Nothing has sent from it yet — the first send is 30 days after a qualifying cancellation. |
 
 ---
 
@@ -1198,6 +1206,8 @@ the next email. On L2 that is the abandon guard; on L6/L7 it is the "they came b
    highest-intent email in the funnel). Worth re-stating as a live consequence rather than a setting:
    with three flows on and no frequency cap, one person can legitimately receive several PF9 emails
    in a short window. Acceptable at current volume; revisit if the flow count grows.
+   **↑ No longer true — reversed later the same day.** Smart Sending is now on for all five; see
+   *"Smart Sending turned on — 2026-08-04, all five"*. The concern in this item is what prompted it.
 
 ### What activation cannot be done by
 
@@ -1318,6 +1328,48 @@ document is wrong and much of the timing reasoning here needs revisiting. A dead
 no charge. That send is the first end-to-end proof that a PF9 lifecycle email actually reaches an
 inbox, and **it has not been observed yet** — do not record this as proven until the mail arrives.
 
+**↑ It arrived. Observed 2026-08-04, and this is now the first proven end-to-end send.** Read out of
+the receiving Gmail inbox, not inferred from Klaviyo:
+
+```
+Gmail thread 19fcd1012292813b
+delivered   2026-08-04T13:56:48Z   (due ~13:55, so ~2 min late — within tolerance)
+to          xfree143+consenttest@gmail.com
+from        support@plainspokenfoundrynine.com
+subject     still thinking about FLOWTRACK?
+body        "Hi Canary, Saw you started checkout for FLOWTRACK but didn't finish.
+             Sometimes that's a card issue, sometimes it's second thoughts…"
+```
+
+Subject and body both fully rendered — `app_name` resolved to `FLOWTRACK`, no raw tags, and the
+`|default:` filter was not needed. Klaviyo recorded two `Opened Email` events at 13:56:51 and
+13:56:55 against message `UUGHrB`, which is L2-E1. **The negative control held**: the 12:29:35
+TASKFLOW checkout, fired before L2 went live at 12:52:16, produced no mail. The no-backfill rule
+this document leans on throughout is therefore observed, not just assumed.
+
+> **Trap: Klaviyo's event `Subject` property stores the TEMPLATE, not the delivered text.** Proven
+> for this send and only this send: the event data reads `{{ event.app_name|default:'PF9' }}` while
+> the recipient saw `FLOWTRACK`. **To judge what a customer saw, read the inbox; the API tells you
+> what was authored.** An earlier attempt to settle this by comparing a May 30 send against a June 29
+> one was called conclusive and was not — the May 30 subject contained no variables, so it could not
+> distinguish a stored template from a stored render.
+>
+> This nearly produced a false alarm: five live subject lines across flows `VuD82q` and `X2tesT` show
+> raw `{{ person.Properties.app_name }}` tags and read like a customer-facing bug. The trap above is
+> the likely explanation, but **it has not been confirmed for those two flows** — the mail actually
+> read was L2-E1, which uses `event.app_name`, a different variable from a different source. So:
+> no alarm raised, and no clean bill of health either. Confirming it needs a delivered email from
+> `VuD82q` or `X2tesT` opened in an inbox. Until then treat those five as unverified, not fixed.
+
+> **`Received Email` lags `Opened Email`.** At 13:59 the canary profile had two `Opened Email`
+> events and no `Received Email` event at all, and the account-wide `Received Email` count was still
+> 2. Absence of `Received Email` shortly after a send is not evidence of non-delivery.
+
+> **A watcher that was never running looked exactly like a watcher reporting nothing.** The previous
+> canary poller's log was 0 bytes and the script was gone from `/tmp`. Trusting it would have
+> produced a confident "no email arrived" from a process that never watched. Check a watcher is
+> alive before believing its silence.
+
 > **Endpoint gotcha, cost a couple of attempts.** The store API is on
 > `app.plainspokenfoundrynine.com/store-api`, **not** `store.plainspokenfoundrynine.com`, and the
 > Blueprint prefix is `/store-api`, not `/api/store`. Both wrong guesses return nginx's bare
@@ -1394,7 +1446,7 @@ more mail than intended, so it is the next thing worth a decision.
 **↑ Superseded the same day.** That decision was taken within the hour — see *"Smart Sending turned
 on"* immediately below. This paragraph is kept as the statement of the problem that prompted it.
 
-### Smart Sending turned on — 2026-08-04, four of five
+### Smart Sending turned on — 2026-08-04, all five
 
 Enabled on founder instruction, per send action, in each message's **Email details → Settings →
 "Skip recently emailed profiles"** — scroll past the template preview, it is below the fold. The
@@ -1406,11 +1458,18 @@ Verified from the flow definition API afterwards, not from the canvas:
 
 | Send action | Message | `smart_sending_enabled` |
 |---|---|---|
-| `113495627` | L2-E1 - Cart abandon 1h | **false — deliberately, see below** |
+| `113495627` | L2-E1 - Cart abandon 1h | true — **turned on last, after the canary landed** |
 | `113495856` | L2-E2 - Cart abandon 48h | true |
 | `113497604` | L7-E1 - Win-back 30d | true |
 | `113498550` | L7-E2 - Win-back 44d | true |
 | `113496376` | L6-E1 - Churn save 24h | true |
+
+Final state re-read from the API after the last save, with the check asserting on all three
+properties at once so a silent miss fails loudly:
+
+```
+5/5 status=live      5/5 smart_sending_enabled=true      5/5 converter exclusion intact
+```
 
 **The field is `smart_sending_enabled`, nested in `data.message` of a `send-email` action** — not
 `use_smart_sending`, and not on the action itself. A first check looked for the wrong key against the
@@ -1422,10 +1481,27 @@ five actions before believing what it says about them.
 **Why L2-E1 was left off.** The canary send was in flight into
 `xfree143+consenttest@gmail.com`, due ~13:55 UTC from that exact action. Smart Sending is evaluated
 at send time, so enabling it first would have risked Klaviyo silently dropping the one email this
-whole workstream is trying to observe arriving. **As of this commit it is still off** — that is a
-loose end, not a decision: it is to be switched on once the canary is resolved, and this table's
-first row must be corrected to `true` when it is. If the row still reads `false` and the Canary
-section below is resolved, the follow-through was dropped.
+whole workstream is trying to observe arriving. **That loose end is now closed** — the canary landed
+at 13:56:48Z (see the Canary section), and L2-E1 was switched on immediately afterwards and verified
+`true`. Sequencing the four saves before the fifth cost one extra pass and protected the measurement.
+
+**The converter-exclusion check produced a false negative on all five, and was nearly believed.** The
+verifier written for this pass looked for the `Placed Order` filter on the action node and in
+`data.filters` / `data.profile_filter`; a `send-email` action's `data` holds only `message` and
+`status`, so it reported `converter_excl=False` for every message — including four verified `True`
+hours earlier. The filter is at **`data.message.additional_filters`**, beside `smart_sending_enabled`:
+
+```json
+{"condition_groups": [{"conditions": [{"type": "profile-metric", "metric_id": "XEMaYg",
+  "measurement": "count", "measurement_filter": {"type": "numeric", "operator": "equals", "value": 0},
+  "timeframe_filter": {"type": "date", "operator": "flow-start"}}]}]}
+```
+
+This is the *second* time in one session that a checker looking in the wrong place returned a clean,
+plausible, wrong answer — and this one failed toward alarm rather than reassurance, which is the
+luckier direction. Two rules earned: **check the structure before checking the value**, and prefer
+walking the parsed object to grepping the serialised JSON. The final verifier does the former and
+asserts on shape, so a wrong path raises instead of printing `False`.
 
 **What this trades away.** Smart Sending **skips, it does not delay**. If the recipient received any
 other email inside the 16 hours, the lifecycle email is dropped entirely, not sent late. So this buys
@@ -1436,6 +1512,13 @@ right trade with three flows live on overlapping audiences, and it is one checkb
 surface these as *Skipped* in per-message analytics, which would be the place to look before assuming
 a flow is broken — **that is from the vendor's description, not observed here**, and no PF9 message
 has been skipped yet to confirm it. Worth confirming the first time a send goes missing.
+
+**The metric to query is `Skipped Send` (`R9tyrh`)** — not "Skipped Email", which does not exist and
+which a poller here waited on fruitlessly. Metric ids in this account, for anything querying the
+events API: `SVTrVL` Received Email, `U7igPC` Bounced Email, `VTJak7` Dropped Email, `UJjjsf` Opened
+Email, `WwKcWJ` Clicked Email, `R9tyrh` Skipped Send, `XEMaYg` Placed Order, `RDTdMQ` Started
+Checkout, `REutQc` Cancelled Subscription. A poller waiting on a metric name that does not exist
+waits forever and looks patient.
 
 ---
 
@@ -1559,6 +1642,15 @@ Listed so they are not mistaken for "checked and fine":
   only two flows.
 - **Flow performance.** No open/click/conversion data pulled. The 8% KPI on spec line 235 has
   never been measured.
+- **Whether the five raw-tag subject lines in `VuD82q` and `X2tesT` render for a customer.** They are
+  authored `{{ person.Properties.app_name }}` and were nearly reported as a live bug. The
+  template-vs-render trap (see Canary) is the likely explanation, but the only mail actually opened
+  was L2-E1, which uses `event.app_name` — a different variable from a different source, so it does
+  not clear these. Needs one delivered email from either flow, opened in an inbox.
+- **That Smart Sending actually skips, and that skips are visible.** All five sends now have it on,
+  but no PF9 message has been skipped yet. The behaviour and the `Skipped Send` visibility are
+  vendor-documented, not observed here. First missing send should be checked against `R9tyrh`
+  before concluding a flow is broken.
 - **HubSpot list IDs** 12/13/14 — env vars are set but the values were not confirmed against
   HubSpot.
 - **That Klaviyo actually skips a non-consented profile.** The 2026-08-03 consent finding rests on
