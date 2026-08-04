@@ -2,6 +2,8 @@
 
 **Purpose:** ready-to-publish copy bank for launches and channels. Updated 2026-05-10 to match the current state of the storefront (video-led funnel, no live demos, 14 shipped products across two verticals, 6 competitor comparison pages, 2 interactive calculators).
 
+**Re-audited 2026-08-04 against `index.html` and `PRICE_MAP`.** The three counts above still hold: 14 sellable apps (plus the Property Bundle), 6 comparison pages, 2 calculators. Two things did not: **six of the fourteen had no publishable copy in this file**, and OPSIQ was filed under "do not launch" while its Subscribe button was live. Both are fixed below. Every price and video ID in this file was checked against the product's own storefront card that day.
+
 **Voice guardrails:** match the founder voice in `for-landlords.html` / `for-manufacturers.html`. Honest, specific, no "enterprise-grade," no fake urgency. Always link to a YouTube video or a specific page on the site — never to "book a demo" or "talk to sales."
 
 ---
@@ -368,6 +370,253 @@ Built for energy companies, contractors, and SMBs who need to manage compliance 
 
 ---
 
+## The six sellable apps this file had no copy for — added 2026-08-04
+
+> **Why this section exists.** Audited every `data-product` card on `index.html` against `PRICE_MAP`
+> on 2026-08-04: **14 apps take money today, and five of them appeared nowhere in this file** —
+> EXTRACTR, MAINTAINR, PERMITR, SUPPORTR, TASKFLOW. A sixth, OPSIQ, appeared only under
+> *"waitlist products (do not include in launch copy)"*, which is no longer true (see the corrected
+> section at the end of this file). So more than a third of the catalogue was unsellable through
+> every channel this playbook drives, not because of a decision but because nobody had written the
+> post.
+>
+> **Every video ID below was read out of the product's own card on `index.html`** — none are
+> invented, and every price was cross-checked against that card's `openSubscribe()` call the same
+> day. OPSIQ is the one app with **no demo video**; its copy links to the live preview instead, and
+> the missing video is flagged rather than papered over.
+
+### EXTRACTR — $149/mo (⚠️ bring your own API key — say so)
+
+**Store description:** AI-powered document data extraction. Upload PDFs, invoices, or field tickets
+and get structured data back in seconds.
+
+> **EXTRACTR is the second BYO-API-key product, not just OPSIQ.** Its card carries the same
+> highlighted disclosure: *"AI extraction runs on your Anthropic API key, billed separately by
+> Anthropic at pay-as-you-go rates — not included in the $149/mo."* The first draft of this post
+> omitted it and led with "$149/mo flat", which would have made the post a **larger promise than the
+> storefront makes** — the exact failure this file's voice guardrail exists to prevent. Any EXTRACTR
+> copy that quotes the price must carry the key caveat in the same breath.
+
+**LinkedIn / Reddit post:**
+
+Somebody in your office is retyping numbers off a PDF right now.
+
+Field tickets, invoices, bills of lading — they arrive as scans, and the data has to end up in a
+spreadsheet, so a person reads one and types the other. It is the most expensive data entry in the
+building because it is invisible: nobody has a line item called "retyping."
+
+EXTRACTR reads the document and hands back structured data. Upload a stack, get columns.
+
+$149/mo for unlimited documents — no per-page or per-seat metering. The AI extraction runs on your
+own Anthropic API key, billed by Anthropic at pay-as-you-go rates, so that part is not included.
+
+90-second demo: https://youtu.be/0rpvA708nFI
+
+#DocumentAutomation #Operations #DataEntry
+
+---
+
+### MAINTAINR — $99/mo
+
+**Store description:** Equipment maintenance management. Preventive schedules, work orders, parts
+inventory, downtime tracking, and maintenance history.
+
+**LinkedIn / Reddit post:**
+
+The machine that went down this morning went down the same way in March.
+
+Nobody remembers, because the fix lived in a text message and the PM schedule lives in a laminated
+sheet on the wall. So you pay for the same failure twice, and the second time you also pay for the
+rush freight.
+
+MAINTAINR keeps it in one place:
+
+✓ Preventive schedules that actually trigger
+✓ Work orders with the history attached
+✓ Parts inventory tied to the equipment that eats them
+✓ Downtime tracking, so "which asset costs us most" has an answer
+✓ Full maintenance history, searchable
+
+$99/mo flat — not per asset, not per technician.
+
+90-second demo: https://youtu.be/eHUC-CvuQig
+
+#Maintenance #CMMS #Manufacturing #Reliability
+
+---
+
+### PERMITR — $299/mo
+
+**Store description:** Permit to Work and Job Safety Analysis platform. Digital permits, hazard
+assessments, multi-level approvals, and safety compliance.
+
+**LinkedIn / Reddit post:**
+
+A permit to work is a safety control right up until it becomes a photocopy in a truck.
+
+Hot work, confined space, line breaking — the paperwork exists to make somebody stop and think, and
+a paper form signed in a hurry skips exactly that step. Then the auditor asks for last quarter's
+permits and you are going through a filing cabinet.
+
+PERMITR runs it digitally: hazard assessment, multi-level approval, and a record you can actually
+produce.
+
+→ Digital permits to work, issued and closed with a timestamp
+→ JSA / hazard assessment attached to the permit, not filed separately
+→ Multi-level approval, so nobody self-authorises
+→ Every permit retrievable by date, area, or person
+
+$299/mo flat.
+
+90-second demo: https://youtu.be/RzKqlyjprMM
+
+#ProcessSafety #PermitToWork #JSA #IndustrialSafety
+
+---
+
+### SUPPORTR — $79/mo
+
+**Store description:** Customer support and ticketing system. Live chat, ticket queues, knowledge
+base, SLA tracking, and team collaboration.
+
+**LinkedIn / Reddit post:**
+
+Support tools are priced per agent, which is a strange way to charge a company whose whole problem
+is that it has too few agents.
+
+Add a part-time person to cover Fridays and the bill goes up. Let the queue sit instead and the bill
+stays flat. The pricing model quietly argues against the thing you want to do.
+
+SUPPORTR is $79/mo for the team, however many people are in it:
+
+✓ Ticket queues with SLA tracking
+✓ Live chat
+✓ Knowledge base your customers can search before they write in
+✓ Internal notes and collaboration on the ticket
+
+Add the Friday person. The price does not move.
+
+90-second demo: https://youtu.be/jVm4NyP_Ssk
+
+#CustomerSupport #Helpdesk #SmallBusiness
+
+---
+
+### TASKFLOW — $69/mo (🛑 do not post until the video is checked)
+
+**Store description (the card):** Project and task management for operations teams. Kanban boards,
+Gantt timelines, assignments, dependencies, and progress tracking.
+
+> ## 🛑 The storefront contradicts itself about what TASKFLOW is
+>
+> Found while sourcing the video ID for this post, and it is the one item in this section that
+> should stop a launch rather than inform one.
+>
+> The **card** sells project management — *"Kanban boards, Gantt timelines, assignments,
+> dependencies"* — and its **Watch Demo** button points at `O2lUhXMeA34`.
+>
+> The **VideoObject schema on the same page**, describing that same video ID, says something else
+> entirely:
+>
+> > *"TASKFLOW — Property Maintenance Dispatch Software ($69/mo). Dispatch maintenance tickets to
+> > vendors with photos, ETAs, and tenant updates. Vendor scorecards and time-to-resolution reports.
+> > $69/month flat — unlimited vendors and tickets."* (`uploadDate: 2026-05-06`)
+>
+> Same price, same product name, same video — **two different products.** One of these is wrong and
+> I cannot tell which from the repo: I can read both strings but not watch the video.
+>
+> **Why this matters more than a typo.** Google reads that schema. It is what can surface as the rich
+> result for TASKFLOW, so the storefront may currently be advertising property-dispatch software to
+> people who land on a project-management card. And a launch post that pitches Kanban and Gantt over
+> a video showing vendor dispatch discredits the post *and* the product in one click, in public,
+> where the correction never catches up.
+>
+> **What to do — two minutes:** open https://youtu.be/O2lUhXMeA34 and see which product it shows.
+> Then pick the matching angle below, and fix whichever of the card or the schema is wrong. Both
+> angles are written; neither is publishable until you know.
+
+**Angle A — if the video shows project management (matches the card):**
+
+Most project tools are built for software teams and then sold to everyone else.
+
+That is why the ops crew ends up back in a shared spreadsheet: they do not need sprints or story
+points, they need to know what is blocking the install on Thursday and who owns it.
+
+TASKFLOW is that, for operations:
+
+→ Kanban when you want to see the flow
+→ Gantt when someone asks for a date
+→ Dependencies, so "blocked" is a fact and not a Slack message
+→ Assignments and progress that survive somebody being on holiday
+
+$69/mo flat for the whole team.
+
+90-second demo: https://youtu.be/O2lUhXMeA34
+
+#ProjectManagement #Operations #Kanban
+
+**Angle B — if the video shows vendor dispatch (matches the schema):**
+
+"Did the plumber ever actually show up?"
+
+Between the tenant reporting it and the vendor invoicing for it, a maintenance ticket usually lives
+in three text threads and one memory. So the same vendor who took nine days in March gets called
+again in April, because nobody is keeping score.
+
+TASKFLOW dispatches the ticket and keeps the record:
+
+→ Send to the vendor with photos and an ETA attached
+→ Tenant gets the update without you relaying it
+→ Vendor scorecards, so "who is slow" is data
+→ Time-to-resolution reports across the portfolio
+
+$69/mo flat — unlimited vendors and tickets.
+
+90-second demo: https://youtu.be/O2lUhXMeA34
+
+#PropertyManagement #Maintenance #Landlords
+
+---
+
+### OPSIQ — $199/mo (⚠️ no demo video exists)
+
+**Store description:** Ask your operations data questions in plain English and get a written answer
+back — no SQL, no report builder. Scheduled digests and alert rules push the numbers to you.
+
+> **Two things to state honestly, and both are on the storefront card already.**
+> 1. **Bring your own API key.** Answers are generated with the customer's own Anthropic key, billed
+>    separately by Anthropic at pay-as-you-go rates — **not** included in the $199/mo. The card says
+>    this in a highlighted box; any post that omits it is a worse promise than the site makes.
+> 2. **OPSIQ has no demo video *and* no open preview — it is the only sellable app with neither.**
+>    Every other one has a 90-second video. The card's "Preview" button goes to
+>    `https://opsiq.plainspokenfoundrynine.com`, and an earlier draft of this post described that as
+>    "click around the live app, no signup". **Checked on 2026-08-04: it returns 200 but renders a
+>    sign-in screen** (`Sign In` / `Password` in the markup). So the storefront offers a $199/mo
+>    product with nothing a stranger can look at before paying — which is a conversion problem, not a
+>    copywriting one, and no post can write around it.
+>
+>    The copy below therefore makes no "try it" promise. **The real fix is to record the video**;
+>    until then OPSIQ is the weakest listing in the catalogue regardless of what this post says.
+
+**LinkedIn / Reddit post:**
+
+"How many work orders did we close last month, by line?"
+
+That question is thirty seconds of thinking and two days of waiting, because it has to become a
+ticket, then a report, then a meeting about what the report meant.
+
+OPSIQ answers it in plain English against your own operations data. No SQL, no report builder. Set
+the ones you ask every week as a scheduled digest and stop asking.
+
+$199/mo flat. You bring your own Anthropic API key, billed by Anthropic at pay-as-you-go rates — that
+part is not included in the subscription.
+
+OPSIQ is in the product grid here: https://store.plainspokenfoundrynine.com/#products
+
+#OperationsIntelligence #Analytics #AI
+
+---
+
 ## Email Outreach Template — Manufacturing
 
 **Subject:** tracking shifts in Excel at {{Company}}?
@@ -414,9 +663,34 @@ If you've been looking at switching or you're just curious about flat-rate, wort
 
 ## Status of waitlist products (do not include in launch copy)
 
-These are real products on the roadmap but not yet shipped. Reference only if a prospect asks; do not feature in launch announcements:
+**Corrected 2026-08-04.** This section used to list OPSIQ as a waitlist product "Coming Q3 2026 per
+the storefront's Coming Soon badge", under a heading that says not to feature it. That badge is gone.
+Re-read `index.html` on 2026-08-04: the OPSIQ card has a working **Subscribe** button at **$199/mo**,
+a live preview link, and no "Coming Soon" or waitlist markup anywhere in it — and `OPSIQ` is a key in
+`PRICE_MAP`, so checkout accepts it. **It has been sellable while this file said not to sell it.**
+Its copy is now in "The six sellable apps this file had no copy for" above.
 
-- **OPSIQ** — AI operations intelligence. Natural-language queries across PF9 apps' data. Coming Q3 2026 per the storefront's "Coming Soon" badge.
-- **MARKUPR** — On the waitlist; pricing and feature set TBD.
+Worth noting how that survived: the instruction was correct when written and nothing about shipping
+OPSIQ would have prompted anyone to reopen a section headed *waitlist*. The check that catches it is
+mechanical, not editorial — compare `PRICE_MAP` against the `data-product` cards, which takes about a
+minute:
 
-When OPSIQ and MARKUPR ship, add LinkedIn posts and a Reddit launch for each following the same pattern as the existing posts above. Storefront-facing copy is already in place on `index.html`.
+```bash
+cd ~/Documents/PlainSpokenFoundryNine/pf9-store
+grep -o "openSubscribe('[A-Z_]*'" index.html | sort -u        # what the storefront sells
+./venv/bin/python -c "import os;os.environ.setdefault('KLAVIYO_API_KEY','');\
+import store_api as s;print(sorted(s.PRICE_MAP))"             # what checkout accepts
+```
+
+Genuinely not shipped, and correct to leave out of launch copy — **both verified against their cards
+on 2026-08-04**:
+
+- **MARKUPR** — card carries both "Coming Soon" and a waitlist form; no Subscribe button, not in
+  `PRICE_MAP`. Pricing and feature set still TBD.
+- **FIELDVIEWR** — SCADA visualisation. Same state: "Coming Soon" + waitlist, no Subscribe button,
+  not in `PRICE_MAP`. It was on the storefront and absent from this file entirely, which is the same
+  gap as OPSIQ pointing the other way.
+
+When either ships, add a LinkedIn post and a Reddit launch following the pattern above — **and record
+a 90-second demo first.** Every other sellable app has one; OPSIQ shipped without one and its copy is
+weaker for it.
