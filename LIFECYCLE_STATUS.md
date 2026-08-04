@@ -167,7 +167,7 @@ Since 2026-08-02 it sits behind a conditional split on `app_count` — see "L5 �
 | L3 | New subscriber onboarding | **Partial; day-27 defect closed** | Trial flow (3 emails @ 0/3/27) + Paid flow both live. Spec says 4 emails over 14 days; actual trial cadence is 0/3/27 — still unresolved. **The day-27 defect is fixed:** a profile filter on `X2tesT` now drops cancelled trials before the charge notice. See "Day-27 filter — 2026-08-02". |
 | L4 | Month-1 success | **Live** | Day-30 email in the Paid flow. Whether its content matches the spec's testimonial ask was NOT checked. |
 | L5 | Month-3 expansion | **Live + conditional** | Day-90 email in the Paid flow, gated on `app_count` since 2026-08-02. See below. |
-| L6 | Churn-save | **L6-E1 LIVE 2026-08-04; L6-Page still not started** | Flow `VgquRn` "PF9 Churn Save": `Cancelled Subscription` trigger (+ `remaining_app_count = 0` filter, added 08-04) → 1 day → L6-E1. Send-time `Placed Order` = 0 filter; **Smart Sending on since 08-04** (was off at build). Structure verified against `GET /api/flows/VgquRn?include=flow-actions`. The L6 *intercept page* is frontend code and is still not started — it is also what blocks L7-E1. |
+| L6 | Churn-save | **L6-E1 LIVE 2026-08-04; L6-Page cannot be built as specced** | Flow `VgquRn` "PF9 Churn Save": `Cancelled Subscription` trigger (+ `remaining_app_count = 0` filter, added 08-04) → 1 day → L6-E1. Send-time `Placed Order` = 0 filter; **Smart Sending on since 08-04** (was off at build). Structure verified against `GET /api/flows/VgquRn?include=flow-actions`. **The L6 intercept page is not ours to build** — cancelling happens inside Stripe's hosted billing portal, so no moment between cancel-click and cancellation belongs to our frontend. The Stripe-native equivalent is half-shipped: see "L6-Page — 2026-08-04". |
 | L7 | Win-back | **LIVE 2026-08-04** (built 08-02) | Flow `RZQKa2` "PF9 Win-back": `Cancelled Subscription` trigger with a `remaining_app_count = 0` **trigger filter** → 30 days → L7-E1 → 14 days → L7-E2. Both emails carry a send-time `Placed Order` = 0 filter; **Smart Sending on since 08-04** (was off at build). L7-E1's spec copy was unbuildable and was **rewritten generically** — see "L7 — built 2026-08-02". Structure verified against `GET /api/flows/RZQKa2`. Nothing has sent from it yet — the first send is 30 days after a qualifying cancellation. |
 
 ---
@@ -1623,6 +1623,72 @@ nothing anywhere reports that, because a `|default:` renders silently. Closing i
 populating these per product at enrolment (the `_cross_sell_properties` pattern at line 612 is the
 model) or simplifying the templates to stop implying personalisation that never arrives. **Not
 attempted — recorded as a decision for the founder, not a defect to fix quietly.**
+
+---
+
+## L6-Page — 2026-08-04
+
+**The playbook's L6-Page cannot be built, and this is a fact about Stripe, not a backlog excuse.**
+The spec says *"before the Stripe cancel flow completes, show…"*. There is no such moment. Cancelling
+happens inside **Stripe's hosted billing portal**: `login.html`'s "Manage Subscription" button calls
+`/create-portal-session` (`store_api.py:1060`) and redirects to `stripe.com`. The cancel button is on
+Stripe's page. Our frontend never sees the click and cannot interrupt it. An interstitial before the
+redirect would intercept *"manage my billing"*, which is mostly not cancelling — friction charged to
+the wrong people.
+
+**Stripe asks the same question natively**, and returns the answer on the subscription as
+`cancellation_details.feedback` (an eight-value enum) plus a free-text `comment`. That is the L6
+intercept, hosted by the party that owns the page.
+
+**Code half — shipped 2026-08-04.** `_cancel_reason_properties()` reads those fields onto the
+`Cancelled Subscription` event that L6 and L7 already trigger on, mapping Stripe's enum to prose that
+survives a sentence (`too_expensive` → "the price"), so L7-E1's shelved *"you mentioned {{ reason }}"*
+copy becomes buildable. It writes a key **only when there is a real value** — an empty string would
+defeat `|default:` and print a blank mid-sentence. Verified against the live account's one real
+cancellation and all eight enum values, plus an enum Stripe has not invented yet; 0 falsy properties
+across a 132-combination sweep.
+
+**Config half — needs the founder, and is deliberately not done.** The question only appears once
+`subscription_cancel.cancellation_reason` is enabled in the Stripe billing-portal configuration. That
+is an account setting on a **live payments account**, so it is not mine to flip. Until it is, Stripe
+sends `feedback: None` and the code writes no copy-bearing property — only `cancel_mechanism`, which
+is Stripe's own `cancellation_requested` and is never used as copy. Verified against the live
+cancellation, not assumed. **No flow or template change is needed when the setting is enabled; the
+data simply starts arriving.**
+
+---
+
+## The demand-side reality — checked 2026-08-04
+
+Recorded because this file has spent three days verifying the machine and never once asked whether
+anyone is in it. Read-only against the **live** Stripe account `acct_1TBvRLFR8f9msr5W`:
+
+| | |
+|---|---|
+| Subscriptions ever created | **1** — `sub_1TNwFJ…`, now cancelled |
+| Whose it was | `xfree143@gmail.com` — Mark's own |
+| Checkout sessions ever | 10 — **all 10** from `test@test.com`, `t@t.com`, `browser-test-…@example.com`, `test@example.com`, `test@gmail.com`, or an `xfree143` address |
+| Real customer subscriptions | **zero** |
+
+**The PF9 software store has never had a paying subscriber.** Every lifecycle email built, verified,
+smart-sent and consent-audited here has an audience of nobody, and will until someone buys.
+
+> **A near-miss that changes the conclusion's basis, not the conclusion.** The account holds two
+> genuinely paid, never-refunded charges from real people — $70.34 (2026-07-21) and $54.11
+> (2026-06-12) — and neither is a test account. Writing "zero real customers" without opening them
+> would have been false. They are **Gigi's Baby Scoops orders placed through Wix** (`wix_metasite_id`,
+> descriptions like *"One Scoop … | Mystery Gift"*), sharing the PSFN Stripe account but belonging to
+> a different business. They hold no subscription and no checkout session, and match none of the five
+> event types the store's webhook handles, so they never enter these flows. *(Customer names and
+> addresses are in Stripe and deliberately not copied here.)* **Fourth false alarm of the day — and
+> the first that would have been an error of fact rather than of tooling.**
+
+**What this changes.** It does not devalue the lifecycle work: the plumbing had to exist before the
+first customer, and it now demonstrably does. It does re-rank what is left. Every remaining lifecycle
+item — the day-100 follow-up, whether Smart Sending really skips, the 8% open KPI — is a refinement
+to a system with no users, and each will answer itself the moment there is traffic. **The binding
+constraint is demand, and every item that addresses it (launch posts, directories, Reddit, outbound,
+YouTube) is permission-gated and waiting on the founder.** That is the honest top of the backlog.
 
 ---
 

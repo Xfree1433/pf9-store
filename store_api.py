@@ -1249,6 +1249,63 @@ def _handle_checkout_completed(session):
     print(f'[Store API] Subscription created: {product} for {email} (provisioned={all_provisioned})')
 
 
+# Stripe's `cancellation_details.feedback` enum, rendered as a noun phrase that
+# reads correctly inside a sentence — the win-back email says "you mentioned
+# {{ reason }}", and "you mentioned too_expensive" is worse than saying nothing.
+#
+# This is the data half of the L6 intercept the playbook specifies as a page of
+# our own. It cannot be a page of our own: cancelling happens inside Stripe's
+# hosted billing portal (login.html only opens it via /create-portal-session),
+# so there is no moment between the cancel click and the cancellation that our
+# frontend owns. Stripe asks the same question natively and hands back the
+# answer here.
+#
+# Nothing populates `feedback` until the cancellation-reason question is turned
+# on in the Stripe billing-portal configuration — verified 2026-08-04 against
+# the one real cancellation on the live account, which carries
+# reason='cancellation_requested' and feedback=None. So today this writes only
+# `cancel_mechanism` and no copy-bearing property, which is why the win-back
+# email keeps its generic wording and upgrades itself once answers arrive.
+_CANCEL_FEEDBACK_PHRASES = {
+    'too_expensive':    'the price',
+    'missing_features': 'a missing feature',
+    'switched_service': 'switching to something else',
+    'unused':           'not using it',
+    'customer_service': 'the support you got',
+    'too_complex':      'it being hard to use',
+    'low_quality':      'the quality',
+    'other':            None,  # deliberately unmapped; 'other' says nothing usable
+}
+
+
+def _cancel_reason_properties(sub):
+    """Cancellation feedback from Stripe's portal, shaped for email copy.
+
+    Returns only the keys that have real values, so a template tag either gets
+    something worth printing or falls through to its default. Writing an empty
+    string instead would defeat `|default:` and print a blank mid-sentence.
+    """
+    details = sub.get('cancellation_details') or {}
+    props = {}
+
+    feedback = details.get('feedback')
+    # `reason` is set by Stripe on every cancellation ('cancellation_requested'
+    # when a human asked). It records the mechanism, not a motive, so it is kept
+    # for analytics and deliberately never used as email copy.
+    if details.get('reason'):
+        props['cancel_mechanism'] = details['reason']
+    if feedback:
+        props['cancel_feedback'] = feedback          # raw enum, for segmenting
+        phrase = _CANCEL_FEEDBACK_PHRASES.get(feedback)
+        if phrase:
+            props['cancel_reason'] = phrase          # prose, for merge tags
+
+    comment = (details.get('comment') or '').strip()
+    if comment:
+        props['cancel_comment'] = comment
+    return props
+
+
 def _handle_subscription_cancelled(sub):
     subscription_id = sub.get('id', '')
     with get_db() as conn:
@@ -1323,6 +1380,19 @@ def _handle_subscription_cancelled(sub):
         remove_list=remove_lists,
     )
 
+    cancel_properties = {
+        'app_name': cancelled_product,
+        'product': cancelled_product,
+        # Lets the flow drop someone who cancelled one app of several. They
+        # have not churned, and win-back copy addressed to a current
+        # customer reads as if we do not know who they are.
+        'remaining_app_count': len(remaining),
+        'reactivate_link': f'{STORE_URL}/?product={cancelled_product}',
+    }
+    # Empty until the portal's cancellation-reason question is enabled, so this
+    # adds nothing today and needs no flow change to start working later.
+    cancel_properties.update(_cancel_reason_properties(sub))
+
     # The trigger for L6 churn-save and L7 win-back. Writing a profile property
     # does not start a Klaviyo flow — only a list join, a segment join, or a
     # metric does — so without this event those sequences have nothing to hang
@@ -1332,15 +1402,7 @@ def _handle_subscription_cancelled(sub):
         email=email,
         name=row['name'],
         unique_id=subscription_id,
-        properties={
-            'app_name': cancelled_product,
-            'product': cancelled_product,
-            # Lets the flow drop someone who cancelled one app of several. They
-            # have not churned, and win-back copy addressed to a current
-            # customer reads as if we do not know who they are.
-            'remaining_app_count': len(remaining),
-            'reactivate_link': f'{STORE_URL}/?product={cancelled_product}',
-        },
+        properties=cancel_properties,
     )
 
 
