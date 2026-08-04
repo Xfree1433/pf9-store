@@ -328,11 +328,16 @@
         var API='https://app.plainspokenfoundrynine.com/store-api';
 
         // Product price map for GA4 purchase-event value attribution.
-        // Keep in sync with index.html openSubscribe calls.
+        // Keep in sync with index.html openSubscribe calls. A product missing from here
+        // reports value 0 rather than erroring, so a gap is silent and shows up only as
+        // revenue that quietly does not appear. OPSIQ was missing until 2026-08-04 —
+        // every OPSIQ sale would have been booked at $0. Checked the rest at the same
+        // time; all twelve others match their storefront button. COMPLI is deliberately
+        // absent: it is the free tier and has no Subscribe button to price.
         var PRICE_MAP={
             FLOWTRACK:99, QUALIFI:79, SHIFTLOG:49, REPORTR:59, INSPECTR:49,
             LANDLORDR:89, TENANTLINK:49, PROPERTY_BUNDLE:119,
-            PERMITR:299, TASKFLOW:69,
+            PERMITR:299, TASKFLOW:69, OPSIQ:199,
             EXTRACTR:149, SUPPORTR:79, MAINTAINR:99
         };
 
@@ -352,6 +357,15 @@
                         value: price,
                         currency:'USD',
                         items:[{item_id: prodKey, item_name: prodKey, price: price, quantity:1}]
+                    });
+                    // Named funnel step (POSTHOG_TRACKING_PLAN.md). Via gtag, not posthog.capture:
+                    // the mirror shim above forwards gtag events to PostHog, so a direct call too
+                    // would double-count. No email — it is not in the URL and must not be put
+                    // there; PostHog joins to checkout_started on the browser's distinct_id.
+                    gtag('event','subscription_started',{
+                        app: prodKey,
+                        amount: price,
+                        source: 'storefront'
                     });
                     sessionStorage.setItem(dedupeKey,'1');
                 }

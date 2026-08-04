@@ -52,18 +52,31 @@ done
 
 ---
 
-## 3. Storefront conversion event (one edit in your billing code)
+## 3. ~~Storefront conversion event (one edit in your billing code)~~ — DONE 2026-08-04, and **do not do what this section used to say**
 
-`subscription_started` fires when Stripe returns to the success page with the right query params. Find where you create the Checkout Session (the handler behind `POST /create-checkout-session`) and set:
-```python
-success_url = (
-    "https://store.plainspokenfoundrynine.com/"
-    "?checkout=success&product=" + product +
-    "&email=" + email +
-    "&session_id={CHECKOUT_SESSION_ID}"
-)
-```
-(Stripe substitutes `{CHECKOUT_SESSION_ID}` itself.) Everything else on the storefront already works with no edit.
+`subscription_started` now fires from **`login.html`**, off the `?subscribed=<app>` parameter that
+`success_url` has carried all along. No billing-code edit, no `store_api.py` redeploy.
+
+This section used to tell you to rewrite `success_url` to
+`https://store.plainspokenfoundrynine.com/?checkout=success&product=…&email=…`. **Don't.** Two reasons:
+
+- **It was solving a self-inflicted problem.** The listener sat on `index.html` watching for
+  `?checkout=success`, but the real `success_url` has always been
+  `…/login.html?subscribed=<app>&session_id={CHECKOUT_SESSION_ID}` — wrong page *and* wrong
+  parameter, so the event could never fire. Moving the listener to the page customers actually land
+  on was the smaller fix. It is now beside the existing GA4 `purchase` event, inside the same
+  `sessionStorage` dedupe guard, so a refresh cannot inflate either.
+- **`&email=` puts a customer's address in a URL**, where it reaches server logs, `Referer` headers
+  and browser history. PostHog joins this event to the earlier `checkout_started` through the
+  browser's own `distinct_id` — same funnel, no PII in the query string.
+
+Fired via `gtag(...)` rather than `posthog.capture(...)` on purpose: the mirror shim at the top of
+every storefront page forwards each gtag event into PostHog, so one call feeds both. Calling PostHog
+directly *as well* would double-count it.
+
+**Not yet observed firing** — no checkout has completed since the change. Confirm on the first one:
+PostHog → Activity, expect `purchase` and `subscription_started` together on the return to
+`login.html`.
 
 ---
 

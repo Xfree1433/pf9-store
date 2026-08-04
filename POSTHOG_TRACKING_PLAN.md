@@ -43,10 +43,20 @@ The storefront already fires these to GA4. Mirror each one to PostHog with `post
 | `waitlist_opened` | waitlist modal open | `app` | exists as `waitlist_open` |
 | `waitlist_submitted` | waitlist form submit | `app`, `email` | exists as `waitlist_submit` |
 | `support_email_clicked` | support mailto click | `subject` | exists |
-| `subscription_started` | **Stripe success / thank-you page** | `app`, `plan`, `amount`, `email` | **add** |
+| `subscription_started` | `login.html`, the Stripe success landing page | `app`, `amount`, `source` | ✅ shipped 2026-08-04 — **no `email`**, see note |
 | `lead_magnet_downloaded` | lead-magnet form submit | `asset` | **add** (you have a `/lead-magnets/` dir) |
 
 Note: keep GA4 as-is for now — run both in parallel. Don't rip out gtag until PostHog is trusted.
+
+**Why `subscription_started` dropped `email`, and gained a `source`.** The row above specified
+`email` as a property. It is deliberately not sent. Carrying it would mean putting the customer's
+address in `success_url`, i.e. in the query string — from where it leaks into server logs, `Referer`
+headers and browser history. The funnel does not need it: PostHog links this event to the earlier
+`checkout_started` through the browser's own `distinct_id`, which is the same join without the PII.
+`plan` was dropped too, for a duller reason — nothing in the storefront has a plan concept, so it
+would have been a permanently-null column. `source` was added because it is genuinely useful once
+apps start emitting their own conversion events. **Shipped but not yet observed:** no checkout has
+completed since, so this is code-correct and unwatched.
 
 ---
 

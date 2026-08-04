@@ -1,6 +1,21 @@
 # PostHog Instrumentation — Status & Next Steps
 
-Done autonomously on 2026-05-31. The **storefront plus the whole app fleet** are now instrumented (see the Fleet Rollout table below). Nothing was pushed to GitHub or deployed — that's yours to trigger. PostHog had **zero events** before this; these changes start the flow.
+Done autonomously on 2026-05-31. The **storefront plus the whole app fleet** are now instrumented (see the Fleet Rollout table below). PostHog had **zero events** before this; these changes start the flow.
+
+> ⚠️ **Re-checked 2026-08-04 — this file had been wrong for about two months.**
+>
+> - *"Nothing was pushed to GitHub or deployed — that's yours to trigger."* **No longer true for the
+>   storefront.** All 34 pages carry the snippet, it is committed (`4426d4b`), and `curl` of the live
+>   `store.plainspokenfoundrynine.com` returns it. Verified by fetching the live page, not by reading
+>   this file.
+> - **The fleet half was not re-checked.** 18 apps is a bigger job than this correction, so treat
+>   every ✅ in the table below as "written in May", not as "deployed and confirmed". Check per app
+>   before relying on it.
+> - **`subscription_started` never once fired**, and §1 below told you to fix it the wrong way.
+>   Corrected 2026-08-04 — see the strikethrough there.
+>
+> The lesson worth keeping: a status file ages into a liability. All three claims were cheap to test
+> against the live system, and none of them had been.
 
 ## Fleet rollout (all apps)
 
@@ -40,7 +55,15 @@ The ⬜ Flask apps still produce a working funnel: autocapture records their log
 
 - Added the PostHog loader to **all 34 HTML pages** (`posthog.init` with your project key).
 - Added a **mirror shim**: every existing `gtag('event', name, params)` now also fires `posthog.capture(name, params)`. So these already flow to PostHog with no further work: `checkout_started`, `subscribe_modal_open`, `waitlist_open`, `waitlist_submit`, `video_play`, `support_email_click`, `lead_magnet_capture`.
-- Added `subscription_started` on checkout return in `index.html` — **requires one change you must make**: set the Stripe `success_url` (in your billing API's `create-checkout-session`) to include `?checkout=success&product=<app>&email=<email>`. Until then this single event won't fire (everything else works).
+- ~~Added `subscription_started` on checkout return in `index.html` — **requires one change you must make**: set the Stripe `success_url` … to include `?checkout=success&product=<app>&email=<email>`.~~
+  **Wrong, and fixed 2026-08-04.** The listener was on `index.html` watching `?checkout=success`,
+  while `success_url` has always pointed at `login.html?subscribed=<app>&session_id=…` — wrong page
+  and wrong parameter, so the event could not fire and never did, for two months. It now fires from
+  `login.html` off the parameter that was already there: **no billing-code change, no `store_api.py`
+  redeploy.** Do not apply the old instruction — besides being unnecessary, `&email=` would put a
+  customer's address into a URL, and so into logs, referrers and history. Full reasoning in
+  `POSTHOG_RUNBOOK.md` §3. **Still unobserved:** no checkout has completed since, so this is fixed in
+  code and not yet watched firing.
 - GA4 is untouched and still runs in parallel. Don't remove gtag until PostHog is trusted.
 
 **Verify:** open the live store, then PostHog → Activity. You should see `$pageview` immediately and `checkout_started` when you open a subscribe modal. (Static files — just deploy as usual; no rebuild required since the snippet is inline HTML.)
@@ -67,7 +90,24 @@ Note: activation is **derived in PostHog** as the *first* `core_action_performed
 ## 3. The funnel (build once events arrive)
 
 In PostHog → Funnels, breakdown by `app`:
-`$pageview` → `checkout_started` → `subscription_started` → `app_signup` → `core_action_performed` (first = activation). Identity stitches storefront→app by **email** (storefront identifies on the Stripe success param; the app identifies at signup).
+`$pageview` → `checkout_started` → `subscription_started` → `app_signup` → `core_action_performed` (first = activation).
+
+⚠️ **The identity claim here was wrong and the fix changed it further.** This used to say identity
+stitches storefront→app by email, with the storefront identifying "on the Stripe success param".
+That `posthog.identify` sat in the same unreachable block as the broken `subscription_started`, so it
+never ran — and it was removed on 2026-08-04 rather than repaired, because it depended on `&email=`
+in the URL. What actually holds now:
+
+- **Within the storefront**, the funnel joins on the browser's anonymous `distinct_id`. That covers
+  `$pageview` → `checkout_started` → `subscription_started` and needs no email at all.
+- **Across the storefront→app boundary**, there is *no* identity stitch from the storefront side —
+  it has no email to offer and is not going to put one in a URL. The app side reportedly calls
+  `identify(email)` at signup, but that is this file's May claim and **was not re-checked**; either
+  way one-sided identification does not join anything. Assume the last two steps do not join.
+
+That is a real gap, recorded rather than papered over. The right fix is a server-side
+`subscription_started` from the Stripe webhook — which already knows the email, and can send it in a
+request body instead of a URL. It is not built.
 
 ---
 

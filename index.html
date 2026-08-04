@@ -1012,26 +1012,9 @@
     if (document.readyState === 'complete') pf9ProductDeepLink();
     else window.addEventListener('load', function() { setTimeout(pf9ProductDeepLink, 0); });
 
-    // On return from Stripe success_url, record the conversion in PostHog (+ GA4).
-    // Requires Stripe success_url to include ?checkout=success&product=<app> (see POSTHOG_TRACKING_PLAN.md).
-    (function() {
-        try {
-            var qs = new URLSearchParams(window.location.search);
-            if (qs.get('checkout') === 'success') {
-                var product = qs.get('product') || 'unknown';
-                var email = qs.get('email');
-                if (email && window.posthog && posthog.identify) {
-                    posthog.identify(email, { email: email, signup_app: product });
-                }
-                if (window.posthog && posthog.capture) {
-                    posthog.capture('subscription_started', { app: product, plan: qs.get('plan') || null, source: 'storefront' });
-                }
-                if (typeof gtag === 'function') {
-                    gtag('event', 'subscription_started', { product: product });
-                }
-            }
-        } catch (e) {}
-    })();
+    // `subscription_started` used to fire from here on ?checkout=success, and never could:
+    // Stripe lands on login.html?subscribed=<app>. Moved there 2026-08-04. Older docs tell
+    // you to add &email= to success_url to revive this — don't, see POSTHOG_RUNBOOK.md §3.
 
     // Stripe checkout
     document.getElementById('subscribeForm').addEventListener('submit', function(e) {
