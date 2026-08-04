@@ -1994,6 +1994,254 @@ as written, with no human in the loop.
 
 ---
 
+## App activity ingest — store half shipped 2026-08-04 (**on disk, NOT running, and inert once it is**)
+
+`PLAYBOOK_LIFECYCLE.md` listed one segmentation trigger as bigger than the rest: *"`last_login` /
+`last_action` per app — **not wired, and larger than it looks.** Requires every app in the fleet to
+report activity back to the store; there is no such channel today."* The channel now exists. The
+apps still do not use it.
+
+Read that as two separate facts, because the failure mode here is treating the first as the second:
+
+| | State |
+|---|---|
+| Store endpoint `POST /store-api/app-activity` | ✅ written, tested, committed |
+| Running in production | ⬜ needs the gunicorn restart (Mark's, `sudo`) |
+| Enabled | ⬜ **403s everything until `ACTIVITY_SECRET` is set** — by design |
+| Any app calling it | ⬜ **none.** 0 of 14 |
+| Data available to a flow | ⬜ none, and none until all three above are done |
+
+**No flow should filter on `last_action_at` yet.** Klaviyo flows do not backfill: a filter built
+today against a property that starts arriving next month evaluates against nothing in the meantime,
+silently, and the flow reports itself as working the whole time.
+
+### Why not just read it out of PostHog
+
+The obvious cheap path, and it was checked before writing any code. The apps already emit
+`app_login` and `core_action_performed`; polling PostHog would have needed **zero app changes**. It
+was rejected on two pieces of evidence:
+
+1. **The store holds no PostHog read key.** Prod `pf9-store-api.env` contains
+   `SUBSCRIPTION_STATUS_SECRET`, `TRIAL_PERIOD_DAYS`, `STORE_DB_PATH`, `KLAVIYO_API_KEY`,
+   `PROVISION_SECRET` — nothing else. Only the apps hold PostHog keys, in their own envs, and those
+   are *write* keys. A read key would have to be created and a new dependency introduced.
+2. **`POSTHOG_INSTRUMENTATION_STATUS.md` disclaims its own checkmarks.** Its 2026-08-04 warning says
+   the per-app ✅s were "written in May" and never re-verified. Building the activation sequences on
+   an unverified claim is exactly how a flow ends up branching on data that was never arriving —
+   the same class of bug this file spends 2,000 lines cataloguing.
+
+The store↔app direction also already exists for provisioning, so this is the return leg of a channel
+that is already trusted with something far more dangerous (creating accounts), not a new one.
+
+### Contract
+
+```
+POST https://app.plainspokenfoundrynine.com/store-api/app-activity
+X-PF9-Activity-Secret: <ACTIVITY_SECRET>
+Content-Type: application/json
+
+{"email": "person@company.com",
+ "product": "FLOWTRACK",          # must be a PRICE_MAP key
+ "kind": "login" | "action",
+ "action": "scan"}                # optional, only read when kind=action
+
+→ 200 {"ok": true, "synced": true}
+  200 {"ok": true, "synced": false, "reason": "throttled" | "not a store customer" | "sync error"}
+  400 {"error": "..."}            # bad email / kind / product
+  403 {"error": "Unauthorized"}   # wrong secret, or ACTIVITY_SECRET unset
+```
+
+Server-to-server only. It deliberately does **not** go through `_cors_response`: an endpoint a
+browser can reach while presenting a shared secret is an endpoint whose secret is in someone's
+devtools. The store's CORS policy allows only `Content-Type` anyway, so a browser could not send the
+header cross-origin regardless — omitting the headers makes that intentional rather than incidental.
+
+**`product` gotchas, both of which will bite on first integration:**
+
+- The sellable key is **`TENANTLINK`**, not `TENANTLINKR`. The app must send `TENANTLINK` or it gets
+  a 400.
+- `PROPERTY_BUNDLE` is in `PRICE_MAP` and so is accepted, but no app is named that — it is a bundle.
+  Its two apps report as `LANDLORDR` and `TENANTLINK` individually, which is the right shape:
+  activation in a bundle is per app.
+
+Validation uses `PRICE_MAP` rather than `APP_URL_MAP` so the set of products that can appear in
+activity is exactly the set that can appear in a subscription — no reconciliation between two lists.
+
+### What it writes
+
+One `app_activity` row per **(customer, app)** — a running summary, not an event log. A log is the
+obvious shape and the wrong one here: the store is a SQLite file on a small box with no retention
+job, so one row per login grows forever, and nothing in this programme ever asks "when was the 40th
+login". Every consumer asks "when was the last one" and "have they ever done the key action", and
+both come out of a fixed-size row.
+
+Then, on the Klaviyo profile (aggregated across all the person's apps, because a Klaviyo profile is
+per *person*):
+
+| Property | Meaning |
+|---|---|
+| `last_login_at` | most recent login across every app |
+| `last_action_at` | most recent key action across every app |
+| `last_active_app` | the app the most recent stamp of either kind came from |
+| `last_action` | name of that last key action, for a human reading the profile |
+| `activated_apps` | comma list — e.g. `FLOWTRACK, SUPPORTR` |
+| `activated_app_count` | integer |
+
+…plus an **`App Activity`** event carrying `product`, `kind`, `action`, `login_count`,
+`action_count`, `first_of_kind`. Both, not one: only an *event* can start a flow or be filtered with
+a time window — "did the key action **since entering this flow**" is not expressible against a
+property, however fresh the property is. The counts sent are the true SQLite totals, not a count of
+what Klaviyo received, so the throttle below costs resolution in time but never accuracy in count.
+
+### 🛑 There is no `has_activated` boolean, and that is deliberate
+
+It was the obvious property to write and it would have been a bug of exactly the kind this file
+already documents for onboarding copy. Profile properties **persist**, and a Klaviyo profile is per
+person. A customer who activated FLOWTRACK and then starts a SUPPORTR trial is *not* activated in
+SUPPORTR — but one boolean says they are, so the SUPPORTR activation nudge would be suppressed for
+the one person who most needs it, silently, forever.
+
+`activated_apps` carries the same information without collapsing it. A flow branches on
+**`activated_apps` contains `SUPPORTR`**, which stays correct per app no matter how many the
+customer owns. `last_login_at` / `last_action_at` keep their plain names because those genuinely are
+per-person questions — "has not been back in 14 days" is a question about the human.
+
+A test asserts this (`no per-person boolean can claim a per-app fact`), so the rule is enforced
+rather than remembered.
+
+### The consent gate — and why it runs *before* the write
+
+An app's users are not all customers. The buyer invites colleagues; those colleagues never visited
+the store, never gave us an address, never agreed to hear from us. `_klaviyo_event` **upserts a
+profile as a side effect** — that is documented in its own docstring — so forwarding their logins
+would quietly build a marketing database out of people who have no idea we exist.
+
+So a ping for an address with no active subscription (`_owned_apps`, which follows
+`ACTIVE_STATUSES = {active, trialing}`) returns `200 {"synced": false, "reason": "not a store
+customer"}` and goes no further.
+
+The first draft recorded the row *first* and checked consent after. That sounded harmless — it is
+our own box, and the count is mildly interesting — but it means an unbounded table of the email
+addresses of people who never transacted with the store, sitting in a database whose entire contents
+are otherwise leads and subscriptions, for a population we have already decided we will never email.
+The gate moved ahead of the write. The diagnostic that gives up ("are pings arriving at all?") is
+covered by a log line that deliberately omits the address; logs rotate, the DB does not.
+
+### The throttle, with firsts exempt
+
+`ACTIVITY_SYNC_INTERVAL_SECONDS` (default **21600**, six hours). Every consumer of this data branches
+on day boundaries — "has not logged in for 14 days", "did the key action during the trial" — so finer
+resolution buys nothing and costs two Klaviyo calls per ping on an endpoint a busy customer hits
+dozens of times a day.
+
+The **first** login and the **first** key action bypass it. Those are state changes, not samples, and
+they are precisely what an activation branch reads: a customer who activates an hour after signup
+would otherwise still get the "here's how to get started" nudge that afternoon.
+
+Timestamps are the **server's receipt time**, never a value the caller supplies. An app behind a
+queue or with a skewed clock could otherwise write a "last login" in the future — and a future
+timestamp does not look like a bug, it looks like an active customer, so every "hasn't logged in for
+14 days" check would quietly exclude them forever.
+
+### It cannot break an app login
+
+The caller is a login handler. If the Klaviyo block ever raises — a future edit, a change in those
+helpers, a sqlite error — the store would return 500 to a login, and a client written the obvious way
+(post, then check the status) would turn a marketing-telemetry failure into customers unable to sign
+in. The whole block is wrapped; failure returns `200 {"synced": false, "reason": "sync error"}`.
+
+`_mark_activity_synced` runs *after* the sends and is skipped when they fail: the mark is what starts
+the six-hour throttle, so recording it on a failed attempt would suppress retries for six hours over
+an error we never confirmed happened. A test asserts `last_synced_at` is unchanged after an outage.
+
+### Tests
+
+`tests/test_app_activity.py` — `./venv/bin/python tests/test_app_activity.py`, all passing. Covers
+the secret gate (including unset ⇒ 403 and nothing written), validation rejecting *before* any write,
+the non-customer path writing nothing anywhere, first-login sync, throttle + firsts exemption,
+the cross-app `activated_apps` case, property types, the Klaviyo-outage path, fixed-size growth
+(25 further pings add 0 rows), and the absence of CORS headers.
+
+### 🔧 The two things left open
+
+**1. Set `ACTIVITY_SECRET` — Mark's, both sides.** Generate one value, put it in
+`/opt/pf9-store/pf9-store-api.env` and in each app's env. Deliberately *not* `PROVISION_SECRET`:
+provisioning creates accounts, so its secret is far more dangerous, and handing the same string to
+fourteen apps for a low-stakes ping would widen that blast radius for nothing.
+
+```
+python3 -c "import secrets; print(secrets.token_urlsafe(32))"
+```
+
+**2. Wire the apps.** Nothing arrives until an app calls it. Per-app activation actions below are
+taken from `POSTHOG_INSTRUMENTATION_STATUS.md` — and note that file's own warning that its
+checkmarks are stale, so confirm the handler still exists before editing:
+
+| Product value to send | App | Key action |
+|---|---|---|
+| `FLOWTRACK` | FLOWTRACK (Next.js) | scan item |
+| `SHIFTLOG` | SHIFTLOG (Next.js) | submit handoff |
+| `MAINTAINR` | MAINTAINR (Next.js) | create work order |
+| `REPORTR` | REPORTR (Next.js) | create dashboard |
+| `INSPECTR` | INSPECTR (Vite + Express) | submit inspection |
+| `QUALIFI` | QUALIFI (Vite + Flask) | complete inspection |
+| `LANDLORDR` | LANDLORDR (Flask) | add property |
+| `TENANTLINK` | TENANTLINKR (Flask) | maintenance request submitted |
+| `SUPPORTR` | SUPPORTR (Flask) | ticket resolved |
+| `EXTRACTR` | EXTRACTR (Flask) | extraction started |
+| `PERMITR` | PERMITR (Flask) | permit created |
+| `TASKFLOW` | TASKFLOW (Flask) | task created |
+| `COMPLI` | COMPLI (Flask) | policy created |
+| `OPSIQ` | OPSIQ (Flask) | pick one at launch |
+
+Flask (the reference — drop in `app/store_activity.py`, call from the login view and the key-action
+view):
+
+```python
+import os, threading, requests
+
+_URL = 'https://app.plainspokenfoundrynine.com/store-api/app-activity'
+_SECRET = os.environ.get('ACTIVITY_SECRET', '')
+_PRODUCT = 'FLOWTRACK'          # must match a PRICE_MAP key exactly
+
+def report(email, kind, action=''):
+    """Fire-and-forget. Never raises, never blocks the request it was called from."""
+    if not _SECRET or not email:
+        return
+    def _send():
+        try:
+            requests.post(_URL, timeout=5,
+                          headers={'X-PF9-Activity-Secret': _SECRET},
+                          json={'email': email, 'product': _PRODUCT,
+                                'kind': kind, 'action': action})
+        except Exception:
+            pass        # telemetry must never surface in an app the customer is using
+    threading.Thread(target=_send, daemon=True).start()
+```
+
+Next.js — login goes in `events.signIn` in `src/lib/auth.ts` (where `app_login` already is), the key
+action in the core-action route handler (`src/app/api/scan/route.ts` for FLOWTRACK):
+
+```ts
+export async function report(email: string, kind: 'login' | 'action', action = '') {
+  const secret = process.env.ACTIVITY_SECRET;
+  if (!secret || !email) return;
+  try {
+    await fetch('https://app.plainspokenfoundrynine.com/store-api/app-activity', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-PF9-Activity-Secret': secret },
+      body: JSON.stringify({ email, product: 'FLOWTRACK', kind, action }),
+      signal: AbortSignal.timeout(5000),
+    });
+  } catch { /* never block a sign-in on telemetry */ }
+}
+```
+
+Do **one app first** and confirm a row appears before touching the other thirteen — the whole point
+of this endpoint is to stop guessing whether data is arriving.
+
+---
+
 ## L5 — closed 2026-08-02
 
 The day-90 expansion email is live and **now gated on a conditional split**, so a subscriber who

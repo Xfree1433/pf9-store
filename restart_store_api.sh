@@ -50,8 +50,9 @@ STORE_API=$STORE_DIR/store_api.py
 VENV=$STORE_DIR/venv
 UNIT=pf9-store-api.service
 PORT=5011
-EXPECT_MD5=0e56b6cdb52df0454d51c9193672700b   # per-app onboarding copy + real app_login_url / add_team_url
-# previous: 1955a2f49ad01743feefdcad04b71d01   (Lead Captured carries per-branch flow properties)
+EXPECT_MD5=9f44fa583db9d07234868236caff8e12   # /store-api/app-activity ingest (inert until ACTIVITY_SECRET is set)
+# previous: 0e56b6cdb52df0454d51c9193672700b   (per-app onboarding copy + real app_login_url / add_team_url)
+# before:   1955a2f49ad01743feefdcad04b71d01   (Lead Captured carries per-branch flow properties)
 # before:   e11c3c6d5bea0a1a41e9f90373587a6d   (/demo-request emits Lead Captured)
 # before:   a0892470ad7473c7e5511f8f8010468e   (Stripe cancel reason -> Cancelled Subscription event)
 # before:   6628991de9ce300ba05dfa038c6b0b17   (day-27 pre-charge notice sends from the webhook)
@@ -180,25 +181,34 @@ if grep -q KLAVIYO_API_KEY "$STORE_API" \
    && grep -q _calculator_size_from "$STORE_API" \
    && grep -q "name=real_name" "$STORE_API" \
    && grep -q _app_link_properties "$STORE_API" \
-   && grep -q _onboarding_properties "$STORE_API"; then
+   && grep -q _onboarding_properties "$STORE_API" \
+   && grep -q _record_app_activity "$STORE_API"; then
   echo "  OK — Klaviyo sync + event emitter + consent grant + trialing reset present,"
   echo "       in-house day-27 emailer present with its idempotency claim column,"
   echo "       Stripe cancel-reason capture present (inert until the portal question is on),"
   echo "       inbound leads emit Lead Captured (inert until a flow is built on it),"
   echo "       with the per-branch properties the lead templates render from,"
-  echo "       and per-app onboarding copy + real login/team links on trial and paid."
-  # The last two greps guard another silent failure. Trial Day 1, Trial Day 3 and
-  # Paid Month 1 all render these through a Klaviyo |default:, so if the helpers
+  echo "       per-app onboarding copy + real login/team links on trial and paid,"
+  echo "       and the /store-api/app-activity ingest route."
+  # The _app_link_properties / _onboarding_properties pair guards another silent
+  # failure. Trial Day 1, Trial Day 3 and Paid Month 1 all render these through
+  # a Klaviyo |default:, so if the helpers
   # regress every customer simply goes back to being told to "add your first item"
   # and the "Log in to <app>" button goes back to opening the storefront. No error,
   # no bounced send, no health-check signal — just three emails quietly becoming
   # generic again. Only a grep catches that.
-  # That last grep is the one worth explaining. `name=real_name` is the guard that
-  # stops the seven surfaces WITHOUT a name field from writing email.split('@')[0]
-  # into person.first_name. If it regresses, nothing errors and no send fails —
-  # affected people are simply greeted "Hi j.smith," forever, in every email
-  # including the paid ones, because Klaviyo keeps the first profile write. Asserted
-  # here because the failure is permanent, silent, and invisible in any health check.
+  # `name=real_name` is the guard that stops the seven surfaces WITHOUT a name
+  # field from writing email.split('@')[0] into person.first_name. If it
+  # regresses, nothing errors and no send fails — affected people are simply
+  # greeted "Hi j.smith," forever, in every email including the paid ones,
+  # because Klaviyo keeps the first profile write. Asserted here because the
+  # failure is permanent, silent, and invisible in any health check.
+  #
+  # _record_app_activity is different from all of the above: it guards a route
+  # that is INERT until ACTIVITY_SECRET is set in $OVERRIDE_ENV. Unset, it 403s
+  # every request by design, so this restart changes nothing customer-visible.
+  # Setting that secret here AND in an app's env is what turns it on; until then
+  # the grep only proves the code shipped, not that any data is arriving.
 else
   echo "  !! loaded file is not the expected build"; exit 1
 fi

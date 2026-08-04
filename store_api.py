@@ -73,6 +73,28 @@ NOTIFY_EMAIL        = os.environ.get('NOTIFY_EMAIL', '')
 # Unset means the header is simply not sent.
 PROVISION_SECRET    = os.environ.get('PROVISION_SECRET', '')
 
+# Shared secret an APP presents to /store-api/app-activity — the reverse of
+# PROVISION_SECRET, which the store presents to an app. Deliberately a separate
+# value: provisioning creates accounts, so its secret is far more dangerous, and
+# handing the same string to fourteen apps for a low-stakes ping would widen that
+# blast radius for nothing.
+#
+# Unset disables the endpoint entirely (403), which is the safe default while
+# no app is calling it yet — an ingest route that accepts anything because its
+# secret was never configured is worse than one that is simply off.
+ACTIVITY_SECRET     = os.environ.get('ACTIVITY_SECRET', '')
+
+# How stale a profile's activity may get before the next ping is forwarded to
+# Klaviyo. Six hours, because every consumer of this data branches on day
+# boundaries ("has not logged in for 14 days", "did the key action during the
+# trial"), so finer resolution buys nothing and costs two API calls per ping on
+# an endpoint that a busy customer hits dozens of times a day.
+#
+# Firsts are exempt — see _record_app_activity. The first login and the first
+# real action are state changes, not samples, and they are the two moments an
+# activation sequence actually branches on.
+ACTIVITY_SYNC_INTERVAL = int(os.environ.get('ACTIVITY_SYNC_INTERVAL_SECONDS', '21600'))
+
 
 # ── HubSpot CRM config ──
 HUBSPOT_TOKEN              = os.environ.get('HUBSPOT_TOKEN', '')
@@ -1188,6 +1210,158 @@ def _owned_app_properties(email):
     return {'app_count': len(apps), 'apps_owned': ', '.join(apps)}
 
 
+# ── App activity ingest ──
+#
+# The one segmentation trigger PLAYBOOK_LIFECYCLE.md listed as "not wired, and
+# larger than it looks": last_login / last_action per app, which every activation
+# sequence needs and none of them can have, because the store has never had a way
+# to hear from the apps. Provisioning already goes store -> app; this is the
+# return leg.
+#
+# Why not read it out of PostHog instead, which already receives app_login and
+# core_action_performed and would need no app changes at all: the store holds no
+# PostHog read key (only the fifteen apps' write keys exist, in their own envs),
+# and POSTHOG_INSTRUMENTATION_STATUS.md carries an explicit warning that its
+# per-app checkmarks were "written in May" and never re-verified. Building the
+# activation sequences on top of an unverified claim is how a flow ends up
+# silently branching on data that was never arriving.
+ACTIVITY_KINDS = {'login', 'action'}
+
+
+def _activity_properties(email):
+    """Cross-app activity summary for the Klaviyo profile.
+
+    Aggregated over every app because a Klaviyo profile is per PERSON, not per
+    app — and the item that made this repo careful about profile properties is
+    that they persist, so a per-app value written under a per-person name
+    becomes a lie the moment the customer opens a second app.
+
+    That is why there is no `has_activated` boolean here, which was the obvious
+    thing to write. A customer who activated FLOWTRACK and then starts a
+    SUPPORTR trial is not activated in SUPPORTR, but a single boolean says they
+    are, and the SUPPORTR activation nudge would be suppressed for the one
+    person who most needs it. `activated_apps` carries the same information
+    without collapsing it: a flow branches on "activated_apps contains
+    SUPPORTR", which stays true per app no matter how many they own.
+
+    `last_login_at` / `last_action_at` genuinely are per-person facts — "has not
+    been back in 14 days" is a question about the human — so those keep their
+    plain names.
+    """
+    email_norm = (email or '').strip().lower()
+    if not email_norm:
+        return {}
+    with get_db() as conn:
+        rows = conn.execute(
+            'SELECT product, last_login_at, last_action_at, last_action, action_count '
+            'FROM app_activity WHERE email = ?', (email_norm,)
+        ).fetchall()
+    if not rows:
+        return {}
+
+    def newest(field):
+        stamps = [r[field] for r in rows if r[field]]
+        return max(stamps) if stamps else None
+
+    # Both timestamps are UTC isoformat from the same clock, so a string max is
+    # a chronological max. Whichever row owns the most recent stamp of either
+    # kind is the app they were last in.
+    latest_row, latest_stamp = None, ''
+    for r in rows:
+        stamp = max(r['last_login_at'] or '', r['last_action_at'] or '')
+        if stamp > latest_stamp:
+            latest_row, latest_stamp = r, stamp
+
+    activated = sorted(r['product'] for r in rows if (r['action_count'] or 0) > 0)
+    return {
+        'last_login_at': newest('last_login_at'),
+        'last_action_at': newest('last_action_at'),
+        'last_active_app': latest_row['product'] if latest_row is not None else None,
+        'last_action': latest_row['last_action'] if latest_row is not None else None,
+        'activated_apps': ', '.join(activated),
+        'activated_app_count': len(activated),
+    }
+
+
+def _record_app_activity(email, product, kind, action=''):
+    """Upsert one (customer, app) activity row. Returns (row, should_sync).
+
+    The timestamp is the server's receipt time, not a value the caller supplies.
+    An app behind a queue, or with a skewed clock, would otherwise be able to
+    write a "last login" in the future — and a future timestamp does not look
+    like a bug, it looks like an active customer, so every "has not logged in
+    for 14 days" check would quietly exclude them forever. If batching ever
+    becomes real, accepting occurred_at is a deliberate change with a reason,
+    not a field left open on the off chance.
+
+    should_sync implements the throttle, with firsts exempt. The first login and
+    the first key action are state changes rather than samples: they are exactly
+    what an activation branch reads, and delaying either by up to six hours
+    would mean a customer who activates an hour after signup still receives the
+    "here's how to get started" nudge that afternoon.
+    """
+    email_norm = (email or '').strip().lower()
+    now = datetime.utcnow()
+    now_iso = now.isoformat()
+    is_login = kind == 'login'
+
+    with get_db() as conn:
+        conn.execute(
+            'INSERT INTO app_activity (email, product) VALUES (?, ?) '
+            'ON CONFLICT(email, product) DO NOTHING',
+            (email_norm, product)
+        )
+        if is_login:
+            conn.execute(
+                'UPDATE app_activity SET '
+                '  login_count    = login_count + 1, '
+                '  first_login_at = COALESCE(first_login_at, ?), '
+                '  last_login_at  = ? '
+                'WHERE email = ? AND product = ?',
+                (now_iso, now_iso, email_norm, product)
+            )
+        else:
+            # COALESCE(NULLIF(...)) so that an action ping which does not name
+            # the action leaves the last named one in place. Blanking it would
+            # be strictly worse than keeping a slightly older name: the field
+            # exists so a human reading the profile can tell what the customer
+            # actually did.
+            conn.execute(
+                'UPDATE app_activity SET '
+                '  action_count    = action_count + 1, '
+                '  first_action_at = COALESCE(first_action_at, ?), '
+                '  last_action_at  = ?, '
+                '  last_action     = COALESCE(NULLIF(?, \'\'), last_action) '
+                'WHERE email = ? AND product = ?',
+                (now_iso, now_iso, (action or '').strip(), email_norm, product)
+            )
+        conn.commit()
+        row = conn.execute(
+            'SELECT * FROM app_activity WHERE email = ? AND product = ?',
+            (email_norm, product)
+        ).fetchone()
+
+    is_first = row['login_count'] == 1 if is_login else row['action_count'] == 1
+    if is_first or not row['last_synced_at']:
+        return row, True
+    try:
+        age = (now - datetime.fromisoformat(row['last_synced_at'])).total_seconds()
+    except (TypeError, ValueError):
+        # An unparseable stamp is corruption, and the safe reading of corruption
+        # is "we do not know when we last synced" — sync, rather than sit on it.
+        return row, True
+    return row, age >= ACTIVITY_SYNC_INTERVAL
+
+
+def _mark_activity_synced(email, product):
+    with get_db() as conn:
+        conn.execute(
+            'UPDATE app_activity SET last_synced_at = ? WHERE email = ? AND product = ?',
+            (datetime.utcnow().isoformat(), (email or '').strip().lower(), product)
+        )
+        conn.commit()
+
+
 # Product → registration endpoint PATH. The host comes from APP_URL_MAP above,
 # so where an app lives is recorded in exactly one place.
 #
@@ -1289,6 +1463,36 @@ def init_db():
                 if 'duplicate column name' not in str(e).lower():
                     raise
                 print(f'[Store API] Column {name} already added by another worker')
+
+        # One row per (customer, app) — a running summary, NOT an event log.
+        #
+        # A log would be the obvious shape and is the wrong one here. The store
+        # runs on a single small box with a SQLite file and no retention job, so
+        # a table that grows one row per login grows forever, and nothing in the
+        # lifecycle programme ever asks "when was the 40th login" — every
+        # consumer asks "when was the last one" and "has this person ever done
+        # the key action". Both are answerable from a fixed-size row.
+        #
+        # counts are kept because Klaviyo will NOT see every ping (see
+        # ACTIVITY_SYNC_INTERVAL): they are the true totals, sent on the App
+        # Activity event, so a flow counting metric occurrences would under-report
+        # where these do not. The throttle costs resolution in time, never
+        # accuracy in count.
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS app_activity (
+                email           TEXT NOT NULL,
+                product         TEXT NOT NULL,
+                first_login_at  TEXT,
+                last_login_at   TEXT,
+                first_action_at TEXT,
+                last_action_at  TEXT,
+                last_action     TEXT,
+                login_count     INTEGER NOT NULL DEFAULT 0,
+                action_count    INTEGER NOT NULL DEFAULT 0,
+                last_synced_at  TEXT,
+                PRIMARY KEY (email, product)
+            )
+        ''')
 
         cols = {row['name'] for row in conn.execute("PRAGMA table_info(subscriptions)").fetchall()}
         add_column('trial_end', 'TEXT')
@@ -1497,6 +1701,109 @@ def get_leads():
 @store_bp.route('/health', methods=['GET'])
 def health():
     return _cors_response(jsonify({'status': 'ok', 'service': 'store-api'}))
+
+
+@store_bp.route('/app-activity', methods=['POST'])
+def app_activity():
+    """An app reports that one of its users logged in, or did the key action.
+
+    Server-to-server only, and deliberately NOT wrapped in _cors_response: the
+    caller has to present a shared secret, and any endpoint a browser can reach
+    with a secret header is an endpoint whose secret is in someone's devtools.
+    The store's CORS policy allows only Content-Type anyway, so a browser could
+    not send the header cross-origin even if this returned the headers — leaving
+    them off makes that intentional rather than incidental.
+
+        POST /store-api/app-activity
+        X-PF9-Activity-Secret: <ACTIVITY_SECRET>
+        {"email": "...", "product": "FLOWTRACK", "kind": "login"|"action",
+         "action": "scan"}            # `action` optional, only read for kind=action
+
+    Nothing here sends mail. It writes one SQLite row and, at most, updates a
+    Klaviyo profile — the flows that will consume it do not exist yet, which is
+    the correct order: the data has to be accumulating before a flow branching
+    on it means anything, because Klaviyo flows do not backfill.
+    """
+    # Fail closed. An unconfigured secret disables the route rather than opening
+    # it, so shipping this before the value is set cannot create a window where
+    # anyone can write to customer profiles.
+    provided = request.headers.get('X-PF9-Activity-Secret', '')
+    if not ACTIVITY_SECRET or not secrets.compare_digest(provided, ACTIVITY_SECRET):
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    data = request.get_json(silent=True) or {}
+    email = (data.get('email') or '').strip().lower()
+    product = (data.get('product') or '').strip().upper()
+    kind = (data.get('kind') or '').strip().lower()
+    action = (data.get('action') or '').strip()[:64]
+
+    if '@' not in email:
+        return jsonify({'error': 'valid email required'}), 400
+    if kind not in ACTIVITY_KINDS:
+        return jsonify({'error': f'kind must be one of {sorted(ACTIVITY_KINDS)}'}), 400
+    # PRICE_MAP rather than APP_URL_MAP: this is the same gate checkout uses, so
+    # the set of products that can appear in activity is exactly the set that can
+    # appear in a subscription, and no reconciliation between the two is needed.
+    if product not in PRICE_MAP:
+        return jsonify({'error': 'unknown product'}), 400
+
+    # The consent gate, and the reason this endpoint cannot simply forward
+    # everything it receives. An app's users are not all customers — the buyer
+    # invites colleagues, and those colleagues never visited the store, never
+    # gave us an address and never agreed to hear from us. _klaviyo_event upserts
+    # a profile as a side effect, so forwarding their logins would quietly build
+    # a marketing database out of people who have no idea we exist.
+    #
+    # Checked BEFORE the row is written, not after, which was this endpoint's
+    # first shape. Recording them locally sounded harmless — it is our own box
+    # and the count is mildly useful — but it means an unbounded table of the
+    # addresses of people who never transacted with the store, kept in a
+    # database whose entire contents are otherwise leads and subscriptions, for
+    # a population we have already decided we will never email. The diagnostic
+    # this gives up ("are pings arriving at all?") is covered by the log line,
+    # and logs rotate where the DB does not.
+    if not _owned_apps(email):
+        print(f'[Store API] app-activity from a non-customer ({product}/{kind}); not recorded')
+        return jsonify({'ok': True, 'synced': False, 'reason': 'not a store customer'})
+
+    row, should_sync = _record_app_activity(email, product, kind, action)
+    if not should_sync:
+        return jsonify({'ok': True, 'synced': False, 'reason': 'throttled'})
+
+    # Both Klaviyo helpers are fail-soft and document that they never raise, so
+    # this looks redundant. It is not: the caller here is an app's LOGIN handler.
+    # If anything in this block ever does raise — a future edit, a change in
+    # those helpers, a sqlite error in _mark_activity_synced — the store would
+    # return 500 to a login, and a client written the obvious way (post, then
+    # check the status) would turn a marketing telemetry failure into customers
+    # unable to sign in. Nothing about lifecycle email is worth that risk.
+    try:
+        _klaviyo_sync(email=email, properties=_activity_properties(email))
+        # Sent as well as the profile properties because only an event can be
+        # triggered or filtered on with a time window — "did the key action since
+        # entering this flow" is not expressible against a property, however
+        # fresh the property is.
+        _klaviyo_event('App Activity', email, properties={
+            'product': product,
+            'kind': kind,
+            'action': action or None,
+            # True totals from SQLite, not a count of what Klaviyo received. The
+            # throttle drops pings, so a metric-occurrence count in Klaviyo would
+            # under-report; these do not.
+            'login_count': row['login_count'],
+            'action_count': row['action_count'],
+            'first_of_kind': (row['login_count'] == 1) if kind == 'login'
+                             else (row['action_count'] == 1),
+        })
+        # Deliberately after the sends, and skipped when they blow up: the mark
+        # is what starts the six-hour throttle, so recording it on a failed
+        # attempt would suppress retries for six hours over an error we did not
+        # even confirm happened.
+        _mark_activity_synced(email, product)
+    except Exception as e:
+        print(f'[Store API] app-activity sync error for {email} ({product}): {e}')
+        return jsonify({'ok': True, 'synced': False, 'reason': 'sync error'})
+    return jsonify({'ok': True, 'synced': True})
 
 
 # ── Stripe Checkout Routes ──

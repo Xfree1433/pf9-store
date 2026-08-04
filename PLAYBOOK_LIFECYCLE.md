@@ -24,9 +24,14 @@ the ones marked *needs code* cannot be turned on from the Klaviyo UI:
 - `demo_clicked` — visitor clicks any `/demo` link. **Not wired.** Note the form *submission* is
   captured — `/demo-request` pushes to HubSpot — but that is a different, later event than the
   click, and it reaches HubSpot only, never Klaviyo.
-- `last_login` / `last_action` per app — to power activation sequences. **Not wired, and larger
-  than it looks.** Requires every app in the fleet to report activity back to the store; there is
-  no such channel today.
+- `last_login` / `last_action` per app — to power activation sequences. **Store half shipped
+  2026-08-04; app half not started.** The channel this bullet said did not exist now does:
+  `POST /store-api/app-activity` takes a login/action ping from an app, keeps a running
+  per-(customer, app) summary, and syncs `last_login_at`, `last_action_at`, `last_active_app`,
+  `activated_apps` onto the Klaviyo profile plus an `App Activity` event to trigger on. **No app
+  calls it yet**, and it stays inert until `ACTIVITY_SECRET` is set on both sides — so the data is
+  still not arriving, and no flow should filter on it until a real ping has landed. Contract,
+  client snippets and the two open steps are in `LIFECYCLE_STATUS.md`.
 
 Build state for the sequences themselves lives in `LIFECYCLE_STATUS.md`.
 
