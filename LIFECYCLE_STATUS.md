@@ -1602,7 +1602,12 @@ canary's real `Started Checkout`. So the un-defaulted tags are exactly the ones 
 to `there`. L7-E2 has no link tag at all — it is deliberately a plain sign-off with one hardcoded
 store URL, not a broken CTA.
 
-### The real finding: personalisation is inert
+### The real finding: personalisation is inert — populated in code 2026-08-04
+
+> **Read the diagnosis, then the outcome.** All ten properties are now written by `store_api.py` for
+> every product in `PRICE_MAP`. The original finding is kept verbatim below because it is still the
+> reason the code exists; **"Closing it — what shipped"** after it records what changed, what it
+> corrected, and the two parts that are deliberately still open.
 
 **Ten properties referenced by live templates are set by no code path at all**, so every recipient
 receives the identical default copy:
@@ -1628,6 +1633,89 @@ nothing anywhere reports that, because a `|default:` renders silently. Closing i
 populating these per product at enrolment (the `_cross_sell_properties` pattern at line 612 is the
 model) or simplifying the templates to stop implying personalisation that never arrives. **Not
 attempted — recorded as a decision for the founder, not a defect to fix quietly.**
+
+### Closing it — what shipped, 2026-08-04 (**on disk, NOT running — same restart gate as everything below**)
+
+Of the two options above, **populate** was taken, following the `_cross_sell_properties` pattern
+exactly as suggested. Three helpers, wired into the same two call sites the cross-sell properties
+already use — trial start (`_app_link_properties` + `_onboarding_properties`) and the
+`trialing → active` conversion webhook.
+
+| Property | Now set from | Coverage |
+|---|---|---|
+| `app_login_url` | `APP_URL_MAP` + new `APP_LOGIN_PATH` | 14 apps; bundle → store |
+| `add_team_url` | `APP_URL_MAP` + new `APP_TEAM_PATH` | **6 apps**; the other 9 keep the default |
+| the eight copy properties | new `ONBOARDING_COPY` | **all 15 `PRICE_MAP` products** |
+
+**`app_login_url` was not personalisation, it was a wrong link.** Trial Day 3 (`Sz4DN3`) renders a
+button reading *"Log in to FLOWTRACK →"* whose href defaults to the storefront. Every trialist who
+has ever clicked the button offering to log them into their app landed on the shop instead. Each of
+the 14 paths was checked against the live host; **21 distinct URLs, all resolving**, asserted by
+`tests/test_app_links.py --live`.
+
+> **The check that mattered most was the control.** An HTTP probe "confirms" routes that do not
+> exist. NextAuth 307s *every* path to `/login` before routing, so `flowtrack…/settings-nonexistent`
+> answered 307 as convincingly as `/settings`; QUALIFI and INSPECTR are SPAs behind a catch-all and
+> return 200 for `/login`, `/signin` and any nonsense at all. Their source settles it —
+> `if (!user) return <LoginPage />` runs before any routing, so **the root is the login screen and
+> there is no `/login` route**. The four Next.js entries rest on the filesystem
+> (`src/app/(dashboard)/settings/page.tsx`, containing the Team/Invite UI) rather than on the probe.
+
+**`add_team_url` covers 6 of 15, and the shortfall is the finding, not the gap.** Paid Month 1
+(`RXA7h3`) states *"Your account includes unlimited users at no extra cost"* and links *"here's how
+to add them →"*. For nine products **no page a customer could be sent to was found**:
+
+| Product | Why not |
+|---|---|
+| COMPLI | invites exist, but only as `POST /invite` returning a JSON token — no page |
+| OPSIQ | `/auth/users` is a JSON API for its own SPA |
+| TENANTLINK | its "Invite" adds **tenants**, not colleagues — a category error to link |
+| QUALIFI | has "Add Inspector" under Admin, but the SPA has no routing, so no URL exists |
+| INSPECTR, SUPPORTR, LANDLORDR, TASKFLOW, PROPERTY_BUNDLE | nothing found |
+
+Those nine keep the template default and the link goes to the storefront, exactly as today. A
+plausible-looking URL would be worse than the status quo: a 404 on a link that has just promised
+free seats reads as a broken product. **Whether that means the seat-management UI is missing or the
+"unlimited users" claim does not apply to those apps is a founder question, and it is a pricing
+claim on live emails — not mine to decide.**
+
+**The eight copy properties are grounded, not invented.** Every screen, object and action named in
+`ONBOARDING_COPY` was read out of that app's own routing first — `src/app/(dashboard)/*` for the
+Next.js four, `register_blueprint(url_prefix=…)` for the Flask apps, component and nav names for the
+two SPAs. Nothing was inferred from a product's name or from the storefront's marketing sentence.
+The house rule is written into the table's comment, because **this is the one table in the file
+whose correctness no test can see** — the words are only checkable against a UI.
+
+> **A real bug the audit caught, not a test.** The first draft left `PROPERTY_BUNDLE` out of
+> `ONBOARDING_COPY` on the reasoning that a two-app purchase has no single "step 1" and the generic
+> default was the honest answer. **That reasoning was wrong, because these are *profile* properties.**
+> A missing key does not fall back to the template default — it preserves whatever the customer's
+> previous app wrote. A FLOWTRACK customer who later bought the property bundle would have received
+> a Paid Month 1 email headed PROPERTY_BUNDLE telling them to turn on traceability for a part
+> number. Covering every `PRICE_MAP` key is what makes that unreachable; checkout rejects anything
+> outside `PRICE_MAP` (`store_api.py:1499`), so full coverage means **no sellable product can
+> inherit another one's copy**. The same asymmetry is why `_app_link_properties` always writes both
+> keys, falling back to a `STORE_URL` that is byte-identical to the templates' own `|default:`.
+
+**Still open, and both are template edits rather than code:**
+
+1. 🛑 **Trial Day 1's "Add teammates →" is a hardcoded literal, not a merge tag.** `V7YkuR` Step 3
+   has `href="https://store.plainspokenfoundrynine.com"` written directly into the HTML, so
+   `add_team_url` cannot reach it and the six apps that *do* have a team page still dead-end there.
+   Fixing it means editing a template attached to a **live flow**, which changes what live flows
+   send — closer to publishing than to drafting, so it is left for the founder.
+2. **`app_name` renders raw product keys.** Trial Day 1 opens *"Your PROPERTY_BUNDLE account is
+   live"*. Pre-existing and out of scope here — `app_name` feeds many templates and changing it
+   changes existing renders — but it is the same class of problem as the `product_name` guard added
+   for waitlist tags earlier the same day.
+
+Verified by `tests/test_app_links.py` (offline shape + `--live` URL resolution). The suite asserts
+the things that fail silently: eight-or-nothing per product, full `PRICE_MAP` coverage, no duplicated
+detail string across products, no product's copy naming an app the customer did not buy (with
+bundles allowed to name their own members, sourced from `BUNDLE_MAP` rather than an exception list),
+and — the drift guard — that every `APP_URL_MAP` entry has a login path, since adding an app without
+one silently reintroduces the storefront link. `restart_store_api.sh` greps for both helpers for the
+same reason.
 
 ---
 

@@ -745,6 +745,396 @@ def _cross_sell_properties(product):
     }
 
 
+# Product → the PATH of that app's sign-in screen. Host comes from APP_URL_MAP,
+# same single-source rule as REGISTER_PATH below.
+#
+# This closes a small but real wrongness rather than adding personalisation:
+# Trial Day 3 (`Sz4DN3`) renders a button reading "Log in to FLOWTRACK →" whose
+# href is `person.Properties.app_login_url|default:'https://store.plainspoken…'`.
+# Nothing has ever set that property, so every trialist who clicked a button
+# offering to log them into their app landed on the storefront instead.
+#
+# Every path below was checked against the live host on 2026-08-04, and the three
+# empty strings are the finding that made the check worth doing:
+#
+#   /login       FLOWTRACK SHIFTLOG REPORTR MAINTAINR COMPLI EXTRACTR SUPPORTR
+#                TENANTLINK      — page served, password (or magic-link) form present
+#   /auth/login  LANDLORDR PERMITR TASKFLOW   — "Sign In — <APP>" served
+#   ''           QUALIFI INSPECTR OPSIQ       — root IS the sign-in screen
+#
+# QUALIFI and INSPECTR are SPAs behind a catch-all: `/login`, `/signin` and
+# `/any-nonsense-at-all` all return 200 with the same index.html, so an HTTP probe
+# "confirms" a route that does not exist. Their source settles it — INSPECTR's
+# App.tsx does `if (!user) return <LoginPage />` before any routing, and QUALIFI
+# renders LoginPage the same way. There is no /login route in either; the root is
+# the login screen. OPSIQ serves its password form at / directly.
+#
+# PROPERTY_BUNDLE is deliberately absent. It is two apps, so there is no single
+# "log in here", and the template default (the storefront, which links to both)
+# is the honest answer.
+APP_LOGIN_PATH = {
+    'FLOWTRACK':  '/login',
+    'SHIFTLOG':   '/login',
+    'REPORTR':    '/login',
+    'MAINTAINR':  '/login',
+    'COMPLI':     '/login',
+    'EXTRACTR':   '/login',
+    'SUPPORTR':   '/login',
+    'TENANTLINK': '/login',
+    'LANDLORDR':  '/auth/login',
+    'PERMITR':    '/auth/login',
+    'TASKFLOW':   '/auth/login',
+    'QUALIFI':    '',
+    'INSPECTR':   '',
+    'OPSIQ':      '',
+}
+
+# Product → the PATH where the account owner adds colleagues.
+#
+# Six entries for fifteen products, and the shortfall is the point. Paid Month 1
+# (`RXA7h3`) states "Your account includes unlimited users at no extra cost" and
+# links "here's how to add them →". For the nine products not listed here, no
+# page a customer could be sent to was found — so they keep the template default
+# and the link goes to the storefront, exactly as it does today. Pointing them at
+# a plausible-looking URL would be worse than the status quo, because a 404 on a
+# link that just promised free seats reads as a broken product.
+#
+# Verified 2026-08-04, and one of those checks is why the list is short. An HTTP
+# 200/redirect proves nothing on the four Next.js apps: NextAuth middleware
+# 307s *every* path to /login before routing, so a made-up control path answered
+# 307 as convincingly as the real one. Their entries rest on the filesystem
+# instead — `src/app/(dashboard)/settings/page.tsx` exists in all four and
+# contains the Team/Invite/Member UI, and `(dashboard)` is a route group, so the
+# public URL is /settings.
+#
+#   PERMITR   /admin/users/  registered at that url_prefix; 302s to its own login
+#                            while a sibling control path 404s. Trailing slash is
+#                            deliberate — without it Flask 308s to an http:// URL.
+#   EXTRACTR  /users         auth_bp has no url_prefix and users_page() renders
+#                            users.html; 302s to login, so the route is real.
+#
+# Deliberately NOT included:
+#   COMPLI      has invites, but only as `POST /invite` returning a JSON token.
+#               There is no page to link to.
+#   OPSIQ       `/auth/users` is a JSON API for its own SPA, not a page.
+#   TENANTLINK  its "Invite" flow adds *tenants*, not colleagues. Sending an
+#               "add your team" email there would be a category error.
+#   QUALIFI INSPECTR SUPPORTR LANDLORDR TASKFLOW PROPERTY_BUNDLE
+#               nothing found. Whether that means the seat-management UI is
+#               missing or the pricing claim does not apply to them is a founder
+#               question, recorded in LIFECYCLE_STATUS.md, not guessed at here.
+APP_TEAM_PATH = {
+    'FLOWTRACK': '/settings',
+    'SHIFTLOG':  '/settings',
+    'REPORTR':   '/settings',
+    'MAINTAINR': '/settings',
+    'PERMITR':   '/admin/users/',
+    'EXTRACTR':  '/users',
+}
+
+
+def _app_link_properties(product):
+    """app_login_url / add_team_url for the trial and paid onboarding emails.
+
+    ALWAYS returns both keys, falling back to STORE_URL — which is not a
+    workaround, it is byte-for-byte the string both templates already carry as
+    their own |default:, so an unmapped product renders exactly as it does
+    today.
+
+    Returning {} would have been the obvious shape and is the wrong one, because
+    these are PROFILE properties and profile properties persist. A customer who
+    trials FLOWTRACK (which has a team page) and later converts SUPPORTR (which
+    does not) has app_name overwritten to SUPPORTR while a {} here would leave
+    add_team_url still pointing into FLOWTRACK — an email naming one app whose
+    link opens another. Writing the fallback explicitly overwrites the stale
+    value; omitting the key preserves it.
+
+    Never writes an empty string. Klaviyo's |default: only fires on a *missing*
+    value, so '' would render href="" — a CTA that silently goes nowhere, the
+    one failure mode worse than pointing at the store.
+    """
+    base = (APP_URL_MAP.get(product) or '').rstrip('/')
+    login_path = APP_LOGIN_PATH.get(product)
+    team_path = APP_TEAM_PATH.get(product)
+    return {
+        'app_login_url': (base + login_path) if base and login_path is not None else STORE_URL,
+        'add_team_url': (base + team_path) if base and team_path else STORE_URL,
+    }
+
+
+# Product → the four pieces of onboarding copy the lifecycle emails were shaped
+# around: (step1, step2) for Trial Day 1, day3 for Trial Day 3, month1 for Paid
+# Month 1. Each is (title, detail).
+#
+# Until now none of the eight properties behind this was set by any code path, so
+# a LANDLORDR customer and a COMPLI customer both received the identical default
+# instruction to "add your first item" and "configure your first alert or rule".
+# Nothing rendered broken and nothing reported it, because a |default: fails
+# silently — which is exactly why it survived this long.
+#
+# THE RULE FOR EDITING THIS TABLE: every screen, object and action named below
+# was read out of that app's own routing before it was written down —
+# src/app/(dashboard)/* for the Next.js four, register_blueprint(url_prefix=…)
+# for the Flask apps, component and nav names for the two SPAs. Nothing here
+# describes a capability that was inferred from the product's name or from the
+# storefront's marketing sentence. If a feature is added or renamed, this table
+# is wrong in a way no test can see, because the words are only checkable against
+# a UI. Re-read the routes rather than editing from memory.
+#
+# PROPERTY_BUNDLE gets its own entry rather than being left to the defaults, and
+# that is a correction to the first draft of this table. Leaving it out looked
+# harmless — the templates have defaults, after all — but these are PROFILE
+# properties, so a missing key does not fall back to the default, it preserves
+# whatever the customer's previous app wrote. A FLOWTRACK customer who later
+# bought the property bundle would have received a Paid Month 1 email headed
+# PROPERTY_BUNDLE telling them to turn on traceability for a part number.
+# Covering every key in PRICE_MAP is what makes that unreachable, and checkout
+# rejects anything not in PRICE_MAP (store_api.py:1499), so full coverage here
+# means no sellable product can ever inherit another one's copy.
+ONBOARDING_COPY = {
+    'FLOWTRACK': {
+        'step1': ('Add your first parts',
+            "Open Inventory and create a handful of the parts you actually stock. You do not "
+            "need the whole catalogue — a dozen is enough to see counts move."),
+        'step2': ('Set a reorder point on one of them',
+            "Pick the part you run out of most and give it a minimum. FLOWTRACK raises it under "
+            "Alerts the moment stock drops below the line, which is the difference between a "
+            "record and a warning."),
+        'day3': ('Run a cycle count',
+            "Cycle Count is where the system starts paying for itself: count one shelf, and the "
+            "variance against what FLOWTRACK expected tells you how far your current numbers "
+            "have drifted."),
+        'month1': ('Turn on traceability for one part number',
+            "Traceability links a lot through receiving, production and sales, so when a customer "
+            "asks where a batch went you answer from a screen instead of a spreadsheet archaeology "
+            "session."),
+    },
+    'QUALIFI': {
+        'step1': ('Log one real nonconformance',
+            "Raise something that actually happened last week rather than a test record. QUALIFI "
+            "is built around the trail an auditor reads, and a real entry shows you the shape of it."),
+        'step2': ('Open a CAPA against it',
+            "Assign the corrective action to a person with a due date. The link between the finding "
+            "and the action is the part auditors check, and it only exists if you make it."),
+        'day3': ('Load the standard you are audited against',
+            "Add your active standard and map a few existing records to it. What you are looking "
+            "for is the gap list — the clauses with nothing attached yet."),
+        'month1': ('Export the audit trail',
+            "Run the audit trail export once while nothing is at stake. It is far better to find "
+            "out what your evidence looks like now than during the week of an audit."),
+    },
+    'SHIFTLOG': {
+        'step1': ('Write one handoff',
+            "Have whoever is on now log the end of their shift. One real handoff tells you more "
+            "about the fit than any amount of setup."),
+        'step2': ('Build the shift template your crew actually uses',
+            "Shift Templates turn the things that always get asked into prompts, so the handoff "
+            "stops depending on who is writing it and how tired they are."),
+        'day3': ('Add a checklist to the handoff',
+            "Checklists are what stop a handoff from being prose. Attach one to a shift and the "
+            "next crew inherits a state, not a paragraph."),
+        'month1': ('Look at your incident history',
+            "A month in you have enough incidents logged to read them together. The value is not "
+            "the individual entries — it is seeing the same thing appear three times."),
+    },
+    'REPORTR': {
+        'step1': ('Connect one data source',
+            "Connectors is the first stop; nothing else in REPORTR does anything until something "
+            "is plugged in. Start with the system you are already exporting from by hand."),
+        'step2': ('Put one number on a dashboard',
+            "Build a single KPI — the one you get asked for most — and pin it. One number that "
+            "refreshes itself beats a dashboard you never finish."),
+        'day3': ('Schedule it to send itself',
+            "Schedules is the point of the whole thing: the report that arrives on its own is the "
+            "one that replaces the half-hour you spend rebuilding it."),
+        'month1': ('Set an alert on a threshold',
+            "Alerts invert the relationship — instead of you checking the dashboard, the dashboard "
+            "tells you when a number crosses a line you care about."),
+    },
+    'INSPECTR': {
+        'step1': ('Run one inspection on your phone',
+            "Start a new inspection and walk an actual asset. INSPECTR is built for the phone in "
+            "your hand on site, so doing it at a desk will undersell it."),
+        'step2': ('Record a failure with a photo',
+            "When something fails, capture it with severity and a picture and assign the fix. The "
+            "photo is what makes the record hold up later."),
+        'day3': ('Turn your paper form into a checklist',
+            "Rebuild the form your team currently carries as a checklist. From then on every "
+            "inspection produces comparable data rather than free text."),
+        'month1': ('Pull a report across the month',
+            "With a month of inspections behind you the report stops being a record of visits and "
+            "starts showing which assets keep failing the same check."),
+    },
+    'LANDLORDR': {
+        'step1': ('Add one property and its units',
+            "Start with a single property rather than the whole portfolio. Everything else in "
+            "LANDLORDR hangs off a unit, so one is enough to get the shape."),
+        'step2': ('Attach a tenant and their lease',
+            "Add the tenant, then the lease with its rent and dates. Once the lease exists the rent "
+            "ledger starts keeping itself."),
+        'day3': ('Log a maintenance request against a unit',
+            "Raise a real request and assign a vendor. What you are checking is that the cost lands "
+            "against the unit, because that is what makes the year-end numbers mean anything."),
+        'month1': ('Run the reports before you need them',
+            "A month of rent and expenses is enough for the reports to be worth reading — and far "
+            "enough from tax season to fix whatever you find missing."),
+    },
+    'TENANTLINK': {
+        'step1': ('Add a property and one lease',
+            "Set up a single unit with its tenant and lease first. The portal a tenant sees is "
+            "generated from the lease, so nothing is visible until that exists."),
+        'step2': ('Invite that tenant to the portal',
+            "Send the portal invite from the tenant list. They get a magic link — no password to "
+            "set, which is most of why tenants actually use it."),
+        'day3': ('Post a notice and watch it land',
+            "Notices are the feature that replaces texting people individually. Post one and it is "
+            "in the portal, timestamped, for everyone it applies to."),
+        'month1': ('Use the ledger for a rent conversation',
+            "The ledger exists so that a disagreement about what was paid is a matter of looking "
+            "rather than arguing. Month one is a good time to check it matches your own records."),
+    },
+    'PERMITR': {
+        'step1': ('Set up your site',
+            "Add the site your crews actually work on before anything else. Permits are scoped to "
+            "a site, so this is the one thing that has to come first."),
+        'step2': ('Issue one permit end to end',
+            "Raise a permit, approve it and close it out — the whole cycle on something low-risk. "
+            "Walking it once is worth more than reading about the states."),
+        'day3': ('Attach a JSA',
+            "Link a job safety analysis to a permit. The permit records that the work was "
+            "authorised; the JSA records what was considered before it was."),
+        'month1': ('Turn your paper permit into a checklist',
+            "Admin → Checklists is where the form your supervisors already carry becomes the one "
+            "PERMITR enforces, so nothing gets signed with a blank left in it."),
+    },
+    'TASKFLOW': {
+        'step1': ('Create one project',
+            "Make a project for something already in flight rather than something planned. Live "
+            "work is the only honest test."),
+        'step2': ('Add tasks with owners and dates',
+            "A task without a name against it is a note. Assign each one and give it a due date — "
+            "that is what makes the board tell you anything."),
+        'day3': ('Get your team into the same project',
+            "TASKFLOW is only worth the switch when it is where people look. Two people in one "
+            "project is the smallest version of that."),
+        'month1': ('Read the project a month in',
+            "After a month the useful question is not what is done but what has moved least. That "
+            "is visible on the board without anyone having to admit to it."),
+    },
+    'OPSIQ': {
+        'step1': ('Add your Anthropic API key',
+            "OPSIQ runs on your own key rather than a shared one, so the first step is Settings. "
+            "Nothing can be asked until that is in."),
+        'step2': ('Connect the database you want to ask about',
+            "Point OPSIQ at a real database — read-only is fine and is the sensible way to start. "
+            "It reads your schema, so the better the table names the better the answers."),
+        'day3': ('Ask the question you always ask someone else',
+            "The test is not whether OPSIQ can write SQL. It is whether it answers the question "
+            "you currently have to interrupt an analyst for."),
+        'month1': ('Check the SQL it writes',
+            "OPSIQ shows the query behind every answer. Reading a few is how you calibrate what to "
+            "trust it with — and occasionally how you find out your data means something else."),
+    },
+    'COMPLI': {
+        'step1': ('Pick the framework you are actually audited against',
+            "COMPLI carries 40+ frameworks; adopt one. Adopting several on day one produces a "
+            "gap list nobody reads."),
+        'step2': ('Attach evidence to a control you already satisfy',
+            "Start with something you are already doing well. Seeing one control go green shows "
+            "you what the other hundred want from you."),
+        'day3': ('Read the gap list',
+            "The dashboard's value is the controls with nothing attached. That list is your "
+            "actual compliance backlog, and it is usually shorter than feared."),
+        'month1': ('Add your vendors',
+            "Vendor risk is the part that always gets asked about and never gets started. A month "
+            "in is the right time, because the framework has told you which vendors matter."),
+    },
+    'EXTRACTR': {
+        'step1': ('Upload one document you already retype',
+            "Pick a real invoice or PO — the kind someone currently keys in by hand. A clean sample "
+            "PDF will not tell you whether this works on your paperwork."),
+        'step2': ('Check the fields it pulled',
+            "Look at what came back and correct anything wrong. The corrections are the point: "
+            "they tell you where the document layout is fighting the extraction."),
+        'day3': ('Run a batch from one supplier',
+            "Consistency is where the time goes. Ten documents from the same supplier show you the "
+            "real hit rate far better than ten from ten."),
+        'month1': ('Push the output into whatever you keyed into before',
+            "Extraction only saves time if it lands somewhere. A month in, the question worth "
+            "answering is what still gets copied by hand after EXTRACTR has run."),
+    },
+    'SUPPORTR': {
+        'step1': ('Point one support address at it',
+            "Inbound email is what turns SUPPORTR on. Until a real address routes in, you are "
+            "looking at an empty queue."),
+        'step2': ('Answer one ticket from inside it',
+            "Reply to a live customer through SUPPORTR rather than your inbox. That is the habit "
+            "the whole thing depends on."),
+        'day3': ('Write your three most repeated answers into the KB',
+            "Everyone has three. Once they are articles you are pasting a link instead of "
+            "retyping, and the widget can serve them before a ticket is even raised."),
+        'month1': ('Look at what you answered most',
+            "A month of tickets tells you which question your product keeps generating. Sometimes "
+            "the fix is an article; sometimes it is a change to the product."),
+    },
+    # Two apps, so the copy has to work for both without pretending they are one.
+    # The sequencing is real rather than diplomatic: TENANTLINK generates the
+    # tenant's portal from the lease that LANDLORDR holds, so the landlord side
+    # genuinely has to be set up first.
+    'PROPERTY_BUNDLE': {
+        'step1': ('Set up one property in LANDLORDR first',
+            "Add a single property, its units, the tenant and the lease. TENANTLINK builds each "
+            "tenant's portal from that lease, so there is nothing for them to log into until it "
+            "exists."),
+        'step2': ('Invite that tenant into TENANTLINK',
+            "Send the portal invite from the tenant list. They get a magic link rather than a "
+            "password to set, which is most of the reason tenants actually use it."),
+        'day3': ('Run one maintenance request through both sides',
+            "Have the tenant raise it in the portal and handle it on the landlord side with a "
+            "vendor and a cost. That round trip is the whole point of buying the pair."),
+        'month1': ('Reconcile the ledger against your own records',
+            "A month of rent and expenses is enough for the ledger to be worth checking — and it "
+            "is the same ledger the tenant sees, so any disagreement is settled by looking."),
+    },
+    'MAINTAINR': {
+        'step1': ('Add the assets that actually break',
+            "Load the equipment that causes you trouble, not the whole plant register. Ten assets "
+            "you care about beat four hundred you do not."),
+        'step2': ('Raise a work order against one',
+            "Create a real work order with a technician and parts. The cost against the asset is "
+            "what makes everything downstream worth having."),
+        'day3': ('Put one asset on a PM schedule',
+            "Schedules are the shift from reacting to planning. Start with the asset whose failures "
+            "cost you the most and let MAINTAINR raise the work."),
+        'month1': ('Read the downtime record',
+            "A month of downtime entries is enough to rank your assets honestly. That ranking is "
+            "usually not the one people expect, and it is what the predictive side runs on."),
+    },
+}
+
+
+def _onboarding_properties(product):
+    """The eight per-app copy properties for Trial Day 1/3 and Paid Month 1.
+
+    Returns {} for an unmapped product — and unlike _app_link_properties this is
+    correct rather than a hazard. These are prose, not hrefs: a stale title from
+    a previously-owned app reads as slightly odd advice, whereas a stale URL
+    sends someone to the wrong login. And there is no neutral string to
+    overwrite with; the templates' own defaults are the neutral version, and
+    they only fire when the property is absent.
+    """
+    copy = ONBOARDING_COPY.get(product)
+    if not copy:
+        return {}
+    props = {}
+    for key, prefix in (('step1', 'onboarding_step1'), ('step2', 'onboarding_step2'),
+                        ('day3', 'day3_feature'), ('month1', 'month1_feature')):
+        title, detail = copy[key]
+        props[f'{prefix}_title'] = title
+        props[f'{prefix}_detail'] = detail
+    return props
+
+
 def _owned_apps(email):
     """Distinct PF9 apps this address currently pays for, bundles expanded.
 
@@ -1454,6 +1844,13 @@ def _handle_checkout_completed(session):
     # than waiting for conversion. Costs nothing, and means the month-3 email
     # has data even if the trialing -> active webhook is ever missed.
     trial_properties.update(_cross_sell_properties(product))
+    # Trial Day 3's only CTA is "Log in to <app> →", and until now it sent every
+    # trialist to the storefront. Set at checkout because day 3 arrives long
+    # before the conversion webhook that the paid emails hang off.
+    trial_properties.update(_app_link_properties(product))
+    # Trial Day 1 and Day 3 read the per-app onboarding copy. Both land inside
+    # the trial, so checkout is the only place early enough to set them.
+    trial_properties.update(_onboarding_properties(product))
     # Seed the multi-app count from day 0 too. The subscription row for this
     # checkout is already committed above, so it is included in the count.
     trial_properties.update(_owned_app_properties(email))
@@ -1682,6 +2079,16 @@ def _handle_subscription_updated(sub):
         # Set it here as well as at checkout so a profile that predates the
         # checkout-side mapping still gets it on conversion.
         properties.update(_cross_sell_properties(previous['product']))
+        # Paid Month 1 reads add_team_url. Re-set both links here rather than
+        # relying on the checkout-side write: a customer converting a SECOND app
+        # has app_name overwritten to the new product above, and leaving
+        # app_login_url pointing at the first app would send them to the wrong
+        # login from an email that names the new one.
+        properties.update(_app_link_properties(previous['product']))
+        # Paid Month 1 reads month1_feature_*. Re-set on conversion for the same
+        # reason as the links: a customer converting a second app needs the copy
+        # to match the app_name written just above, not the one they trialed first.
+        properties.update(_onboarding_properties(previous['product']))
         # Refresh the multi-app count that the month-3 conditional split reads.
         # This is the moment it can change: converting a second app is what
         # turns a single-app customer into someone who should NOT be pitched an
