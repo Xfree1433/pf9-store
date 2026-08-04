@@ -490,21 +490,35 @@ key changes.** A malformed POST returns 403 for a missing scope and 400 once pre
 nothing either way. Note the events endpoint does **not** share that property — a valid probe there
 creates a metric, and Klaviyo metrics cannot be deleted.
 
-**Housekeeping still owed — and read the Last Used column, not the name.** The account now holds five
-private keys, and **three of them are named `PF9 Store2`**, because Clone copies the name too. The
-listing as read 2026-08-04:
+**Housekeeping — done 2026-08-04. Two keys remain, and the account is deliberately left with a
+rollback.** The account had held five private keys, **three of them named `PF9 Store2`**, because
+Clone copies the name too. The three dead ones were deleted; the listing now reads:
 
-| Name | Created | Last used | Standing |
-|---|---|---|---|
-| `pf9 store lifecycle sync` | 08/01 | 8/2 6:14 PM | dead — Lists+Profiles only, pre-dates `events:write` |
-| `PF9 Store2` | 08/02 | **never used** | dead — a spare that was never put in the env |
-| `PF9 Store2` | 08/02 | 8/3 9:32 AM | **superseded, and the rollback** — the events-scoped key that ran production until 08/04 |
-| `PF9 Store2` | 08/04 | 8/3 8:11 PM | dead — the failed clone; its only use is my probe |
-| Full Access key | 08/04 | — | **live, in `pf9-store-api.env`** |
+| Name | Created | Last used | Key ends | Standing |
+|---|---|---|---|---|
+| `PF9 Store2` | 08/02 | 8/3 9:32 AM | `70ee` | **kept — the rollback**, the events-scoped key that ran production until 08/04 |
+| `pf9 Full access Key` | 08/04 | 8/3 8:36 PM | `5217` | **live, in `pf9-store-api.env`** |
 
-Delete the three dead rows, but **keep the 08/02 8/3-9:32 key until the Full Access key has been
-observed working on a real checkout** — it is the only rollback that still carries `events:write`.
-Since three rows share a name, identify them by Created/Last Used before deleting anything.
+Deleted: `pf9 store lifecycle sync` (08/01, `…b7df`, Lists+Profiles only, pre-dated `events:write`),
+`PF9 Store2` (08/02, `…d6a6`, never used — a spare that never reached the env), and `PF9 Store2`
+(08/04, `…78e6`, the failed clone whose only use was a scope probe).
+
+**Identify keys by the last four characters, not the name or the dates.** Name is ambiguous by
+construction, and the dates cannot be reasoned about naively — two rows read "created 08/04, last
+used 8/3", i.e. used before they existed. Cause not established (a timezone difference between the
+two columns is the obvious guess); what matters is that the ordering is not trustworthy on its own.
+The reveal (eye) icon prints the tail,
+and that is what was matched against production before anything was deleted — the live key ends
+`5217`, read from `KLAVIYO_API_KEY` in `/opt/pf9-store/pf9-store-api.env`. Klaviyo's delete
+confirmation says only "Delete private API key — This cannot be undone"; **it does not name the key**,
+so the row must be confirmed before the menu is opened, not from the dialog.
+
+Verified after deleting, from the server so the key never enters a transcript: the subscriptions
+probe returns **400** (authenticated, scope present, creates nothing), `GET /api/profiles/` **200**,
+`GET /api/metrics/` **200**. A 401 there would have meant the wrong key was deleted.
+
+**The rollback key stays until the Full Access key has been observed working on a real checkout** —
+it is the only other key carrying `events:write`.
 
 ### Deploy order matters — and the sequence as actually executed
 
