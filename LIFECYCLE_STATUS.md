@@ -1998,17 +1998,19 @@ as written, with no human in the loop.
 
 `PLAYBOOK_LIFECYCLE.md` listed one segmentation trigger as bigger than the rest: *"`last_login` /
 `last_action` per app — **not wired, and larger than it looks.** Requires every app in the fleet to
-report activity back to the store; there is no such channel today."* The channel now exists. The
-apps still do not use it.
+report activity back to the store; there is no such channel today."* The channel now exists, and as
+of 2026-08-05 **all fourteen apps call it in code**. Not one of them is deployed, the store endpoint
+is not running, and the shared secret does not exist — so the amount of activity data in production
+is still zero.
 
-Read that as two separate facts, because the failure mode here is treating the first as the second:
+Read that as separate facts, because the failure mode here is treating the first as the last:
 
 | | State |
 |---|---|
 | Store endpoint `POST /store-api/app-activity` | ✅ written, tested, committed |
 | Running in production | ⬜ needs the gunicorn restart (Mark's, `sudo`) |
 | Enabled | ⬜ **403s everything until `ACTIVITY_SECRET` is set** — by design |
-| Any app calling it | 🟡 **1 of 14 in code** — PERMITR, `9fcc7a8`, 2026-08-05. Pushed, **not deployed** |
+| Any app calling it | ✅ **14 of 14 in code** — 2026-08-05, all pushed. **None deployed** |
 | Data available to a flow | ⬜ none, and none until all four above are done |
 
 **No flow should filter on `last_action_at` yet.** Klaviyo flows do not backfill: a filter built
@@ -2240,6 +2242,17 @@ export async function report(email: string, kind: 'login' | 'action', action = '
 Do **one app first** and confirm a row appears before touching the other thirteen — the whole point
 of this endpoint is to stop guessing whether data is arriving.
 
+> **This advice was only half-followed, deliberately — read it before trusting the ✅ above.** One
+> app (PERMITR) was wired first and the client's shape settled against it before the other thirteen
+> were touched. But *"confirm a row appears"* means a row **in production**, and that is impossible
+> today: the store endpoint is not running and `ACTIVITY_SECRET` does not exist, both of which are
+> Mark's to do. Waiting would have blocked all fourteen behind a `sudo`. What was done instead is
+> weaker and it is worth being precise about how: each client was driven end to end against a **real
+> store on a real socket** — real URL, real header, real JSON, real thread — writing a real row to a
+> real SQLite file. That falsifies every app-side failure. It cannot falsify a production-only one:
+> a wrong `ACTIVITY_SECRET`, an app whose env never got the variable, or a host that cannot reach
+> `app.plainspokenfoundrynine.com`. **The confirmation query below is still owed, once per app.**
+
 ### First integration — PERMITR, `9fcc7a8`, 2026-08-05
 
 **Copy `PERMITR/app/store_activity.py` for the other thirteen** rather than the snippet above; it is
@@ -2311,6 +2324,101 @@ for r in sqlite3.connect(p).execute(
 A row means the whole chain works. No row means the secret does not match, the store has not been
 restarted, or that address has no active subscription — the store log distinguishes the third
 (`app-activity from a non-customer`, logged without the address).
+
+### The remaining thirteen — 2026-08-05, all pushed, none deployed
+
+Every app now reports. The client stayed **one artifact, not fourteen forks**: the eight Python
+copies are byte-identical apart from `PRODUCT` (verified by diffing with comments stripped), and its
+docstring says so, so the next person fixes the original rather than one branch of it.
+
+| Product | Commit | Login call site | Action call site |
+|---|---|---|---|
+| PERMITR | `9fcc7a8` | `routes/auth.py` | `permit_created` |
+| SUPPORTR | `9a8a6fc` | `routes/auth.py` ×2 — password **and** magic-link | `ticket_resolved` |
+| LANDLORDR | `399ac4d` | `routes/auth.py` | `property_created` |
+| TENANTLINK | `643eba7` | `routes/auth.py` ×2 — tenant and landlord | `tenant_onboarded` ⚠ see below |
+| TASKFLOW | `799b094` | `routes/auth.py` | `task_created` |
+| COMPLI | `8ebc84e` | `blueprints/auth/routes.py` | `policy_created` |
+| EXTRACTR | `3a0c5fb` | `blueprints/auth/__init__.py` | `extraction_started` |
+| OPSIQ | `56ea83f` | `opsiq/routes.py` | `query_run` |
+| QUALIFI | `29a4275` | `backend/app.py` | **none** ⚠ see below |
+| FLOWTRACK | `8134a86` | `src/lib/auth.ts` | `scan` |
+| SHIFTLOG | `28d5d8c` | `src/lib/auth.ts` | `handoff_submitted` |
+| MAINTAINR | `fde2d61` | `src/lib/auth.ts` | `work_order_created` |
+| REPORTR | `619c234` | `src/lib/auth.ts` | `dashboard_created` |
+| INSPECTR | `227cf0d` | `server/auth.js` | `inspection_submitted` |
+
+Note the product name for TENANTLINKR is **`TENANTLINK`**, no trailing R — the repo and the
+`PRICE_MAP` key disagree, and the key is what the store matches on. All fourteen were checked
+against the live `PRICE_MAP` rather than typed from the repo names.
+
+**Three decisions here are judgements, not mechanics.** They are the parts a future reader cannot
+reconstruct from the diff, and each one is a case where the obvious wiring would have been wrong:
+
+1. **Send the email, never the id — in every app.** Each app's PostHog actor is `email ?? id`,
+   because PostHog only needs a *stable* identifier. The store is different: it matches a
+   subscription **on email alone**. Forwarding the fallback would produce a ping that is accepted,
+   costs a round trip, and matches nothing — failing silently and forever. So OPSIQ drops its
+   `user_id` fallback, the four Next.js apps ignore `actorId` in favour of `session.user.email`, and
+   INSPECTR drops `req.orgId`. Each site carries a comment saying why, because the code looks
+   gratuitously different from the `ph_capture` on the line above it.
+
+2. **TENANTLINK reports the landlord, not the tenant.** Its PostHog core action is a tenant
+   submitting a maintenance request. That route is `@tenant_required`, and **a tenant is the
+   landlord's customer, not ours** — a tenant address can never match a subscription, so this ping
+   could only ever be dropped. This was wired the obvious way first and caught in the diff audit.
+   The store's action moved to the landlord onboarding a tenant (`admin_tenants.new_tenant`,
+   `@admin_required`), which is what the subscriber actually pays for. **PostHog's actor and the
+   store's actor genuinely differ for this product** — the one app in the fleet where they do.
+
+3. **QUALIFI is login-only, and that is correct, not incomplete.** Its quality records live in
+   browser `localStorage`; the Flask backend only does auth and provisioning. There is no
+   server-side core action to report, so `action_count` will stay 0 for QUALIFI customers and
+   `activated_apps` will never list it. **Any activation segment must therefore key on
+   `last_login_at` for QUALIFI, not `action_count`** — a fleet-wide "has never performed an action"
+   filter would classify every QUALIFI customer as unactivated, including daily users.
+
+**Two structural differences worth knowing before deploying:**
+
+- **QUALIFI's import is defensive because its backend is a flat module, not a package.** A bare
+  `from store_activity import report` there depends on how the service starts, and an `ImportError`
+  at module scope would stop the backend booting — a marketing ping must never do that. It is
+  wrapped in `try/except` with a `logger.warning` and a no-op fallback. The fallback is
+  belt-and-braces rather than load-bearing: the systemd unit runs
+  `ExecStart=…/venv/bin/python /opt/qualifi/backend/app.py`, and Python puts the **script's**
+  directory on `sys.path[0]` regardless of `WorkingDirectory=/opt/qualifi`, so the import resolves.
+  Confirmed by reproducing that exact layout locally, not by reading the docs.
+- **In Node an unhandled promise rejection kills the process.** The TS/JS client therefore catches
+  its own promise rather than leaving it to the `void` at the call site. This is a harder failure
+  than the Python case: there a stray exception is a 500 on one request, here it takes down the
+  server.
+
+**The harness now covers both halves of the fleet**, and the JS one is not a rewrite of the
+assertions — same store, same socket, same twenty-five checks:
+
+```bash
+./venv/bin/python tests/test_app_client_e2e.py    ~/…/SUPPORTR SUPPORTR    # 9 Python apps
+./venv/bin/python tests/test_app_client_e2e_js.py ~/…/FLOWTRACK FLOWTRACK  # 5 JS apps
+```
+
+The JS twin drives the real client from a `node` subprocess. It loads the `.ts` files through
+node's built-in type stripping rather than compiling a copy first, **so what runs is the file that
+ships** — a test against a transpiled duplicate can pass while the real module is broken. All
+fourteen apps were driven end to end against a real store over a real socket and pass all
+twenty-five assertions.
+
+**What deploying will and will not do.** With `ACTIVITY_SECRET` unset the client returns before it
+builds a request, so all fourteen can ship in any order, at any time, and do nothing. That is
+deliberate and it is the order these steps will actually happen in. But note the corollary: **until
+the secret is set, a successful deploy proves nothing about this feature.** The only evidence that
+the chain works is a row in `app_activity`.
+
+⚠ **QUALIFI's `.env` is rewritten on every deploy.** `deploy-qualifi-backend.sh` truncates
+`/opt/qualifi/.env` and writes exactly `QUALIFI_DATABASE_URL` and `PORT` — it preserves nothing.
+That file is the unit's only `EnvironmentFile`, so an `ACTIVITY_SECRET` added there by hand
+**disappears the next time that script is run**, silently, and QUALIFI alone stops reporting while
+the other thirteen carry on. Either add the secret to the script's heredoc or accept that re-running
+it is also a step that re-adds the secret.
 
 ---
 

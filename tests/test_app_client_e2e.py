@@ -32,7 +32,15 @@ STORE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 APP_DIR = os.path.expanduser(sys.argv[1] if len(sys.argv) > 1 else
                              '~/Documents/PlainSpokenFoundryNine/PERMITR')
 PRODUCT = sys.argv[2] if len(sys.argv) > 2 else 'PERMITR'
-CLIENT = os.path.join(APP_DIR, 'app', 'store_activity.py')
+
+# The client sits beside the app package, and the apps do not agree on what that
+# package is called: most use app/, OPSIQ uses opsiq/, QUALIFI's backend is flat.
+# Search rather than hardcode, so adding an app does not mean editing this line.
+CLIENT = next(
+    (p for p in (os.path.join(APP_DIR, d, 'store_activity.py')
+                 for d in ('app', 'opsiq', 'backend', '.'))
+     if os.path.exists(p)),
+    os.path.join(APP_DIR, 'app', 'store_activity.py'))
 
 os.environ['STORE_DB_PATH'] = tempfile.mktemp(suffix='.db')
 os.environ['KLAVIYO_API_KEY'] = 'test-key-not-used'
