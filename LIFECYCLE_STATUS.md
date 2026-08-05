@@ -2413,12 +2413,35 @@ deliberate and it is the order these steps will actually happen in. But note the
 the secret is set, a successful deploy proves nothing about this feature.** The only evidence that
 the chain works is a row in `app_activity`.
 
-⚠ **QUALIFI's `.env` is rewritten on every deploy.** `deploy-qualifi-backend.sh` truncates
-`/opt/qualifi/.env` and writes exactly `QUALIFI_DATABASE_URL` and `PORT` — it preserves nothing.
-That file is the unit's only `EnvironmentFile`, so an `ACTIVITY_SECRET` added there by hand
-**disappears the next time that script is run**, silently, and QUALIFI alone stops reporting while
-the other thirteen carry on. Either add the secret to the script's heredoc or accept that re-running
-it is also a step that re-adds the secret.
+**QUALIFI's `.env` is rebuilt on every deploy — fixed 2026-08-05 so the secret survives it.**
+`deploy-qualifi-backend.sh` used to truncate `/opt/qualifi/.env` and write exactly
+`QUALIFI_DATABASE_URL` and `PORT`, preserving nothing. Since that file is the unit's only
+`EnvironmentFile`, an `ACTIVITY_SECRET` added by hand would have vanished on the next run —
+silently, with QUALIFI alone going quiet while the other thirteen carried on.
+
+The script now owns those two keys and **carries over every other key already in the file**, so
+future operator-set variables survive too without editing it again. Set or rotate the secret by
+passing it to `sudo` — as an argument, not a prefix, since `sudo` drops the caller's environment:
+
+```bash
+ssh -t xfree143@pf9-2.taile2beaa.ts.net \
+  'sudo ACTIVITY_SECRET=… bash /tmp/deploy-qualifi-backend.sh'   # ✅
+# ACTIVITY_SECRET=… sudo bash …                                   # ❌ silently lost
+```
+
+Its verification step now also prints whether `ACTIVITY_SECRET` is set (presence, never the value),
+because a missing one produces no error anywhere.
+
+⚠ **Use an alphanumeric secret.** systemd applies its own quoting to `EnvironmentFile` values, so a
+secret containing spaces, quotes or backslashes may not reach the app byte-for-byte — and the
+resulting mismatch is a 403 the client never sees. The script warns if the value is outside
+`[A-Za-z0-9_-]`. `tr -dc 'A-Za-z0-9' </dev/urandom | head -c 48` is the safe generator; note the
+script already generates the DB password that way for the same reason. **This applies to the store
+side too** — the same secret goes in `/opt/pf9-store/pf9-store-api.env`.
+
+⚠ `deploy-qualifi-backend.sh` and the other sixteen scripts at the fleet root are **not in any git
+repo**, so this fix has no version history. That is a pre-existing fleet-wide convention, not
+specific to QUALIFI, and it was left alone rather than moving one script out of step with the rest.
 
 ---
 
