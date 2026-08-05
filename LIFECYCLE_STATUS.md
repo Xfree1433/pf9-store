@@ -2008,8 +2008,8 @@ Read that as two separate facts, because the failure mode here is treating the f
 | Store endpoint `POST /store-api/app-activity` | ✅ written, tested, committed |
 | Running in production | ⬜ needs the gunicorn restart (Mark's, `sudo`) |
 | Enabled | ⬜ **403s everything until `ACTIVITY_SECRET` is set** — by design |
-| Any app calling it | ⬜ **none.** 0 of 14 |
-| Data available to a flow | ⬜ none, and none until all three above are done |
+| Any app calling it | 🟡 **1 of 14 in code** — PERMITR, `9fcc7a8`, 2026-08-05. Pushed, **not deployed** |
+| Data available to a flow | ⬜ none, and none until all four above are done |
 
 **No flow should filter on `last_action_at` yet.** Klaviyo flows do not backfill: a filter built
 today against a property that starts arriving next month evaluates against nothing in the meantime,
@@ -2239,6 +2239,78 @@ export async function report(email: string, kind: 'login' | 'action', action = '
 
 Do **one app first** and confirm a row appears before touching the other thirteen — the whole point
 of this endpoint is to stop guessing whether data is arriving.
+
+### First integration — PERMITR, `9fcc7a8`, 2026-08-05
+
+**Copy `PERMITR/app/store_activity.py` for the other thirteen** rather than the snippet above; it is
+the same shape with the sharp edges found. Change one line, `PRODUCT`.
+
+Why PERMITR was chosen, since the choice is repeatable: of the six Flask candidates, **TASKFLOW,
+COMPLI and EXTRACTR had uncommitted local modifications** — this file and `MEMORY.md` both still
+claimed "prod = git = local" for TASKFLOW and COMPLI, so that claim is stale and wiring them would
+have entangled this change with someone else's in-flight work. Of the three clean repos, LANDLORDR
+lacks `requests` in `requirements.txt`; PERMITR and SUPPORTR both have it. PERMITR is the
+highest-priced of the group at $299/mo.
+
+The integration itself was small because the decision had already been made: every Flask app already
+calls `ph_capture(email, "app_login", {})` in `app/routes/auth.py` and a `core_action_performed`
+capture at its key action, so **both call sites already exist in all of them** — the wiring is one
+import and one line beside each existing capture. No app needs a new judgement about what counts as
+activation.
+
+Three things worth carrying to the next twelve:
+
+1. **Wrap the whole client body, not just the network call.** Everything up to `thread.start()` runs
+   *synchronously* inside the login view. The first draft called `email.strip().lower()` outside the
+   `try`, so a non-`str` email would have raised — turning marketing telemetry into a 500 on the
+   sign-in page, which is precisely the failure the endpoint's own never-500 rule exists to prevent.
+   Fuzzed with `None`, `int`, `bytes`, `list`, `object`.
+2. **Exclude the demo account in the client, not at the call site.** The storefront's one-click demo
+   logs everyone in as `demo@plainspokenfoundrynine.com`; that is storefront traffic, not usage.
+   `auth.demo` already omits `ph_capture` for the same reason. The consent gate would reject it
+   anyway, but only after a pointless round trip on every demo click. Guarding inside `report()` also
+   means a future call site cannot forget.
+3. **Verify over a real socket, not `test_client`.** `test_client` bypasses the URL, the header name,
+   JSON serialisation and the thread — every part of an app-side client that can actually be wrong.
+   The harness runs a real werkzeug server and lets `requests.post` reach it, importing the app's
+   module from its own repo. It is committed and **parameterised for the remaining twelve**:
+
+   ```bash
+   ./venv/bin/python tests/test_app_client_e2e.py                      # PERMITR (default)
+   ./venv/bin/python tests/test_app_client_e2e.py ~/…/SUPPORTR SUPPORTR
+   ```
+
+Verified end to end: a login writes one row, a permit adds to that same row rather than a second one,
+`activated_apps` carries `PERMITR`, the demo address and a non-customer write nothing anywhere, and
+an unreachable store does not raise. CI's gates pass — `flake8 --select=E9,F63,F7,F82` clean, and
+`create_app()` boots 41 routes with the client imported.
+
+**It is safe that this is deployed before `ACTIVITY_SECRET` exists** — with the secret unset
+`report()` returns immediately and sends nothing, which is the order these two steps will actually
+happen in.
+
+**How to confirm it is working once both are done** — the client is fire-and-forget and ignores the
+response, so a wrong secret fails *silently* (403, invisible to the app). Do not infer success from
+the app behaving normally. Log into PERMITR, then on the store box:
+
+```bash
+# The DB path is NOT hardcodable: it defaults to /opt/pf9-store/store_leads.db but
+# pf9-store-api.env sets STORE_DB_PATH, so read it from the env the app actually uses.
+# Uses python rather than the sqlite3 CLI, which is not installed on every PF9 box.
+sudo bash -c 'set -a; . /opt/pf9-store/pf9-store-api.env; set +a;
+  python3 -c "
+import os, sqlite3
+p = os.environ.get(\"STORE_DB_PATH\", \"/opt/pf9-store/store_leads.db\")
+print(\"db:\", p)
+for r in sqlite3.connect(p).execute(
+        \"SELECT email, product, login_count, action_count, last_login_at FROM app_activity\"):
+    print(r)
+"'
+```
+
+A row means the whole chain works. No row means the secret does not match, the store has not been
+restarted, or that address has no active subscription — the store log distinguishes the third
+(`app-activity from a non-customer`, logged without the address).
 
 ---
 
