@@ -2,7 +2,7 @@
 
 **Purpose:** durable session state so any future agent (me, another Claude session, or a human) can pick up without re-deriving context.
 
-**Last updated:** 2026-07-31
+**Last updated:** 2026-08-06
 **Active session:** https://claude.ai/code/session_01PDCcag8KXiq7YURGhjqPrn
 
 ---
@@ -107,6 +107,12 @@
 ---
 
 ## Open items / waiting on user
+
+### Closed since last update (2026-08-06)
+- [x] **App-activity ingest is LIVE end to end — but it will report zero, and that is expected.** All 14 apps now POST logins/actions to `POST /store-api/app-activity` on the store API. `ACTIVITY_SECRET` is set on the store (`/opt/pf9-store/pf9-store-api.env`, 5 keys → 6) and on all 14 apps (systemd `EnvironmentFile` for the 9 Python apps, compose `${VAR}` for the 5 Docker apps); same secret everywhere, fingerprint `cf778e926eb8`. Store API restarted onto the route 2026-08-06 18:31:51 UTC (**`MainPID 1307811 → 147276`** — the restart, not a health check, is the proof). Probe returns `200 {"ok":true,"synced":false,"reason":"not a store customer"}` and the journal logs the real handler. **MARKUPR is deliberately NOT wired** — 14 of the 15 store apps report; MARKUPR's absence is intentional and correct, do not "fix" it.
+- [ ] **⚠️ MARKETING-CRITICAL: `app_activity` has 0 rows and cannot get one yet. Do NOT build Klaviyo flows off it.** `store_api.py` checks `_owned_apps(email)` *before* writing, so only an email with an **active subscription** ever produces a row. The `subscriptions` table shows 3 rows, but the two marked `active` are `@example.com` **seeded test artifacts that Stripe does not back** — the only subscription Stripe has ever recorded is the third row, and it is `cancelled`. So there is no live customer to generate activity. Klaviyo does not backfill, so a segment/flow built now evaluates against an empty set **while reporting itself as working** — the worst failure mode, because it looks healthy. Build the flows when the first genuine paying customer exists, not before. **Reconcile subscribers against Stripe, never against the `subscriptions.status` column.**
+- [x] **Klaviyo side effects documented (matters for send volume).** A *successful* customer ping is not read-only: it writes the SQLite row, calls `_klaviyo_sync()`, and fires an `App Activity` Klaviyo event. A **6-hour throttle** (`{"synced":false,"reason":"throttled"}`) caps this per email+product. Non-customer pings write nothing and touch Klaviyo not at all — which is what makes the probe above safe to re-run.
+- [x] **Store DB is NOT at the default path.** It's `/opt/bridgr/store_leads.db` via `STORE_DB_PATH`, not `/opt/pf9-store/store_leads.db`. Querying the default fails with `unable to open database file`, which misleads as a permissions problem. (Full fleet-side detail in the agent memory file `store_activity_wiring.md`.)
 
 ### Closed since last update (2026-07-26)
 - [x] **Google Ads SUSPENDED then REINSTATED.** Account 731-567-9505 suspended **2026-06-24** for "unacceptable business practices" (phishing / public-figure impersonation / other) — a false positive, almost certainly triggered by the competitor-keyword campaign strategy (bidding on "buildium alternative" etc. with comparison landing pages) compounded by the earlier ghost campaign. Filed an appeal (package saved as `APPEAL_GOOGLE_ADS_2026-06-24.md`) after completing SSN identity verification. **Appeal SUCCEEDED — account reactivated 2026-07-05** ("your appeal was successful"). Dashboard banner lagged the email by ~a day (cosmetic cache). **CRITICAL for relaunch:** do NOT re-enable the old competitor-comparison campaign as-is — it's what triggered the suspension. Use the cautious relaunch in `APPEAL_GOOGLE_ADS_2026-06-24.md` §5 (exact-match only, one ad group, competitor names negative-listed initially, $5/day ramp). A second suspension is far harder to appeal.
