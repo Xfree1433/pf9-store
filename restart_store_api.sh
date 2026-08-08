@@ -25,8 +25,8 @@
 # new MainPID's start time is later than store_api.py's mtime.
 #
 # Guards below catch a bad file or a missing secret before the service goes
-# down rather than after. EXPECT_MD5 must be bumped by hand whenever
-# store_api.py changes, or every restart aborts on the checksum.
+# down rather than after. They need no hand-maintenance: the code check asks
+# git what should be on disk rather than comparing against a pinned constant.
 #
 # Needs a real sudo password — pf9-store-api is missing from the NOPASSWD list
 # that ~12 sibling PF9 services are on, so this cannot be run as a one-shot
@@ -50,14 +50,9 @@ STORE_API=$STORE_DIR/store_api.py
 VENV=$STORE_DIR/venv
 UNIT=pf9-store-api.service
 PORT=5011
-EXPECT_MD5=9f44fa583db9d07234868236caff8e12   # /store-api/app-activity ingest (inert until ACTIVITY_SECRET is set)
-# previous: 0e56b6cdb52df0454d51c9193672700b   (per-app onboarding copy + real app_login_url / add_team_url)
-# before:   1955a2f49ad01743feefdcad04b71d01   (Lead Captured carries per-branch flow properties)
-# before:   e11c3c6d5bea0a1a41e9f90373587a6d   (/demo-request emits Lead Captured)
-# before:   a0892470ad7473c7e5511f8f8010468e   (Stripe cancel reason -> Cancelled Subscription event)
-# before:   6628991de9ce300ba05dfa038c6b0b17   (day-27 pre-charge notice sends from the webhook)
-# before:   4e2d690e869dc97e0d03cff6202a220e   (checkout consent tick -> _klaviyo_subscribe)
-# before:   01e45e4187644ae68e9ce68d176310cd   (trial start writes subscription_status=trialing)
+# There was an EXPECT_MD5 constant here, plus seven superseded sums kept as an
+# audit trail. Both are gone; `git log --oneline -- store_api.py` is that trail,
+# and it maintains itself. See the preflight below for why the constant had to go.
 BRIDGR_ENV=/opt/bridgr/.env
 OVERRIDE_ENV=$STORE_DIR/pf9-store-api.env
 
@@ -65,10 +60,54 @@ say(){ echo -e "\n=== $* ==="; }
 [ "$(id -u)" -eq 0 ] || { echo "must run as root (use sudo)"; exit 1; }
 
 say "Preflight: on-disk code matches the committed build"
-GOT_MD5=$(md5sum "$STORE_API" | awk '{print $1}')
-echo "  md5=$GOT_MD5 (expected $EXPECT_MD5)"
-[ "$GOT_MD5" = "$EXPECT_MD5" ] || {
-  echo "  !! mismatch — the runner may not have synced yet. Aborting."; exit 1; }
+#
+# This used to be `[ "$(md5sum store_api.py)" = "$EXPECT_MD5" ]` against a
+# hand-maintained constant. The flaw is structural, not a slip: the guard was
+# pinned to a literal that had to be bumped by hand on EVERY change to the file
+# it guards, so the default state after any edit was "aborts". By 2026-08-08 the
+# pin still held the 08-06 sum and this script would have refused to run on a
+# perfectly good tree — a guard that spends most of its life as a blocker gets
+# worked around, and a worked-around guard protects nothing.
+#
+# So ask git, which already knows. The blob hash of the working file must equal
+# the blob hash recorded for it in the ref we are deploying. Self-maintaining,
+# and strictly stronger than the old check: a matching md5 only ever meant "this
+# is the file someone once approved", never "this is what is committed".
+#
+# Scoped deliberately to store_api.py rather than requiring a clean whole repo.
+# Static files under $STORE_DIR go live on their own (see the header), so an
+# unrelated .html lagging a minute behind must not block an API restart.
+
+git -C "$STORE_DIR" fetch --quiet origin main 2>/dev/null \
+  || echo "  (could not fetch; comparing against the ref already on disk)"
+
+if git -C "$STORE_DIR" rev-parse --verify --quiet origin/main >/dev/null; then
+  COMPARE_REF=origin/main
+else
+  COMPARE_REF=HEAD
+  echo "  !! no origin/main ref here — falling back to local HEAD, which cannot"
+  echo "     tell you whether the every-minute pull has caught up yet."
+fi
+
+DISK_BLOB=$(git -C "$STORE_DIR" hash-object --path store_api.py -- "$STORE_API")
+REPO_BLOB=$(git -C "$STORE_DIR" rev-parse --verify "$COMPARE_REF:store_api.py")
+printf '  %-12s %s\n' "on-disk"      "$DISK_BLOB"
+printf '  %-12s %s\n' "$COMPARE_REF" "$REPO_BLOB"
+
+[ "$DISK_BLOB" = "$REPO_BLOB" ] || {
+  echo "  !! store_api.py is not what $COMPARE_REF says it should be."
+  echo
+  echo "     Two causes, and they want opposite responses:"
+  echo "       a) the every-minute pull has not caught up — wait 60s, re-run."
+  echo "       b) the file was edited directly on the server — that edit is about"
+  echo "          to be destroyed by the next pull, so save it before doing anything."
+  echo
+  echo "     Tell them apart:"
+  echo "       git -C $STORE_DIR status --porcelain store_api.py"
+  echo "       git -C $STORE_DIR diff $COMPARE_REF -- store_api.py"
+  echo
+  echo "     Aborting."; exit 1; }
+echo "  match"
 
 say "Preflight: code compiles under the service venv"
 "$VENV/bin/python" -m py_compile "$STORE_API" && echo "  OK"
@@ -243,10 +282,13 @@ echo "Rollback if needed — the day-27 notice has TWO halves and this script ow
 echo
 echo "  1. Code (here):"
 echo "       cd $STORE_DIR && git checkout c203ec7 -- store_api.py && systemctl restart $UNIT"
-echo "     c203ec7 = the build before the day-27 send moved back in-house. Rolling back"
-echo "     also invalidates EXPECT_MD5 above, so this script refuses to run again until you"
-echo "     restore the old sum 4e2d690e869dc97e0d03cff6202a220e — and its verify block"
-echo "     asserts _send_trial_ending_email is ABSENT, so the two must be restored together."
+echo "     c203ec7 = the build before the day-27 send moved back in-house. Its verify block"
+echo "     asserts _send_trial_ending_email is ABSENT, so code and checks move together."
+echo
+echo "     NOTE: a bare 'git checkout <rev> -- store_api.py' leaves the file differing from"
+echo "     origin/main, so the preflight will refuse the NEXT run — correctly, because the"
+echo "     every-minute pull is about to overwrite that rollback regardless. A rollback you"
+echo "     mean to keep has to be committed and pushed, not just checked out here."
 echo
 echo "     The DB column trial_notice_sent_for is left in place by a rollback and does no"
 echo "     harm: nothing in c203ec7 reads it. Do NOT drop it — rolling forward again would"
