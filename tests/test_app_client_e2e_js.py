@@ -3,7 +3,7 @@
     ./venv/bin/python tests/test_app_client_e2e_js.py APP_DIR PRODUCT
 
     ./venv/bin/python tests/test_app_client_e2e_js.py \
-        ~/Documents/PlainSpokenFoundryNine/FLOWTRACK FLOWTRACK
+        ~/Documents/PlainSpokenFoundryNine/apps/FLOWTRACK FLOWTRACK
 
 The twin of tests/test_app_client_e2e.py, which does the same job for the Flask
 apps. Same store, same socket, same assertions; the only difference is that the
@@ -30,7 +30,7 @@ import threading
 
 STORE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 APP_DIR = os.path.expanduser(sys.argv[1] if len(sys.argv) > 1 else
-                             '~/Documents/PlainSpokenFoundryNine/FLOWTRACK')
+                             '~/Documents/PlainSpokenFoundryNine/apps/FLOWTRACK')
 PRODUCT = sys.argv[2] if len(sys.argv) > 2 else 'FLOWTRACK'
 
 # Next.js apps keep it at src/lib/store-activity.ts; INSPECTR's server is plain

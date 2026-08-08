@@ -5,7 +5,7 @@
 Defaults to PERMITR, the first app wired (2026-08-05). Point it at the next
 app's repo as each one is integrated:
 
-    ./venv/bin/python tests/test_app_client_e2e.py ~/Documents/PlainSpokenFoundryNine/SUPPORTR SUPPORTR
+    ./venv/bin/python tests/test_app_client_e2e.py ~/Documents/PlainSpokenFoundryNine/apps/SUPPORTR SUPPORTR
 
 Exits non-zero on failure. Nothing leaves the process: the Klaviyo helpers are
 replaced with recorders and the store runs on localhost.
@@ -30,7 +30,7 @@ import importlib.util
 
 STORE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 APP_DIR = os.path.expanduser(sys.argv[1] if len(sys.argv) > 1 else
-                             '~/Documents/PlainSpokenFoundryNine/PERMITR')
+                             '~/Documents/PlainSpokenFoundryNine/apps/PERMITR')
 PRODUCT = sys.argv[2] if len(sys.argv) > 2 else 'PERMITR'
 
 # The client sits beside the app package, and the apps do not agree on what that
