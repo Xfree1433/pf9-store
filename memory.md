@@ -192,7 +192,22 @@ Subscribe promoted to the single CTA. JSON-LD re-validated: 14 → 13 VideoObjec
 - [ ] **HARO daily scan** — `PLAYBOOK_HARO.md`. Sign up at Help a B2B Writer, Terkel.io, Qwoted. 10 min/morning to scan; 4-hour response goal on relevant queries.
 - [ ] **Quora + Stack Exchange answers** — `PLAYBOOK_QUORA_STACKEXCHANGE.md`. 3–5 substantive answers per week, 15 min each. Build profile credibility before mentioning PF9.
 
-#### Google Ads — WITHDRAWN / SHELVED (decided 2026-07-31)
+#### Google Ads — 🔴 ACCOUNT CANCELLED 2026-08-02 (terminal — was "withdrawn/shelved" 07-31)
+
+> **Updated 2026-08-08.** This section ended at "withdrawn/shelved," which read as reversible. It is
+> not: **Mark cancelled account 731-567-9505 outright on 2026-08-02.** Sequence, because the two
+> suspensions are easy to conflate and make the record below look self-contradictory:
+> **(1)** suspended 6/24 "unacceptable business practices" → appealed → **genuinely reinstated 7/5**;
+> **(2)** suspended *again* under *"Public Figure Impersonation"* → a 7/26 investigation found the
+> ad's 10 assets and the landing page completely clean (mis-categorised automated suspension) →
+> appeal filed 7/26 → Google's ~5-business-day window lapsed ~7/31 with no reply → **cancelled 8/02.**
+> So "reinstated 7/5" below is historically true and NOT in conflict with the cancellation; it just
+> is not the end of the story.
+>
+> **Consequence: `PLAYBOOK_GOOGLE_ADS.md` and `PLAYBOOK_GOOGLE_ADS_PROPERTY_TEST.md` are dead
+> documents, not blocked ones.** Do not propose paid-search tactics, budget, or reinstatement
+> follow-ups unless Mark raises it first. Full detail: agent memory `google_ads_appeal.md`.
+
 - [x] **Google Ads is abandoned as a channel — do NOT restart it.** History: property-first test decided 6/3 → account auto-created a ghost campaign (~$47 wasted) → suspended 6/24 for "unacceptable business practices" (competitor-keyword false positive) → appeal succeeded, reinstatement email 7/5 → **but dashboard still showed suspended weeks later, so on 2026-07-31 the founder decided to withdraw entirely.** Rationale: highest-risk + lowest-priority-per-visitor channel, consumed disproportionate effort for zero traffic, and Reddit (lower-risk) + HN (free) are better bets. **Withdrawal steps for the founder (agent can't operate Google Ads): remove the billing/payment method (critical — prevents any spend if the account ever un-suspends, given the ghost-campaign auto-spend history); set any campaign to Removed/$0. Leave conversion tracking in place (harmless, ready if ever revived).** Docs `PLAYBOOK_GOOGLE_ADS.md`, `PLAYBOOK_GOOGLE_ADS_PROPERTY_TEST.md`, `APPEAL_GOOGLE_ADS_2026-06-24.md`, and `tools/google-ads/` are kept for reference/revival but are NOT an active plan. Paid traffic now = Reddit (see `PLAYBOOK_REDDIT_ADS.md`).
 
 #### When traffic + leads exist
