@@ -126,7 +126,7 @@ Flat-rate works when (a) the per-seat math hurts the customer materially, (b) th
 
 It doesn't work when the product is deeply usage-correlated with each individual user's success — Slack, Notion, etc. — because the value really does scale per-user there.
 
-At PF9, we charge $249/month flat for our 5-app manufacturing suite (unlimited users) and $119/month for the property suite (unlimited units). Crossover with per-seat alternatives is around 5-6 users / 30 units; above that, flat saves real money for the customer.
+At PF9, our manufacturing apps are $49–$99/month flat each — $335 for all five — with unlimited users, and the property suite is $119/month for unlimited units. Crossover with per-seat alternatives is around 7 users / 30 units; above that, flat saves real money for the customer.
 
 Happy to provide screenshots of our pricing comparison pages if useful.
 
@@ -146,7 +146,7 @@ Small manufacturers get squeezed between two software extremes. Enterprise MES p
 
 What small manufacturers actually need: shift handoffs (what happened on second shift?), inventory tracking out of spreadsheets, quality management with searchable NCRs/CAPAs, operational dashboards, and field inspections. None of that requires ERP-scale infrastructure. Most of it lives on clipboards and whiteboards today.
 
-The right software for this segment is flat-rate, browser-based (no IT setup), and operationally focused — not a stripped-down enterprise tool. We charge $249/month flat for 5 apps covering those exact pains, unlimited users. Some shops pair us with a focused MRP (MRPeasy, Katana) and QuickBooks for accounting; total software spend under $400/month for the operation.
+The right software for this segment is flat-rate, browser-based (no IT setup), and operationally focused — not a stripped-down enterprise tool. We charge $335/month flat for 5 apps covering those exact pains, unlimited users. Some shops pair us with a focused MRP (MRPeasy, Katana) and QuickBooks for accounting; total software spend under $400/month for the operation.
 
 Happy to share specific examples if useful.
 
@@ -207,7 +207,7 @@ Hi {first name},
 
 I'm Kennedy Pierce — I bootstrapped Plainspoken Foundry Nine because I got tired of watching small manufacturers and landlords get squeezed by per-seat and per-unit software bills. Some context that might help your piece:
 
-PF9 ships two SaaS suites — Manufacturing ($249/mo flat, 5 apps, unlimited users) and Property ($119/mo flat, unlimited units). Built deliberately for the segment between Excel and enterprise: 20-250 employee manufacturers and 5-50 unit landlords. No VC funding, no sales team, no demos.
+PF9 ships two SaaS suites — Manufacturing ($335/mo flat, 5 apps, unlimited users) and Property ($119/mo flat, unlimited units). Built deliberately for the segment between Excel and enterprise: 20-250 employee manufacturers and 5-50 unit landlords. No VC funding, no sales team, no demos.
 
 The bootstrapped angle that's worth surfacing: the entire go-to-market is structured so a single founder can run it. Product education happens via 13 YouTube videos (about three minutes each, watch before you subscribe). Comparison pages and free interactive cost calculators handle pre-purchase research. HubSpot CRM + a Lifecycle agent (when it ships) handles email nurture. Stripe handles billing. The founder's role is product + customer success, not sales.
 

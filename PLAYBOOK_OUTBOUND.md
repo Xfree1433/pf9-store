@@ -65,7 +65,7 @@ Quick context, since you didn't ask:
 - **SHIFTLOG** — $49/mo flat, digital shift handoffs, crew notes, incident log
 - **FLOWTRACK** — $99/mo flat, inventory + WIP + barcodes
 - **QUALIFI** — $79/mo flat, inspections, NCRs, CAPAs
-- Bundle the five apps for $249/mo. No per-seat charges, ever.
+- All five together run $335/mo. Take one or take all five. No per-seat charges, ever.
 
 3-minute video on SHIFTLOG: {{youtube_shiftlog_url}}
 
@@ -102,7 +102,7 @@ That's SHIFTLOG + REPORTR together, $108/mo total. Both videos and the subscribe
 
 → SHIFTLOG ($49/mo): {{youtube_shiftlog_url}}
 → REPORTR ($59/mo): {{youtube_reportr_url}}
-→ Or the full 5-app bundle for $249/mo: https://store.plainspokenfoundrynine.com/#bundle
+→ Or all five manufacturing apps for $335/mo: https://store.plainspokenfoundrynine.com/#products
 
 {{sender_first}}
 

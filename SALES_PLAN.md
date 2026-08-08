@@ -54,7 +54,7 @@ Cowork should treat PF9 as **four distinct go-to-market motions**, not one. Each
 
 | Vertical | Apps | Price band | Motion |
 |---|---|---|---|
-| **Manufacturing suite** | FLOWTRACK $99, QUALIFI $79, SHIFTLOG $49, REPORTR $59, INSPECTR $49 — bundle $249/mo | $49–$249/mo | Mid-touch: content + outbound to plant managers |
+| **Manufacturing suite** | FLOWTRACK $99, QUALIFI $79, SHIFTLOG $49, REPORTR $59, INSPECTR $49 — $335/mo for all five, **no bundle discount** | $49–$335/mo | Mid-touch: content + outbound to plant managers |
 | **AI Ops Intelligence** | OPSIQ ($79 / $199 / $399) | $79–$399/mo | Higher-touch: demo-led, operations VP buyer |
 | **Property management** | LANDLORDR $89, TENANTLINK $49, TASKFLOW $69, PERMITR $299 — Property Suite (LANDLORDR + TENANTLINK) $119/mo | $49–$299/mo | Low-touch: self-serve, SEO. *(Paid search is no longer available — see §5.)* |
 | **Compliance** | COMPLI (Free / Pro / Enterprise) | Freemium | PLG: free tier → Pro upgrade |
@@ -124,7 +124,7 @@ Cowork should explicitly **not** target enterprise (1,000+ employee) manufacture
   `PLAYBOOK_REDDIT_ADS.md`, which is unstarted and has no pixel installed. Restarting paid
   acquisition is a founder decision, not a scheduled Phase 2 task.
 - **Outbound:** 3-touch email + 1 LinkedIn sequence per list; 50 contacts/day/SDR
-- **Content:** 2 blog posts/week — teardown style ("What a $2,000/mo MES actually does vs. our $249 bundle")
+- **Content:** 2 blog posts/week — teardown style ("What a $2,000/mo MES actually does vs. our $335 five-app stack")
 - **Product Hunt launch** for OPSIQ (manufacturing suite launch copy is already drafted in MARKETING.md)
 - **Partnerships:** 5 outreach conversations to industry newsletters (Modern Machine Shop, Manufacturing.net) for sponsored primers
 
@@ -144,7 +144,7 @@ Cowork should explicitly **not** target enterprise (1,000+ employee) manufacture
 3. **Activation** — onboarding email sequence (`PLAYBOOK_LIFECYCLE.md` L3) drives first key action
 4. **Expansion** — month-3 sequence (L5) prompts bundle upgrade
 
-**No demo-led tier.** Every product, regardless of price, sells through video + storefront + Stripe. Bundle deals ($249+/mo) follow the same path; the bundle CTA is just a different button.
+**No demo-led tier.** Every product, regardless of price, sells through video + storefront + Stripe. Multi-app customers ($335/mo for all five manufacturing apps) follow the same path — they just subscribe more than once.
 
 **Human fallback (low priority):** support@plainspokenfoundrynine.com for buyers with questions the video and FAQ don't answer. Not a sales channel — answer once, link to the video, close the loop. SLA: 1 business day.
 
@@ -207,7 +207,7 @@ Cowork hands back at end of 90 days:
 ## 10. Risks & What We Won't Do
 
 - **Don't chase enterprise logos** — it breaks the pricing promise
-- **Don't discount below list** — the $249 bundle is already the discount
+- **Don't discount below list** — list is already priced against per-seat competitors, and there is no Manufacturing bundle discount to fall back on (dropped 2026-08-08). The Property Suite's $119 vs $138 is the only standing discount.
 - **Don't promise integrations we don't have** — keep claims to what's on the storefront today
 - **If a channel isn't producing by week 6, kill it** — no sunk-cost extensions
 

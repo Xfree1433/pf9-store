@@ -51,7 +51,7 @@ A high-performing Quora / Stack Exchange answer follows this structure:
     or trade-offs. This is the meat. No marketing language.}
 
 3. {If your product is genuinely relevant, mention it once with disclosure.}
-   "Disclosure: I'm the founder of PF9, which works in this space. We're $249/month flat
+   "Disclosure: I'm the founder of PF9, which works in this space. We're $335/month flat
     for the manufacturing suite — but the broader point about per-seat math applies
     regardless of which vendor you pick."
 
@@ -80,7 +80,7 @@ Adapt these by inserting the actual question text. Don't paste verbatim across m
 ```
 For 20-250 employee shops, the honest answer is "it depends on what hurts most."
 
-If your daily pain is shop-floor operations — shift handoffs, inventory accuracy, quality tracking, inspections — you want a focused operational suite. Tools: SHIFTLOG for handoffs, FLOWTRACK for inventory, QUALIFI for NCR/CAPA workflows. These typically run $49-$99/month each, or $249/month bundled (5 apps, unlimited users) for what I built at PF9.
+If your daily pain is shop-floor operations — shift handoffs, inventory accuracy, quality tracking, inspections — you want a focused operational suite. Tools: SHIFTLOG for handoffs, FLOWTRACK for inventory, QUALIFI for NCR/CAPA workflows. These typically run $49-$99/month each, or $335/month bundled (5 apps, unlimited users) for what I built at PF9.
 
 If your daily pain is production planning — multi-level BOMs, MRP runs, scheduling work orders against capacity — you want a focused MRP tool. MRPeasy at $49/user/month works for small teams (under ~5 users). Katana ($179-$799/month tiers) is strong if you sell on Shopify and need real-time inventory sync. Fishbowl Inventory (from $329/month + per-user) has the most mature QuickBooks integration.
 
@@ -130,7 +130,7 @@ When it hurts:
 - When the buyer's growth doesn't correlate with their per-user value extraction
 - When the buyer wants predictable software costs that don't scale with hiring
 
-At typical per-user rates of $40-$60/user/month, flat-rate alternatives become economic around 5-6 users. At 25+ users, the math is dramatic — $49/user × 25 = $1,225/month vs $249/month flat for equivalent flat-rate tools (PF9, etc.).
+At typical per-user rates of $40-$60/user/month, flat-rate alternatives become economic around 7 users. At 25+ users, the math is dramatic — $49/user × 25 = $1,225/month vs $335/month flat for equivalent flat-rate tools (PF9, etc.).
 
 The honest framing isn't "per-seat is bad" — it works for some categories. It's "per-seat is bad when your team grows faster than your per-user revenue does."
 
@@ -156,7 +156,7 @@ Adding ERP later is easier than re-engineering an undersized MES. Start with the
 
 Counter-position: if you already have functional shop-floor data and your real pain is multi-site planning, financial close, or compliance reporting — that's ERP. Don't buy MES if planning is the issue.
 
-Disclosure: I built PF9, which covers MES-adjacent operational territory (shifts, inventory, quality, inspections) for $249/month flat. The MES-vs-ERP framework applies regardless of vendor.
+Disclosure: I built PF9, which covers MES-adjacent operational territory (shifts, inventory, quality, inspections) for $335/month flat. The MES-vs-ERP framework applies regardless of vendor.
 
 — Kennedy Pierce, PF9
 ```
@@ -166,7 +166,7 @@ Disclosure: I built PF9, which covers MES-adjacent operational territory (shifts
 ```
 I built Plainspoken Foundry Nine — a flat-rate SaaS in two verticals (manufacturing and property management) because both industries are dominated by per-seat or per-unit pricing that scales with the customer's growth.
 
-Manufacturing Suite: $249/month flat for 5 apps (shift handoffs, inventory, quality, dashboards, inspections). Unlimited users. Built specifically for 20-250 employee shops.
+Manufacturing Suite: $335/month flat for 5 apps (shift handoffs, inventory, quality, dashboards, inspections). Unlimited users. Built specifically for 20-250 employee shops.
 
 Property Suite: $119/month flat (landlord software + tenant portal). Unlimited units, unlimited tenants. Built for landlords with 5-50 units.
 

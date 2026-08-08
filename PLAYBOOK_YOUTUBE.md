@@ -17,7 +17,7 @@ YouTube Studio → Customization → Basic info → **Description**:
 ```
 Flat-rate software for manufacturers and landlords. No per-user fees, no per-unit fees, no $50k ERP quotes.
 
-PF9 Manufacturing Suite — 5 apps for shop floor operations (shifts, inventory, quality, dashboards, inspections). $249/month flat for unlimited users.
+PF9 Manufacturing Suite — 5 apps for shop floor operations (shifts, inventory, quality, dashboards, inspections). $335/month flat for unlimited users.
 
 PF9 Property Suite — Property management + tenant portal. $119/month flat for unlimited units.
 
@@ -77,7 +77,7 @@ Organize the 13 live videos into thematic playlists so viewers binge-watch withi
 
 **Description:**
 ```
-Five flat-rate manufacturing apps for shops with 20–250 employees. SHIFTLOG ($49), QUALIFI ($79), FLOWTRACK ($99), REPORTR ($59), INSPECTR ($49). Bundle all 5 for $249/month flat with unlimited users. See the apps in action.
+Five flat-rate manufacturing apps for shops with 20–250 employees. SHIFTLOG ($49), QUALIFI ($79), FLOWTRACK ($99), REPORTR ($59), INSPECTR ($49). Take one app or all five ($335/month total) — every price is flat monthly with unlimited users. See the apps in action.
 
 → Subscribe: https://store.plainspokenfoundrynine.com/for-manufacturers.html
 → Per-user calculator: https://store.plainspokenfoundrynine.com/tools/per-user-calculator.html

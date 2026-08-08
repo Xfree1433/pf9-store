@@ -23,12 +23,23 @@ another document.
 noticed left eleven behind, and the next person read one of the eleven. If you change any of the
 three above, grep the whole repo for it — including the HTML — in the same sitting.
 
-> 🔴 **Separately, do not publish the $249 Manufacturing Suite price until it is purchasable.**
-> There is no `MANUFACTURING_BUNDLE` in `PRICE_MAP`, so checkout returns `400 Unknown product`.
-> The only route a buyer can complete is the five apps individually at **$335/mo** — meaning the
-> advertised price is $86/mo *cheaper* than anything payable. The Product Hunt and directory copy
-> below still quotes $249. That is a pricing decision for the founder (create the Stripe price, or
-> drop the claim) — see `HN_LAUNCH_DAY.md`. It is deliberately **not** silently rewritten here.
+> ✅ **RESOLVED 2026-08-08 — the $249 Manufacturing bundle has been dropped.**
+> It was never purchasable: there is no `MANUFACTURING_BUNDLE` in `PRICE_MAP`, so checkout returned
+> `400 Unknown product`, and the site was advertising a price $86/mo *cheaper* than anything a buyer
+> could actually pay. Founder decision was to drop the bundle rather than create the Stripe price.
+>
+> **The correct numbers now, everywhere:**
+> - **Entry price: $49/mo per app**, unlimited users. This is the headline number — it is ~80% lower
+>   than the old bundle figure and it is real.
+> - **All five manufacturing apps: $335/mo**, subscribed individually. There is **no discount** —
+>   $335 is exactly the sum of $99 + $79 + $49 + $59 + $49.
+> - **The only real bundle is the Property Suite** (`PROPERTY_BUNDLE`, $119 vs $138 standalone,
+>   saves $19). Never write "bundles" plural.
+>
+> ⚠️ Comparison-page crossover points moved with the price: PF9 now beats MRPeasy above **~7 users**
+> (was 5–6). Fishbowl stays at **~6 users** — its $329 base already covers 5 seats, so the extra $86
+> only shifted the break by a fraction of a seat. Katana is **~3 users**. If a discounted bundle is ever created, those
+> thresholds move back down and every comparison table needs recomputing.
 
 ---
 
@@ -36,7 +47,7 @@ three above, grep the whole repo for it — including the HTML — in the same s
 
 **Product Name:** Plainspoken Foundry Nine — Manufacturing Suite
 
-**Tagline:** Flat-rate manufacturing software. 5 apps. Unlimited users. $249/mo.
+**Tagline:** Flat-rate manufacturing software. 5 apps from $49/mo. Unlimited users.
 
 **Description:**
 
@@ -56,7 +67,7 @@ The PF9 Manufacturing Suite is 5 modern web apps designed for small-to-mid manuf
 
 - **INSPECTR** ($49/mo) — Field inspections. Mobile-first checklists, photo capture, offline-capable. Reports done before the truck pulls back.
 
-**Bundle all 5 for $249/mo — flat, unlimited users.** That's $86/mo less than the individual prices and roughly $2,000/mo less than equivalent per-seat MES quotes.
+**Start at $49/mo for one app. All five run $335/mo — flat, unlimited users at every price.** That's roughly $2,000/mo less than equivalent per-seat MES quotes.
 
 **Why we're different:**
 
@@ -142,7 +153,7 @@ We built the opposite:
 → REPORTR — Operations dashboards, $59/mo
 → INSPECTR — Field inspections, $49/mo
 
-Bundle all 5 for $249/mo. Unlimited supervisors, inspectors, operators, office staff.
+Take one, or take all five for $335/mo. Unlimited supervisors, inspectors, operators, office staff at every price.
 
 3-minute video for each app on YouTube — watch before you subscribe, no signup, no sales call:
 https://www.youtube.com/@plainspokenfoundrynine
@@ -235,7 +246,7 @@ Here's what it costs to run a manufacturing floor on per-user software:
 → Fishbowl Inventory with 25 users: ~$1,329/mo
 → Enterprise MES at $500/user/mo × 25: $12,500/mo (plus 3–6 mo implementation)
 
-PF9 Manufacturing Suite — 5 apps, unlimited users, any team size: **$249/mo flat.**
+PF9 Manufacturing Suite — 5 apps, unlimited users, any team size: **$335/mo flat.**
 
 Same operational coverage for shifts, inventory, quality, dashboards, and inspections. Modern UI. Browser-only — no IT setup. 30-day free trial if it's not the fit.
 
@@ -313,7 +324,7 @@ So we built Plainspoken Foundry Nine — 5 standalone apps that cover the basics
 - **REPORTR** — Operations dashboards ($59/mo)
 - **INSPECTR** — Mobile field inspections ($49/mo)
 
-All flat-rate. No per-user fees. Bundle all 5 for $249/mo, unlimited users.
+All flat-rate. No per-user fees. Start with one from $49/mo, or run all five for $335/mo — unlimited users either way.
 
 There's a 3-minute video for each app on YouTube — watch first, decide later, no signup needed:
 https://www.youtube.com/@plainspokenfoundrynine

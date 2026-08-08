@@ -156,8 +156,8 @@
             <p class="text-xs text-gray-500 mb-6">Last verified against vendor pricing pages May 2026. Several vendors gate exact pricing behind quotes — numbers below are approximations of entry-tier cost.</p>
             <div class="space-y-6 text-sm text-gray-700">
                 <div>
-                    <h3 class="font-semibold mb-1">PF9 Manufacturing Suite — $249/mo flat</h3>
-                    <p>FLOWTRACK + QUALIFI + SHIFTLOG + REPORTR + INSPECTR bundle. No per-user fee, no per-site fee. Price does not change from 5 users to 250. Published on our <a href="/for-manufacturers.html" class="text-black underline">manufacturing page</a>.</p>
+                    <h3 class="font-semibold mb-1">PF9 Manufacturing Suite — $335/mo flat</h3>
+                    <p>FLOWTRACK ($99) + QUALIFI ($79) + SHIFTLOG ($49) + REPORTR ($59) + INSPECTR ($49), each subscribed individually. No per-user fee, no per-site fee. Price does not change from 5 users to 250. Need only one or two? Start from $49/mo. Published on our <a href="/for-manufacturers.html" class="text-black underline">manufacturing page</a>.</p>
                 </div>
                 <div>
                     <h3 class="font-semibold mb-1">MRPeasy Starter — from $49/user/mo</h3>
@@ -221,7 +221,7 @@
         const savingsEl = document.getElementById('savings');
 
         const providers = [
-            { name: 'PF9 Manufacturing Suite', tag: 'Flat rate — no per-user fee, any team size', cost: () => ({ value: 249, label: '$249' }), color: 'bg-amber-600', isPF9: true },
+            { name: 'PF9 Manufacturing Suite (all 5 apps)', tag: 'Flat rate — no per-user fee, any team size', cost: () => ({ value: 335, label: '$335' }), color: 'bg-amber-600', isPF9: true },
             { name: 'MRPeasy Starter', tag: 'Per-user pricing — scales linearly with team', cost: u => {
                 const est = u * 49;
                 return { value: est, label: '$' + Math.round(est).toLocaleString('en-US') };
@@ -308,7 +308,7 @@
                     <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                         <div>
                             <p class="text-sm font-semibold text-blue-900">At ${users} users, PF9 isn't the cheapest — yet.</p>
-                            <p class="text-xs text-blue-800 mt-1">Per-user vendors start cheap, then scale with your team. PF9 stays at $249/mo forever — unlimited supervisors, inspectors, operators, office staff. You're buying predictability and the headroom to grow without re-shopping.</p>
+                            <p class="text-xs text-blue-800 mt-1">Per-user vendors start cheap, then scale with your team. PF9 stays at $335/mo forever — unlimited supervisors, inspectors, operators, office staff. And you don't have to take all five: apps start at $49/mo each. You're buying predictability and the headroom to grow without re-shopping.</p>
                         </div>
                         <a href="/for-manufacturers.html" class="inline-flex items-center justify-center bg-black text-white font-semibold px-5 py-2.5 rounded-lg text-sm hover:bg-gray-800 transition-colors whitespace-nowrap">Why flat pricing →</a>
                     </div>`;
@@ -318,7 +318,7 @@
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div>
                             <p class="text-sm font-semibold text-gray-900">Your team size is bigger than most vendors publish pricing for.</p>
-                            <p class="text-xs text-gray-600 mt-1">PF9 stays at $249/mo regardless. Most competitors want a custom quote at this scale.</p>
+                            <p class="text-xs text-gray-600 mt-1">PF9 stays at $335/mo regardless. Most competitors want a custom quote at this scale.</p>
                         </div>
                         <a href="/for-manufacturers.html" class="inline-flex items-center justify-center bg-black text-white font-semibold px-5 py-2.5 rounded-lg text-sm hover:bg-gray-800 transition-colors whitespace-nowrap">See PF9 Manufacturing Suite →</a>
                     </div>`;

@@ -1,36 +1,25 @@
 # HN Launch Day — One-Screen Kit
 
-> # 🛑 DO NOT POST YET — ONE BLOCKER, AND IT IS THE HEADLINE
+> # ✅ BLOCKER CLEARED 2026-08-08 — the $249 bundle was dropped
 >
-> **The $249 Manufacturing Suite cannot be bought.** Found 2026-08-08. The title of this post leads
-> with `$249` and the first bullet sells it, but there is **no purchase path** for it:
+> This post used to lead with a **$249 Manufacturing Suite that could not be bought.** There was no
+> `MANUFACTURING_BUNDLE` in `store_api.py`'s `PRICE_MAP`, and checkout rejects anything not in that
+> map (`400 Unknown product`), so the headline offer had no checkout at all — and it advertised a
+> price **$86/mo cheaper than the only price a customer could actually pay.**
 >
-> - No `MANUFACTURING_BUNDLE` key in `store_api.py`'s `PRICE_MAP` — and checkout **rejects any
->   product not in that map** (`store_api.py:1747`, `:1832` → `400 Unknown product`).
-> - `BUNDLE_APPS` (`store_api.py:654`) defines exactly one bundle: `PROPERTY_BUNDLE`. There is no
->   manufacturing equivalent anywhere in the code, HTML, or JS — a repo-wide search returns nothing.
-> - The `$249` "Subscribe" button on `for-manufacturers.html:348` links to **`/#products`**, the app
->   grid. The grid has 14 Subscribe buttons and **none of them is a $249 bundle.**
-> - So a buyer who wants the advertised suite lands on the five apps priced individually:
->   `$49 + $99 + $79 + $59 + $49 =` **$335/mo**. The page itself admits this — it prints
->   "$335/mo standalone. **$249/mo bundled.** Save $86/mo" — but the $249 is not purchasable.
->   **The advertised price is $86/mo cheaper than the only price a customer can actually pay.**
-> - `for-manufacturers.html` also emits JSON-LD `"price": "249.00"`, so Google is being told an
->   offer exists that does not.
+> **Founder decision was to drop the bundle, not to create the Stripe price.** Every `$249` claim has
+> been stripped from the site, the JSON-LD, and the copy bank. The numbers below are the real ones:
 >
-> By contrast the **$119 Property Suite is real** — `PROPERTY_BUNDLE` is in `PRICE_MAP`, has a
-> Subscribe button, and maps to `['LANDLORDR','TENANTLINK']`. So this is specifically the
-> manufacturing half.
+> - **$49/mo** — entry price, one app, unlimited users. Purchasable today.
+> - **$335/mo** — all five manufacturing apps, subscribed individually. **No discount**; $335 is
+>   exactly `$99 + $79 + $49 + $59 + $49`.
+> - **$119/mo Property Suite is the only real bundle** (`PROPERTY_BUNDLE`, vs $138 standalone).
+>   Never write "bundles" plural.
 >
-> **This needs your decision, not mine — it's pricing:**
-> 1. **Create the bundle** — add a $249 recurring price in Stripe, set `STRIPE_MANUFACTURING_BUNDLE_PRICE_ID`,
->    add the key to `PRICE_MAP` + `BUNDLE_APPS`, and add a real Subscribe button. (Only you can create
->    the Stripe price.) — or —
-> 2. **Drop the $249 claim** from the title, body, `for-manufacturers.html`, its JSON-LD, and
->    `comparisons/index.html`, and sell the five apps individually at $335.
->
-> Posting as-is sends HN traffic to a headline offer with no checkout — the one thing worse than not
-> launching. Everything else in this file is verified and ready.
+> ⚠️ The crossover point moved with the price: PF9 now beats MRPeasy above **~7 users** (was 5–6).
+> Fishbowl stays ~6 and Katana ~3 — their tier structures absorbed the change.
+> The title and body below have been rewritten to lead with **$49**, which is both the truer hook and
+> the cheaper-sounding one. **This file is now clear to post.**
 
 **This is the only file you need open on launch morning.** Everything is copy-paste ready and in order. Work top to bottom.
 
@@ -59,7 +48,7 @@
 ## 1. Title — paste into the "title" field
 
 ```
-Show HN: PF9 – Flat-rate manufacturing and property software ($249 / $119 a month)
+Show HN: PF9 – Flat-rate manufacturing and property software, from $49/month
 ```
 
 ## 2. URL field — LEAVE EMPTY
@@ -73,13 +62,13 @@ Hi HN — I built Plainspoken Foundry Nine because most operational software in 
 
 Two suites:
 
-- Manufacturing Suite ($249/month flat): 5 apps for shop-floor operations — shift handoffs, inventory + WIP, quality (NCR/CAPA, SPC), operational dashboards, mobile field inspections. Unlimited users.
+- Manufacturing (5 apps, $49–$99/month each, $335 for all five): shift handoffs, inventory + WIP, quality (NCR/CAPA, SPC), operational dashboards, mobile field inspections. Each one is a flat monthly price with unlimited users — take one app or take all five.
 
 - Property Suite ($119/month flat): property management (leases, rent ledger, maintenance, vendor invoices) + tenant portal (online rent, maintenance requests, lease access). Unlimited units, unlimited tenants.
 
 The pricing math vs the alternatives:
 
-- MRPeasy at 25 users: $1,225/mo (linear $49/user). PF9: $249/mo.
+- MRPeasy at 25 users: $1,225/mo (linear $49/user). PF9: $335/mo for all five apps, flat. Crossover is around 7 users — below that MRPeasy is cheaper, and I'd rather say so than pretend.
 - Buildium at 100 units: ~$167/mo (per-unit fees stack). PF9: $119/mo.
 - Enterprise MES quotes: $500/user/mo + $30–80k year-one implementation. PF9: deploy in days.
 
@@ -109,10 +98,10 @@ YouTube channel (13 demos): https://www.youtube.com/@plainspokenfoundrynine
 Keep these here and adapt to the real comment — never paste verbatim. HN can smell canned answers. First person, honest, concede real limits.
 
 **"How is this different from {Buildium / Katana / etc.}?"**
-> Mostly flat pricing — those vendors do real things we don't (Buildium's mature accounting, Katana's Shopify sync). The comparison pages cover the trade-offs explicitly. Honest answer is we're the right pick if (a) you have 6+ users / 30+ units and per-seat math hurts, and (b) you don't need the deep features the established vendors built over 10+ years.
+> Mostly flat pricing — those vendors do real things we don't (Buildium's mature accounting, Katana's Shopify sync). The comparison pages cover the trade-offs explicitly. Honest answer is we're the right pick if (a) you have 7+ users / 30+ units and per-seat math hurts, and (b) you don't need the deep features the established vendors built over 10+ years.
 
 **"Why no free tier?"**
-> There is a free trial — 30 days, on every subscription. Card up front, first charge on day 30, cancel any time before it. If it does convert and you didn't mean to continue, there's a 14-day refund window on that first charge. What we don't have is a permanently free *tier*, because that means building and maintaining gated feature paths, and at $119/$249 flat the trial does the same job for both sides.
+> There is a free trial — 30 days, on every subscription. Card up front, first charge on day 30, cancel any time before it. If it does convert and you didn't mean to continue, there's a 14-day refund window on that first charge. What we don't have is a permanently free *tier*, because that means building and maintaining gated feature paths, and at $49–$119 flat the trial does the same job for both sides.
 
 > 🔴 **This answer was WRONG until 2026-08-08 and would have cost you the thread.** It used to read
 > "14-day money-back acts as a free trial" — i.e. it denied having a free trial. **PF9 has a 30-day

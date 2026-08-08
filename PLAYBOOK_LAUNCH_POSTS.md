@@ -19,7 +19,7 @@ Three paste-ready founder posts for big-spike publishing on Hacker News, Twitter
 ### Title
 
 ```
-Show HN: PF9 – Flat-rate manufacturing and property software ($249 / $119 a month)
+Show HN: PF9 – Flat-rate manufacturing and property software, from $49/month
 ```
 
 (HN title rules: no clickbait, no marketing language, "Show HN" prefix required for self-launches, ~80 char limit. This title fits.)
@@ -31,13 +31,13 @@ Hi HN — I built Plainspoken Foundry Nine because most operational software in 
 
 Two suites:
 
-- Manufacturing Suite ($249/month flat): 5 apps for shop-floor operations — shift handoffs, inventory + WIP, quality (NCR/CAPA, SPC), operational dashboards, mobile field inspections. Unlimited users.
+- Manufacturing (5 apps, $49–$99/month each, $335 for all five): shift handoffs, inventory + WIP, quality (NCR/CAPA, SPC), operational dashboards, mobile field inspections. Each one is a flat monthly price with unlimited users — take one app or take all five.
 
 - Property Suite ($119/month flat): property management (leases, rent ledger, maintenance, vendor invoices) + tenant portal (online rent, maintenance requests, lease access). Unlimited units, unlimited tenants.
 
 The pricing math vs the alternatives:
 
-- MRPeasy at 25 users: $1,225/mo (linear $49/user). PF9: $249/mo.
+- MRPeasy at 25 users: $1,225/mo (linear $49/user). PF9: $335/mo for all five apps, flat. Crossover is around 7 users — below that MRPeasy is cheaper, and I'd rather say so than pretend.
 - Buildium at 100 units: ~$167/mo (per-unit fees stack). PF9: $119/mo.
 - Enterprise MES quotes: $500/user/mo + $30–80k year-one implementation. PF9: deploy in days.
 
@@ -63,10 +63,10 @@ YouTube channel (13 demos): https://www.youtube.com/@plainspokenfoundrynine
 HN comments are often pointed. Have these reply-templates ready (don't paste verbatim — adapt to the actual comment):
 
 **Q: "How is this different from {Buildium / Katana / etc.}?"**
-> Mostly flat pricing — those vendors do real things we don't (Buildium's mature accounting, Katana's Shopify sync). The comparison pages cover the trade-offs explicitly. Honest answer is we're the right pick if (a) you have 6+ users / 30+ units and per-seat math hurts, and (b) you don't need the deep features the established vendors built over 10+ years.
+> Mostly flat pricing — those vendors do real things we don't (Buildium's mature accounting, Katana's Shopify sync). The comparison pages cover the trade-offs explicitly. Honest answer is we're the right pick if (a) you have 7+ users / 30+ units and per-seat math hurts, and (b) you don't need the deep features the established vendors built over 10+ years.
 
 **Q: "Why no free tier?"**
-> There is a free trial — 30 days, on every subscription. Card up front, first charge on day 30, cancel any time before it. If it does convert and you didn't mean to continue, there's a 14-day refund window on that first charge. What we don't have is a permanently free *tier*, because that means building and maintaining gated feature paths, and at $119/$249 flat the trial does the same job for both sides.
+> There is a free trial — 30 days, on every subscription. Card up front, first charge on day 30, cancel any time before it. If it does convert and you didn't mean to continue, there's a 14-day refund window on that first charge. What we don't have is a permanently free *tier*, because that means building and maintaining gated feature paths, and at $49–$119 flat the trial does the same job for both sides.
 
 > 🔴 **Corrected 2026-08-08 — this used to deny having a free trial.** PF9 ships a **30-day free
 > trial**: `store_api.py:623,1845` (`trial_period_days=30`), `refund.html` ("Every new subscription
@@ -108,9 +108,9 @@ Each tweet is its own line below. Number them in your client (1/12, 2/12, etc.) 
 ```
 1/12 I shipped 13 product demo videos in two weeks for Plainspoken Foundry Nine — flat-rate manufacturing and property software. No per-seat fees, no per-door fees, no $50k ERP quotes. Here's what I learned and the math against per-seat competitors.
 
-2/12 The pricing model came first. Manufacturing Suite is $249/mo flat for 5 apps. Property Suite is $119/mo flat for the bundle. Unlimited users. The price doesn't change whether you have 5 employees or 250, 5 units or 250.
+2/12 The pricing model came first. Manufacturing apps are $49–$99/mo flat each, $335 for all five. Property Suite is $119/mo flat for the bundle. Unlimited users. The price doesn't change whether you have 5 employees or 250, 5 units or 250.
 
-3/12 The math vs MRPeasy at 25 users: they bill $49 per user per month → $1,225/mo. PF9 stays at $249. Crossover is around 5–6 users. Above that, flat-rate saves real money every month.
+3/12 The math vs MRPeasy at 25 users: they bill $49 per user per month → $1,225/mo. PF9 stays at $335. Crossover is around 7 users. Below that MRPeasy is cheaper; above it, flat-rate saves real money every month.
 
 4/12 Same against Buildium for landlords. At 50 units, Buildium runs about $92/mo (base + per-unit fees). At 250 units it's about $392. PF9 stays at $119 the whole way.
 
@@ -145,7 +145,7 @@ If the thread doesn't blow up, these can be cherry-picked as standalone tweets i
 ```
 Most manufacturing software charges per user. At 25 users on MRPeasy that's $1,225/mo. Same software at 50 users? $2,450. Same again at 100? $4,900.
 
-PF9 Manufacturing Suite is $249/mo flat. The price doesn't change when you hire.
+PF9 is $335/mo flat for all five manufacturing apps — or $49/mo if you only need one. The price doesn't change when you hire.
 
 https://store.plainspokenfoundrynine.com/for-manufacturers.html
 ```
@@ -177,7 +177,7 @@ Indie Hackers is timezone-agnostic — engagement spans 24 hours globally. Post 
 ### Title
 
 ```
-I built a flat-rate alternative to per-seat manufacturing and property software ($249 / $119 / mo). Looking for honest feedback.
+I built a flat-rate alternative to per-seat manufacturing and property software (from $49/mo). Looking for honest feedback.
 ```
 
 ### Body
@@ -185,11 +185,11 @@ I built a flat-rate alternative to per-seat manufacturing and property software 
 ```
 Background: I run a small manufacturing operation and watched every software vendor charge per user or per unit. Buildium, AppFolio, DoorLoop in property. MRPeasy, Katana, Fishbowl in manufacturing. Plus the enterprise tier — Plex, NetSuite, Epicor — that quotes $500/user/mo plus a 6-month implementation.
 
-So I built PF9. Two suites, both flat-rate:
+So I built PF9. Everything is flat-rate — unlimited users at every price:
 
-**Manufacturing Suite — $249/month flat, unlimited users**
-Five apps for shop-floor ops:
-- SHIFTLOG: digital shift handoffs ($49 standalone)
+**Manufacturing — five apps, $49–$99/month each, $335 for all five**
+Subscribe to one or all of them; there's no bundle discount, $335 is just the sum.
+- SHIFTLOG: digital shift handoffs ($49)
 - FLOWTRACK: inventory + WIP + barcodes ($99)
 - QUALIFI: NCR/CAPA quality management ($79)
 - REPORTR: drag-and-drop dashboards ($59)
@@ -200,7 +200,7 @@ Five apps for shop-floor ops:
 - TENANTLINK: tenant portal ($49)
 
 **The math vs competitors:**
-At 25 users on MRPeasy: $1,225/mo. PF9: $249.
+At 25 users on MRPeasy: $1,225/mo. PF9: $335 for all five apps. (Crossover is ~7 users — under that, MRPeasy is genuinely cheaper.)
 At 50 units on Buildium: ~$92/mo. PF9: $119.
 At 100 units on Buildium: ~$167. PF9: still $119.
 
@@ -226,7 +226,7 @@ At 100 units on Buildium: ~$167. PF9: still $119.
 
 **What I'm looking for from this community:**
 - Honest feedback on the comparison-page approach (the "what they do well" sections specifically)
-- Pricing critique — am I leaving money on the table at $249/$119?
+- Pricing critique — am I leaving money on the table at $49–$99 per app / $119 for the property suite?
 - What's missing that would block you from switching from your current setup?
 - Other indie hackers who've shipped product video pipelines at this scale (13 videos in 2 weeks) — how did you maintain quality?
 

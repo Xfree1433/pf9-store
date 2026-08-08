@@ -214,7 +214,7 @@ Per-app action set (Cowork to maintain):
 > Live demo: {{demo_link}}
 > Add it from your dashboard: {{upgrade_link}}
 >
-> Or bundle all 5 apps for $249/mo instead of $335: {{bundle_link}}
+> Or run all five manufacturing apps for $335/mo total: {{products_link}}
 >
 > — {{founder_first}}
 
@@ -248,19 +248,25 @@ Per-app action set (Cowork to maintain):
 
 ### L5-E1 — Day 90
 
-**Subject:** you're paying {{current_spend}} — bundle is $249
+**Subject:** the {{missing_apps}} gap, 3 months in
 
 > {{first_name}},
 >
 > You've been on {{app_list}} for 3 months, at ${{current_spend}}/mo.
 >
-> The 5-app bundle is $249/mo — and the apps you don't have today are {{missing_apps}}.
+> The apps you don't have today are {{missing_apps}}. All five manufacturing apps together run $335/mo, and each one is flat-rate on its own — no seat count, no tier jump, no renegotiation.
 >
-> If one of those is on your list for Q{{next_quarter}}, the bundle math works. Upgrade in two clicks: {{bundle_link}}
+> If one of those is on your list for Q{{next_quarter}}, add it in two clicks: {{products_link}}
 >
 > If not, ignore — the current plan stays exactly as it is.
 >
 > — {{founder_first}}
+
+> ⚠️ **This email lost its price lever on 2026-08-08.** It used to argue "the bundle is cheaper
+> than what you're paying plus the apps you're missing." There is no Manufacturing bundle discount
+> any more — five apps cost exactly the sum of five apps ($335). So this is now a *needs*
+> cross-sell, not a *savings* cross-sell, and it should be measured as one. If a discounted bundle
+> is ever created, restore the savings framing — it converts better.
 
 ### L5-E2 — Day 100 (only if no upgrade)
 

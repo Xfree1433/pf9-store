@@ -20,6 +20,13 @@
 > and rewriting a dozen dead variants is wasted effort — but do not copy them forward as-is.
 > The same applies to `PLAYBOOK_GOOGLE_ADS_PROPERTY_TEST.md`.
 >
+> ⚠️ **The prices below are also stale, and worse than stale (noted 2026-08-08).** The ad variants
+> repeatedly sell a **"$249/mo Manufacturing Suite"** that was never purchasable — there was no
+> `MANUFACTURING_BUNDLE` in `PRICE_MAP`, so checkout returned `400 Unknown product`. That bundle
+> was **dropped** on 2026-08-08. The real numbers are **$49/mo** per app (entry) and **$335/mo**
+> for all five, with no discount. The "6+ Users? Save vs MRPeasy" line is stale too — the
+> crossover moved to **~7 users**. Left un-rewritten for the same reason as above.
+>
 > Also dead as a consequence: `PLAYBOOK_GOOGLE_ADS_PROPERTY_TEST.md` (the click-by-click
 > runbook for this) and the Google Ads Editor CSV bundle in `tools/google-ads/`.
 >

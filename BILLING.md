@@ -24,9 +24,23 @@
 | OPSIQ (Operations) | $399/mo | (create in Stripe) |
 
 **Bundle Pricing:**
-- Starter: From $49/mo (single app)
-- Professional: $149/mo (any 3 apps)
-- Enterprise: $249/mo (all 5 apps)
+
+> 🔴 **STALE — none of the tiers below exist. Do not quote them. Flagged 2026-08-08.**
+> There is no `Starter` / `Professional` / `Enterprise` tier anywhere in `store_api.py`. `PRICE_MAP`
+> holds 15 individual product keys plus exactly one bundle, `PROPERTY_BUNDLE`; checkout returns
+> `400 Unknown product` for anything else. In particular **"Professional: $149/mo (any 3 apps)" was
+> never built** — there is no mix-and-match mechanism in the code at all.
+>
+> **What is actually purchasable today:**
+> - Individual apps, **$49–$99/mo** each, flat, unlimited users.
+> - All five manufacturing apps = **$335/mo**, as five separate subscriptions. **No discount** —
+>   $335 is exactly `$99 + $79 + $49 + $59 + $49`.
+> - **`PROPERTY_BUNDLE` $119/mo** (LANDLORDR + TENANTLINK, vs $138 standalone) — the only real
+>   bundle in the system.
+>
+> A $249 Manufacturing bundle was advertised on the storefront until 2026-08-08 despite never being
+> purchasable; it has been dropped. If a discounted bundle is ever created, it needs a Stripe price,
+> a `PRICE_MAP` key, a `BUNDLE_MAP` entry, and a Subscribe button — all four, or it 400s.
 
 > 🔴 **THIS REPO IS PUBLIC — never paste an unredacted secret into it. Found 2026-08-08.**
 > The test-mode webhook signing secret was committed here in full (`ecefd65`) and was being served

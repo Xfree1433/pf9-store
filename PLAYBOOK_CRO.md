@@ -121,13 +121,19 @@ Ship tests in the **Order** column, not ICE-raw order — dependencies matter.
 
 ---
 
-## T6 — Bundle callout in hero
+## T6 — Entry-price callout in hero
 
-**Hypothesis:** the $249/mo five-app bundle is the sharpest value claim PF9 has ("competitors charge $2,000+/mo"). It's hidden deep in the page. Hoisting it into the hero drives bundle-share of revenue.
+> ⚠️ **Rewritten 2026-08-08.** This test used to hoist a "$249/mo bundle — save $86/mo" pill into
+> the hero. **That bundle was never purchasable and has been dropped**, so the original variant
+> would have tested a claim that 400s at checkout. What's left is the genuinely sharp number:
+> the *entry* price. Do not resurrect the savings pill unless a discounted bundle actually exists
+> in Stripe.
 
-**Variant:** add a pill under the hero CTAs: *"Or bundle all 5 manufacturing apps for $249/mo — save $86/mo"*
-**Metric:** clicks on the bundle link + bundle-share of Subscribe events.
-**Guardrail:** single-app Subscribe rate (must not drop >20%).
+**Hypothesis:** the hero leads with the platform, not the price. The sharpest true claim PF9 has is that a shop can start for **$49/mo, unlimited users**, against competitors quoting $2,000+/mo. Surfacing entry price in the hero should lift Subscribe starts.
+
+**Variant:** add a pill under the hero CTAs: *"Flat-rate from $49/mo — unlimited users, 30-day free trial"*
+**Metric:** Subscribe events started (any product).
+**Guardrail:** average order value (must not drop >20% — the risk is anchoring everyone on the cheapest app).
 **Run time:** 14 days.
 
 ---
@@ -176,7 +182,7 @@ Route paid traffic to the vertical page, not the homepage. Expected lift: 2–3�
 ## T10 — Cost calculator (phase 3)
 
 **Hypothesis:** buyers who calculate their current per-seat software spend commit faster.
-**Widget:** "How many users do you have? × $50/user/mo ≈ $X/mo. PF9 flat: $249/mo. You save $X/year."
+**Widget:** "How many users do you have? × $50/user/mo ≈ $X/mo. PF9 flat: $335/mo. You save $X/year."
 **Risk:** complex to build well; commit only if T1 + T6 confirm that the price-savings message is the winning angle.
 
 ---
