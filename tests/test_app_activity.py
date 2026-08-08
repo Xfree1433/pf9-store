@@ -43,6 +43,21 @@ client = app.test_client()
 
 fails = []
 
+# A product the store does not sell, for the validation case below.
+#
+# Chosen at runtime rather than hardcoded, because the hardcoded value was
+# MARKUPR and this test started failing the day MARKUPR was added to PRICE_MAP.
+# The fixture was silently coupled to the shape of the catalogue: making a
+# product sellable broke a test that has nothing to do with that product. Every
+# candidate here is a real PF9 app deliberately not sold through the store, so
+# the case still reads as "a name the fleet uses but the catalogue does not".
+UNSELLABLE = next(
+    (p for p in ('WELLR', 'CURBKIT', 'PAPERCLIPR', 'LISTNER', 'FIELDVIEWR')
+     if p not in store_api.PRICE_MAP),
+    None,
+)
+assert UNSELLABLE, 'every candidate is now sellable — pick a new one'
+
 
 def expect(label, cond, detail=''):
     print(f'  {"ok " if cond else "FAIL"}  {label}{("  <- " + str(detail)) if detail and not cond else ""}')
@@ -100,7 +115,7 @@ for label, body in [
     ('missing kind',       {'email': 'a@example.com', 'product': 'FLOWTRACK'}),
     ('unknown kind',       {'email': 'a@example.com', 'product': 'FLOWTRACK', 'kind': 'deleted'}),
     ('missing product',    {'email': 'a@example.com', 'kind': 'login'}),
-    ('unsellable product', {'email': 'a@example.com', 'product': 'MARKUPR', 'kind': 'login'}),
+    ('unsellable product', {'email': 'a@example.com', 'product': UNSELLABLE, 'kind': 'login'}),
     ('path traversal',     {'email': 'a@example.com', 'product': '../etc/passwd', 'kind': 'login'}),
     ('empty body',         {}),
 ]:

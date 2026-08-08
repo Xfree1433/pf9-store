@@ -103,12 +103,18 @@ HUBSPOT_LIST_MANUFACTURING = int(os.environ.get('HUBSPOT_LIST_MANUFACTURING', '1
 HUBSPOT_LIST_PROPERTY      = int(os.environ.get('HUBSPOT_LIST_PROPERTY', '13'))
 HUBSPOT_LIST_SUBSCRIBERS   = int(os.environ.get('HUBSPOT_LIST_SUBSCRIBERS', '14'))
 
-# FIELDVIEWR is here for CRM segmentation only — it is industrial/field
-# operations and belongs on the manufacturing list rather than in neither. It is
-# NOT one of the five apps in the $335 Manufacturing Suite; this set is read
-# solely by the two HubSpot/Klaviyo list routers below and carries no pricing.
+# FIELDVIEWR and MARKUPR are here for CRM segmentation only. FIELDVIEWR is
+# industrial/field operations and belongs on the manufacturing list rather than
+# in neither; MARKUPR follows its own storefront card, which is
+# data-category="property operations", so the two agree instead of the CRM
+# quietly disagreeing with the shop page. Neither is part of the $335
+# Manufacturing Suite or the $119 Property Suite — this set is read solely by
+# the two HubSpot/Klaviyo list routers below and carries no pricing.
+#
+# Note the matching is `app in p`, a SUBSTRING test, so a new key must not be a
+# substring of an unrelated product name. MARKUPR is not.
 _MANUFACTURING_APPS = {'FLOWTRACK', 'QUALIFI', 'SHIFTLOG', 'REPORTR', 'INSPECTR', 'MAINTAINR', 'FIELDVIEWR'}
-_PROPERTY_APPS      = {'LANDLORDR', 'TENANTLINK', 'TENANTLINKR', 'PROPERTY_BUNDLE', 'PERMITR', 'TASKFLOW'}
+_PROPERTY_APPS      = {'LANDLORDR', 'TENANTLINK', 'TENANTLINKR', 'PROPERTY_BUNDLE', 'PERMITR', 'TASKFLOW', 'MARKUPR'}
 
 
 # ── Klaviyo lifecycle-email config ──
@@ -657,6 +663,10 @@ PRICE_MAP = {
     # creating a Stripe session — the storefront card stays on Join Waitlist
     # until that env var exists, so no customer can reach the dead path.
     'FIELDVIEWR': os.environ.get('STRIPE_FIELDVIEWR_PRICE_ID', ''),
+    # $59/mo, likewise already advertised on a waitlist card. Same rule as
+    # FIELDVIEWR above: unset means '' means checkout 400s, and the card stays
+    # on Join Waitlist until STRIPE_MARKUPR_PRICE_ID exists on the store host.
+    'MARKUPR': os.environ.get('STRIPE_MARKUPR_PRICE_ID', ''),
 }
 
 # Bundle definitions — maps bundle name to list of individual products
@@ -681,6 +691,7 @@ APP_URL_MAP = {
     'SUPPORTR': 'https://supportr.plainspokenfoundrynine.com',
     'MAINTAINR': 'https://maintainr.plainspokenfoundrynine.com',
     'FIELDVIEWR': 'https://fieldviewr.plainspokenfoundrynine.com',
+    'MARKUPR': 'https://markupr.plainspokenfoundrynine.com',
 }
 
 # Product → the app we suggest next, for the paid month-3 expansion email.
@@ -823,6 +834,13 @@ APP_LOGIN_PATH = {
     'QUALIFI':    '',
     'INSPECTR':   '',
     'OPSIQ':      '',
+    # Next.js like the four above, and its login page really is at /login —
+    # src/app/(auth)/login/page.tsx, where (auth) is a route group and so does
+    # not appear in the URL. Taken from the filesystem rather than an HTTP
+    # probe for the reason spelled out under APP_TEAM_PATH: this app 307s every
+    # path to /login when logged out, so a probe cannot tell a real route from
+    # a made-up one.
+    'MARKUPR':    '/login',
 }
 
 # Product → the PATH where the account owner adds colleagues.
@@ -855,6 +873,15 @@ APP_LOGIN_PATH = {
 #   OPSIQ       `/auth/users` is a JSON API for its own SPA, not a page.
 #   TENANTLINK  its "Invite" flow adds *tenants*, not colleagues. Sending an
 #               "add your team" email there would be a category error.
+#   MARKUPR     the tempting entry, and wrong. It is Next.js like the four
+#               above, so /settings looks like the obvious answer — but its
+#               only settings route is src/app/(dashboard)/settings/api-keys,
+#               and there is no settings/page.tsx. /settings would 404. There
+#               is no member-management UI anywhere in the app: Membership is
+#               written by the register route and never edited again. This is
+#               the filesystem check earning its keep — the pattern would have
+#               produced a broken link inside the email that promises free
+#               seats.
 #   QUALIFI INSPECTR SUPPORTR LANDLORDR TASKFLOW PROPERTY_BUNDLE
 #               nothing found. Whether that means the seat-management UI is
 #               missing or the pricing claim does not apply to them is a founder
@@ -1167,6 +1194,29 @@ ONBOARDING_COPY = {
             "A month of history is where this stops being a display and starts being evidence. "
             "The historian shows you the slow drift nobody catches watching a live number."),
     },
+    # Written from the viewer toolbar and the version panel, per the rule above.
+    # The tools named here — Calibrate, Length, Area, Cloud, Arrow, Text — are
+    # the literal labels in src/components/viewer/Toolbar.tsx, and "Not
+    # calibrated" is the message the viewer itself shows.
+    'MARKUPR': {
+        'step1': ('Upload a drawing you are actually working from',
+            "Open Documents and upload one real PDF — a floor plan, a site drawing, a shop "
+            "detail. A live sheet shows you the fit in a way a sample file never does."),
+        'step2': ('Calibrate the sheet before you measure anything',
+            "Open the document, use the Calibrate tool to set one known distance, then Save "
+            "scale. Until you do, the viewer says Not calibrated and the Length and Area tools "
+            "report page units instead of feet. This is the step that makes a measurement worth "
+            "quoting from."),
+        'day3': ('Redline a sheet and export it flattened',
+            "Mark one up with Cloud, Arrow and Text, then export. The export flattens your "
+            "markups into an ordinary PDF, which is what lets you send it to the people who "
+            "need to read it and do not have MARKUPR."),
+        'month1': ('Upload the next revision as a new version',
+            "When a drawing gets reissued, add it to the same document rather than starting a "
+            "new one. The version history keeps every markup attached to the sheet it was made "
+            "against, and locking a version stops two people redlining the same one at once — "
+            "which is the argument this replaces."),
+    },
 }
 
 
@@ -1436,6 +1486,13 @@ REGISTER_PATH = {
     # silently provisioned nothing. It creates a dedicated tenant per customer
     # and requires PROVISION_SECRET; without the secret it 404s.
     'FIELDVIEWR': '/api/auth/register',
+    # NOT /api/auth/register. MARKUPR's route is /api/register, and the
+    # difference is not cosmetic: its NextAuth middleware allowlist covers
+    # /api/auth by prefix, so a route under that path would have been let
+    # through by accident — which is exactly why FLOWTRACK never hit the
+    # redirect bug and MARKUPR did. Fixed on the app side; recorded here so
+    # nobody "corrects" this line to match the others.
+    'MARKUPR':    '/api/register',
 }
 
 
@@ -1623,9 +1680,16 @@ def demo_request():
         if product:
             lead_properties['product_tag'] = product   # raw, as the page sent it
         # Only when it names something we can actually sell. PROPERTY_SUITE and
-        # MANUFACTURING_SUITE are marketing groupings, and MARKUPR is pre-launch;
-        # none are in PRICE_MAP, and writing them here would make `product` mean
-        # two different things depending on the surface.
+        # MANUFACTURING_SUITE are marketing groupings and are not in PRICE_MAP,
+        # so writing them here would make `product` mean two different things
+        # depending on the surface.
+        #
+        # MARKUPR was the third example here and no longer is: it is in
+        # PRICE_MAP now. It still does not reach this branch, but for a
+        # different reason — the waitlist form sends 'MARKUPR (waitlist)'
+        # (index.html:964), and the suffixed string is not a PRICE_MAP key. Once
+        # its card flips to Subscribe the plain name will be sold and this
+        # branch will start writing it, which is correct.
         if product in PRICE_MAP:
             lead_properties['product'] = product
         if company:
