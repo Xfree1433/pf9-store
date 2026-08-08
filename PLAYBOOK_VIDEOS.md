@@ -511,47 +511,101 @@ When a new video ships, add the URL to the table above, swap the `href` on the m
 
 ## 10. TASKFLOW — $69/mo
 
-**Tagline:** *Property maintenance dispatching without the spreadsheet.*
+> ## 🛑 REWRITTEN 2026-08-08 — the previous version of this section was for the wrong product
+>
+> **This section used to specify a property-maintenance dispatch video** (vendor dispatch, tenant
+> ETAs, vendor scorecards). **TASKFLOW is project and task management** — Flask app on :5004,
+> workspaces/projects/tasks. This section is the *origin* of the storefront's card-vs-schema
+> contradiction: the video was produced from the dispatch script, and the VideoObject was derived
+> from it, so the schema was never a typo — it faithfully described the wrong spec.
+>
+> **The old video (`O2lUhXMeA34`) is gone — it returns HTTP 404** — so this is a fresh recording,
+> not a re-edit. Had this section been left as-is, whoever recorded the replacement would have
+> reproduced the identical error.
+>
+> ⚠️ **Every claim below was verified against the source** (`apps/TASKFLOW/app/models/__init__.py`
+> and `templates/`) before being written. **There is no Gantt view** — `grep -ri gantt` over the whole
+> codebase returns zero hits, and the app's own landing page says *"boards, lists, and calendars."*
+> The storefront card previously advertised "Gantt timelines" and has been corrected. **Do not add
+> Gantt to this script unless it actually ships.**
+
+**Tagline:** *Project management for teams that do not run sprints.*
 **Slug:** `taskflow`
-**Voice:** Charlotte
+**Voice:** Daniel (operations app, not property — the old spec's `Charlotte` was part of the mixup)
 **Length target:** 60 seconds
 
 ### Voiceover script (150 words)
 
-> When a tenant submits a maintenance request, the next sixty minutes decide whether they renew the lease.
+> Most project tools are built for software teams, then sold to everyone else. So the operations
+> crew quietly goes back to a shared spreadsheet.
 >
-> TASKFLOW dispatches it. Vendor gets the request, the photos, and the address on their phone. Tenant gets an ETA. You see the whole queue on one screen — open, in progress, awaiting parts, completed.
+> They don't need sprints and story points. They need to know what's blocking Thursday's install,
+> and who owns it.
 >
-> Sixty-nine dollars a month. Unlimited vendors. Unlimited tickets.
+> TASKFLOW is a board when you want to see the flow, a list when you want to work it, and a calendar
+> when someone asks about dates. Same tasks, three views.
 >
-> Vendor scorecards roll up automatically. Time-to-resolution reports hit your inbox weekly. Tenant satisfaction tracked per ticket.
+> Break work into subtasks. Link dependencies, so "blocked" is a fact instead of a Slack message.
+> Track time against the task while it's happening, not reconstructed on Friday afternoon.
 >
-> Pairs cleanly with TENANTLINK on the tenant side and LANDLORDR on the property side.
+> Custom fields, templates, and automations for the work you run the same way every time.
 >
-> Subscribe at store.plainspokenfoundrynine.com.
+> Sixty-nine dollars a month, flat. Unlimited projects, unlimited teammates — no per-seat math.
+>
+> Subscribe at store.plainspokenfoundrynine.com. Fourteen-day money-back.
 
 ### Shot list
 
 | # | Time | Shot | Source |
 |---|---|---|---|
-| 1 | 0:00–0:08 | Pixa: text message chain on a phone | Pixa |
-| 2 | 0:08–0:20 | TASKFLOW dispatch board | `screenshots/taskflow_*` shot A |
-| 3 | 0:20–0:32 | Vendor mobile view of ticket | shot B |
-| 4 | 0:32–0:44 | Tenant ETA notification preview | shot C |
-| 5 | 0:44–0:54 | Vendor scorecard | shot D |
-| 6 | 0:54–0:60 | End frame | static |
+| 1 | 0:00–0:10 | Pixa: cluttered shared spreadsheet on a laptop | Pixa |
+| 2 | 0:10–0:22 | TASKFLOW **board view**, cards moving across columns | `screenshots/taskflow_*` shot A |
+| 3 | 0:22–0:30 | Same project toggled to **list view**, then **calendar view** | shot B |
+| 4 | 0:30–0:42 | Task detail: subtasks + a linked **dependency** | shot C |
+| 5 | 0:42–0:50 | **Time entry** logged against a task | shot D |
+| 6 | 0:50–0:57 | Automations / custom fields settings | shot E |
+| 7 | 0:57–1:00 | End frame | static |
+
+**Screenshot capture note:** all shots come from a seeded demo workspace. Per the global standards
+above, **no fake user names** — use role labels (`Site Lead`, `Fabrication`, `QA`).
 
 ### YouTube metadata
 
-- **Title:** `TASKFLOW — Property Maintenance Dispatch Software ($69/mo)`
-- **Tags:** `property maintenance software, work order software, vendor dispatch app, rental maintenance tracking`
-- **Thumbnail copy:** `MAINTENANCE TICKETS · DISPATCHED IN MINUTES · $69/mo`
+- **Title:** `TASKFLOW — Project Management for Operations Teams ($69/mo, Unlimited Users)`
+- **Tags:** `project management software, task management software, kanban board software, flat rate project management, project management for operations teams, no per user pricing`
+- **Thumbnail copy:** `BOARDS · LISTS · CALENDARS · $69/mo FLAT`
+
+### When this is recorded — restore the storefront wiring
+
+Removed when the video 404'd; put back **only** once the new video is live and verified via oEmbed:
+
+1. `index.html` — TASKFLOW card: add the `Watch Demo` anchor back beside Subscribe (copy the markup
+   from any sibling card, restore the two-button `flex gap-2` layout).
+2. `index.html` — re-add a `VideoObject` to the JSON-LD block using the **Title above**, not the old
+   dispatch text. Re-validate that all four `ld+json` blocks still parse.
+3. `PLAYBOOK_YOUTUBE.md` §D — restore the end-screen chain `PERMITR → TASKFLOW → COMPLI` (currently
+   `PERMITR → COMPLI`), and bump the counts back to 14.
+4. `TASK_BRIEF_YOUTUBE_ENDSCREENS.md` — restore the TASKFLOW row and the 14-video counts.
+5. Update the status table at the top of this file, and `memory.md`'s video table.
 
 ---
 
 # Operations & AI
 
-## 11. OPSIQ — from $79/mo
+## 11. OPSIQ — $199/mo
+
+> ⚠️ **Price corrected 2026-08-08: this section said "from $79/mo"; the storefront charges $199/mo.**
+> Found by cross-checking every `openSubscribe(...)` price in `index.html` against this file — the
+> other 13 products match exactly, **OPSIQ was the only mismatch.** $199 is the live commercial
+> truth: it is what the card's working Subscribe button charges, independently confirmed in
+> `MARKETING.md` (re-read of `index.html`, 2026-08-04). The $79 here appears to be a stale early
+> tiered-pricing idea. **It never reached the public** — OPSIQ is marked "not planned" in the status
+> table and has no video — but had one been recorded from this section it would have quoted a price
+> less than half the real one, on camera, permanently.
+>
+> ⚠️ **OPSIQ is BYO-Claude-API-key** (each customer brings their own). Any price stated on camera
+> must carry that caveat, or $199/mo reads as all-in when it is not. EXTRACTR is the other BYO-key
+> product — same rule applies there.
 
 **Tagline:** *Ask your operations data a question. Get an answer.*
 **Slug:** `opsiq`

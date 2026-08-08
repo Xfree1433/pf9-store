@@ -504,8 +504,12 @@ Add the Friday person. The price does not move.
 
 ### TASKFLOW — $69/mo (⚠️ no demo video exists — see below)
 
-**Store description (the card):** Project and task management for operations teams. Kanban boards,
-Gantt timelines, assignments, dependencies, and progress tracking.
+**Store description (the card, corrected 2026-08-08):** Project and task management for operations
+teams. Kanban boards, list and calendar views, subtasks, dependencies, time tracking, and progress
+reporting.
+
+*(Previously read "Kanban boards, Gantt timelines, assignments, dependencies, and progress tracking"
+— TASKFLOW has no Gantt view. See the second 🛑 block below.)*
 
 > ## ✅ RESOLVED 2026-08-08 — the contradiction is settled, but the video is gone
 >
@@ -541,6 +545,26 @@ Gantt timelines, assignments, dependencies, and progress tracking.
 > the last of the 14 missing. Until then TASKFLOW is postable, but the copy below must not link a
 > demo. If a replacement is recorded, restore a VideoObject using the **project-management** text —
 > never the dispatch text, which was always wrong.
+>
+> ## 🛑 Second defect, found the same day: the card was selling a feature that does not exist
+>
+> Traced the dispatch/project-management mixup to its origin — **`PLAYBOOK_VIDEOS.md` §10, the
+> production script itself, was written for property-maintenance dispatch.** The video was produced
+> from that script and the VideoObject was derived from it, so the schema was never a typo; it
+> faithfully described the wrong spec. **Anyone re-recording from that section would have reproduced
+> the exact same error**, which is why §10 has been rewritten rather than left for later.
+>
+> Checking the card against the app to write an accurate script turned up a separate live problem:
+> the card advertised **"Gantt timelines"**, and **`grep -ri gantt` across the whole TASKFLOW
+> codebase returns zero hits.** The app's own landing page says *"boards, lists, and calendars"* and
+> its SoftwareApplication schema says the same. **The storefront was advertising a feature that does
+> not exist on a $69/mo product.**
+>
+> **Verified feature set** (from `app/models/__init__.py` + `templates/`): workspaces and projects;
+> **board / list / calendar** views; subtasks; task **dependencies** (`task_dependencies` table);
+> comments; tags; attachments; **time tracking** (`TimeEntry`); custom fields; saved views; task
+> templates; automations; analytics; notifications; multi-tenant isolation. Card, Angle A, and the
+> video script now claim only these. **Do not reintroduce Gantt without shipping it first.**
 
 **Angle A — project management (matches the card and the app):**
 
@@ -551,9 +575,9 @@ points, they need to know what is blocking the install on Thursday and who owns 
 
 TASKFLOW is that, for operations:
 
-→ Kanban when you want to see the flow
-→ Gantt when someone asks for a date
-→ Dependencies, so "blocked" is a fact and not a Slack message
+→ Kanban when you want to see the flow, a list when you want to work it, a calendar when someone asks about dates
+→ Dependencies and subtasks, so "blocked" is a fact and not a Slack message
+→ Time tracked against the task, not reconstructed on Friday
 → Assignments and progress that survive somebody being on holiday
 
 $69/mo flat for the whole team.
