@@ -103,7 +103,11 @@ HUBSPOT_LIST_MANUFACTURING = int(os.environ.get('HUBSPOT_LIST_MANUFACTURING', '1
 HUBSPOT_LIST_PROPERTY      = int(os.environ.get('HUBSPOT_LIST_PROPERTY', '13'))
 HUBSPOT_LIST_SUBSCRIBERS   = int(os.environ.get('HUBSPOT_LIST_SUBSCRIBERS', '14'))
 
-_MANUFACTURING_APPS = {'FLOWTRACK', 'QUALIFI', 'SHIFTLOG', 'REPORTR', 'INSPECTR', 'MAINTAINR'}
+# FIELDVIEWR is here for CRM segmentation only — it is industrial/field
+# operations and belongs on the manufacturing list rather than in neither. It is
+# NOT one of the five apps in the $335 Manufacturing Suite; this set is read
+# solely by the two HubSpot/Klaviyo list routers below and carries no pricing.
+_MANUFACTURING_APPS = {'FLOWTRACK', 'QUALIFI', 'SHIFTLOG', 'REPORTR', 'INSPECTR', 'MAINTAINR', 'FIELDVIEWR'}
 _PROPERTY_APPS      = {'LANDLORDR', 'TENANTLINK', 'TENANTLINKR', 'PROPERTY_BUNDLE', 'PERMITR', 'TASKFLOW'}
 
 
@@ -647,6 +651,12 @@ PRICE_MAP = {
     'EXTRACTR': os.environ.get('STRIPE_EXTRACTR_PRICE_ID', ''),
     'SUPPORTR': os.environ.get('STRIPE_SUPPORTR_PRICE_ID', ''),
     'MAINTAINR': os.environ.get('STRIPE_MAINTAINR_PRICE_ID', ''),
+    # $299/mo, the price the storefront card has been advertising while the
+    # product sat on a waitlist. Until STRIPE_FIELDVIEWR_PRICE_ID is set on the
+    # store host this resolves to '' and checkout returns 400 rather than
+    # creating a Stripe session — the storefront card stays on Join Waitlist
+    # until that env var exists, so no customer can reach the dead path.
+    'FIELDVIEWR': os.environ.get('STRIPE_FIELDVIEWR_PRICE_ID', ''),
 }
 
 # Bundle definitions — maps bundle name to list of individual products
@@ -670,6 +680,7 @@ APP_URL_MAP = {
     'EXTRACTR': 'https://extractr.plainspokenfoundrynine.com',
     'SUPPORTR': 'https://supportr.plainspokenfoundrynine.com',
     'MAINTAINR': 'https://maintainr.plainspokenfoundrynine.com',
+    'FIELDVIEWR': 'https://fieldviewr.plainspokenfoundrynine.com',
 }
 
 # Product → the app we suggest next, for the paid month-3 expansion email.
@@ -799,6 +810,9 @@ APP_LOGIN_PATH = {
     'SHIFTLOG':   '/login',
     'REPORTR':    '/login',
     'MAINTAINR':  '/login',
+    # Static file, not a route: FIELDVIEWR serves a plain SPA, and /login 404s
+    # on it. Verified against the live host, not assumed from the pattern above.
+    'FIELDVIEWR': '/login.html',
     'COMPLI':     '/login',
     'EXTRACTR':   '/login',
     'SUPPORTR':   '/login',
@@ -852,6 +866,11 @@ APP_TEAM_PATH = {
     'MAINTAINR': '/settings',
     'PERMITR':   '/admin/users/',
     'EXTRACTR':  '/users',
+    # Static file, like its login page — /users and /settings both 404 here.
+    # Worth mapping rather than leaving to the STORE_URL fallback: provisioning
+    # makes the buyer an admin of their own tenant, so the "add your team" link
+    # is one they can actually act on.
+    'FIELDVIEWR': '/admin.html',
 }
 
 
@@ -1132,6 +1151,22 @@ ONBOARDING_COPY = {
             "A month of downtime entries is enough to rank your assets honestly. That ranking is "
             "usually not the one people expect, and it is what the predictive side runs on."),
     },
+    'FIELDVIEWR': {
+        'step1': ('Point it at one real tag',
+            "Open I/O Connections, add your Modbus TCP source and hit Test read before you bind "
+            "anything. One tag reading correctly tells you more than a finished-looking screen "
+            "that is quietly showing simulated numbers."),
+        'step2': ('Trace your own drawing',
+            "Load your plot plan or P&ID as an underlay in the builder and drop equipment straight "
+            "onto it. Operators trust a screen that looks like the plant they walk — a generic "
+            "diagram is the one they stop checking."),
+        'day3': ('Set limits on the tag that matters',
+            "Give your most important tag real LL/L/H/HH limits. One alarm that fires when "
+            "something is genuinely wrong beats twenty that everyone has learned to scroll past."),
+        'month1': ('Read the trends, not the live screen',
+            "A month of history is where this stops being a display and starts being evidence. "
+            "The historian shows you the slow drift nobody catches watching a live number."),
+    },
 }
 
 
@@ -1396,6 +1431,11 @@ REGISTER_PATH = {
     'SUPPORTR':   '/api/auth/register',
     'MAINTAINR':  '/api/auth/register',
     'QUALIFI':    '/api/auth/register',
+    # Added with the endpoint itself — FIELDVIEWR had no register route at all
+    # until now, so it was the one product that could have taken money and
+    # silently provisioned nothing. It creates a dedicated tenant per customer
+    # and requires PROVISION_SECRET; without the secret it 404s.
+    'FIELDVIEWR': '/api/auth/register',
 }
 
 
