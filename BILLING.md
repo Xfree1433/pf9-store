@@ -28,11 +28,23 @@
 - Professional: $149/mo (any 3 apps)
 - Enterprise: $249/mo (all 5 apps)
 
-**Stripe Keys:**
-- Publishable: `pk_test_51TBvRfFAgoUfnM8VLxN2Fyz...` (in store frontend)
-- Secret: `sk_test_51TBvRf...` (in server .env)
-- Webhook Secret: `whsec_JmvHZE6lLaPmfiswnwOsNFsaRCjKqw8e`
-- Webhook Endpoint ID: `we_1TBwHSFAgoUfnM8Vn63MjcJh`
+> 🔴 **THIS REPO IS PUBLIC — never paste an unredacted secret into it. Found 2026-08-08.**
+> The test-mode webhook signing secret was committed here in full (`ecefd65`) and was being served
+> at `https://store.plainspokenfoundrynine.com/BILLING.md` (HTTP 200, verified). It has been redacted
+> below, but **redaction does not undo the exposure**: the repo is public and the value remains in
+> git history, which cannot be assumed private. **The test webhook secret must be rotated in the
+> Stripe dashboard** — see the rotation note under "Webhooks" below.
+>
+> Rule going forward: this file records *which* variables exist and where they live, **never their
+> values**. Real values belong only in the server-side `.env` (mode 600), which `pf9-deploy`
+> deliberately does not ship.
+
+**Stripe Keys (values redacted — read them from the server `.env`, never from this file):**
+- Publishable: `pk_test_…` (in store frontend — publishable keys are safe to expose by design)
+- Secret: `sk_test_…` (server `.env` only)
+- Webhook Secret: `whsec_…` (server `.env` only) — **🔴 the previously committed test value is
+  compromised and pending rotation**
+- Webhook Endpoint ID: `we_1TBwHSFAgoUfnM8Vn63MjcJh` (an identifier, not a credential — safe)
 
 **Test Card:** `4242 4242 4242 4242` / any future expiry / any CVC
 
