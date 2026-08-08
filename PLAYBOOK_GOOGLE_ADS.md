@@ -13,6 +13,13 @@
 > record of the strategy and as a starting point if paid search is ever revisited on a new
 > account — but reopening that decision is a founder call, not a task in this file.
 >
+> ⚠️ **If you ever mine this file for ad copy, the offer lines below are stale (noted 2026-08-08).**
+> The ~12 ad variants repeatedly lead with **"14-Day Money-Back Guarantee"**. That is not the
+> offer: every subscription starts with a **30-day free trial**, and the 14 days is only the refund
+> window on the first charge. They were deliberately left un-rewritten because the channel is dead
+> and rewriting a dozen dead variants is wasted effort — but do not copy them forward as-is.
+> The same applies to `PLAYBOOK_GOOGLE_ADS_PROPERTY_TEST.md`.
+>
 > Also dead as a consequence: `PLAYBOOK_GOOGLE_ADS_PROPERTY_TEST.md` (the click-by-click
 > runbook for this) and the Google Ads Editor CSV bundle in `tools/google-ads/`.
 >
@@ -281,7 +288,7 @@ Each ad group needs **one Responsive Search Ad** with multiple headlines and des
 1. $119/mo flat for unlimited units. Honest comparison vs Buildium with pricing, features, and migration walkthrough.
 2. Where Buildium wins, where PF9 wins, and the math at your portfolio size. Free per-door calculator inside.
 3. 14-day money-back guarantee. Cancel anytime. Deploy in an afternoon. See why landlords are switching to flat pricing.
-4. Watch the 90-second product demo on YouTube. No signup, no sales call. Then subscribe in 60 seconds.
+4. Watch the 3-minute product demo on YouTube. No signup, no sales call. Then subscribe in 60 seconds.
 
 ### AppFolio ad
 
@@ -308,7 +315,7 @@ Each ad group needs **one Responsive Search Ad** with multiple headlines and des
 1. AppFolio requires 50+ units. PF9 starts at 1. Honest comparison with pricing, features, and migration notes.
 2. $119/mo flat — no per-unit fees, no minimum spend, no quote required. Subscribe in 60 seconds.
 3. Where AppFolio wins (marketing, AI leasing) and where PF9 wins (flat pricing, no minimum, deploy in an afternoon).
-4. 14-day money-back guarantee. Cancel anytime. Watch the 90-second demo on YouTube — no signup needed.
+4. 14-day money-back guarantee. Cancel anytime. Watch the 3-minute demo on YouTube — no signup needed.
 
 ### DoorLoop ad
 
@@ -335,7 +342,7 @@ Each ad group needs **one Responsive Search Ad** with multiple headlines and des
 1. DoorLoop's Pro tier kicks in at 11 units. PF9 stays $119/mo at any size. Honest comparison inside.
 2. Where DoorLoop wins (built-in payments, polished UI) and where PF9 wins (flat pricing, no contract).
 3. $119/mo flat for unlimited units, unlimited team members. No annual contract. 14-day money-back.
-4. Watch the 90-second demo on YouTube. Subscribe in 60 seconds. Cancel anytime.
+4. Watch the 3-minute demo on YouTube. Subscribe in 60 seconds. Cancel anytime.
 
 ### MRPeasy ad
 
@@ -426,7 +433,7 @@ Sitelinks add additional clickable destinations under your ad. **Add these 6 to 
 
 | Sitelink text | Description line 1 | Description line 2 | URL |
 |---|---|---|---|
-| Watch the Demos | All 14 product videos | 90 seconds each, no signup | https://www.youtube.com/@plainspokenfoundrynine |
+| Watch the Demos | All 13 product videos | about three minutes each, no signup | https://www.youtube.com/@plainspokenfoundrynine |
 | For Landlords | 5–50 units, flat $119/mo | Unlimited units & tenants | https://store.plainspokenfoundrynine.com/for-landlords.html |
 | For Manufacturers | 20–250 employees | Flat $249/mo, unlimited users | https://store.plainspokenfoundrynine.com/for-manufacturers.html |
 | Per-Door Calculator | See real cost vs Buildium | Free, no signup required | https://store.plainspokenfoundrynine.com/tools/per-door-calculator.html |

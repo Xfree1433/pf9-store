@@ -1,7 +1,7 @@
 # Task Brief — YouTube End Screens + Pinned Comments (delegable)
 
 **For:** an assistant or VA with access to the PF9 YouTube channel (`@plainspokenfoundrynine`).
-**Goal:** add an end screen + a pinned comment to all 14 product videos so viewers get routed back to the storefront instead of dead-ending.
+**Goal:** add an end screen + a pinned comment to all 13 product videos so viewers get routed back to the storefront instead of dead-ending.
 **Time:** ~70 min for end screens + ~15 min for pinned comments. Can be done in batches.
 **Judgment required:** none — every decision is pre-made below. This is repetitive execution.
 
@@ -78,7 +78,7 @@ Each video points to the next in its group, looping so none dead-ends.
 For **each** of the 13 videos, open the video's public watch page (while signed into the channel), post this exact comment, then click the **⋮ (three dots) → Pin**:
 
 ```
-Subscribe in 60 seconds at store.plainspokenfoundrynine.com — no demo to book, no sales call, 14-day money-back guarantee.
+Subscribe in 60 seconds at store.plainspokenfoundrynine.com — no demo to book, no sales call, 30-day free trial.
 
 Cost math vs per-seat competitors: store.plainspokenfoundrynine.com/comparisons/
 ```

@@ -19,7 +19,7 @@
 | Trust indicators | "No per-user fees," "Live demos, no signup," "From $49/mo" |
 | App CTA pair | "Try Demo" (gray outline) + "Subscribe" (solid) |
 | Social proof | None — only a stats block |
-| Risk reversal on page | None — 14-day money-back is footer-only |
+| Risk reversal on page | Weak — the 30-day free trial is in the hero, but the CTA area leans on the footer-only 14-day refund line |
 | FAQ | None on homepage |
 
 ---
@@ -80,9 +80,15 @@ Ship tests in the **Order** column, not ICE-raw order — dependencies matter.
 
 ## T3 — Hero risk-reversal line
 
-**Hypothesis:** the 14-day money-back guarantee is a real trust signal that's buried in the footer. Surfacing it near the CTA reduces purchase anxiety.
+**Hypothesis:** the 30-day free trial is the strongest trust signal PF9 has and it is under-used near the CTA. Surfacing it there reduces purchase anxiety.
 
-**Variant:** add beneath the trust-indicator row: *"14-day money-back guarantee. Cancel anytime."*
+**Variant:** add beneath the trust-indicator row: *"30-day free trial. Cancel any time before day 30 and you're not charged."*
+
+> ⚠️ **This test used to propose surfacing "14-day money-back guarantee" instead.** That is the
+> weaker and less accurate of the two claims: the 14 days is the refund window on the *first
+> charge*, which only ever happens on day 30. Testing the refund policy as the risk-reversal line
+> would have measured the wrong lever — nobody is anxious about a refund when they haven't paid
+> yet. Test the trial.
 **Metric:** Subscribe-click rate.
 **Guardrail:** refund request rate (must not spike).
 **Run time:** 14 days.
@@ -133,7 +139,7 @@ Ship tests in the **Order** column, not ICE-raw order — dependencies matter.
 **FAQ items to ship (from demo objection log):**
 1. Do you charge per user? (No, flat monthly.)
 2. How long does setup take? (Minutes to days.)
-3. Can I cancel anytime? (Yes, 14-day money-back, then month-to-month.)
+3. Can I cancel anytime? (Yes — cancel before day 30 and you're never charged; after that it's month-to-month, with a 14-day refund window on the first charge.)
 4. Do the apps integrate with [ERP]? (CSV today, roadmap varies — link to contact.)
 5. Is my data secure? (Short summary + contact link.)
 6. Can I try before I subscribe? (Yes, live demo, no signup.)

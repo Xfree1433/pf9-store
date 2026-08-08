@@ -110,7 +110,7 @@ PF9 Property Suite is $119/mo flat. Unlimited units, unlimited tenants. Leases, 
 
 Not saying it's better than the incumbents at everything — the comparison pages on the site literally list where they win. But if per-unit pricing has been eating your margin, the math is worth a look.
 
-14-day money-back, no contract. Free per-door calculator on the site so you can run your own numbers.
+30-day free trial, no contract. Free per-door calculator on the site so you can run your own numbers.
 ```
 **CTA:** `Learn More` → `https://store.plainspokenfoundrynine.com/for-landlords.html`
 
@@ -136,7 +136,7 @@ Short version: if you're 5–50 units and per-door fees hurt, flat rate wins the
 
 **Creative production notes:**
 - If using image ads: a clean screenshot of the per-door calculator or a simple "flat $119 vs stacking per-unit fees" chart outperforms stock photos.
-- Video ads are allowed — your 90-second LANDLORDR/PROPERTY_BUNDLE YouTube demos can be trimmed to 15–30s vertical. Optional for v1; text/image is enough to start.
+- Video ads are allowed — your 3-minute LANDLORDR/PROPERTY_BUNDLE YouTube demos can be trimmed to 15–30s vertical. Optional for v1; text/image is enough to start.
 
 ---
 

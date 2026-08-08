@@ -33,7 +33,7 @@ Quick one — most {{industry_descriptor, e.g. "small job shops"}} I talk to are
 
 Is that roughly the case at {{company}}?
 
-If yes, I built a couple of small flat-rate apps you can subscribe to in 60 seconds. No demo to sit through, no sales call. Worth a 90-second video?
+If yes, I built a couple of small flat-rate apps you can subscribe to in 60 seconds. No demo to sit through, no sales call. Worth a 3-minute video?
 
 {{sender_first}}
 
@@ -67,7 +67,7 @@ Quick context, since you didn't ask:
 - **QUALIFI** — $79/mo flat, inspections, NCRs, CAPAs
 - Bundle the five apps for $249/mo. No per-seat charges, ever.
 
-90-second video on SHIFTLOG: {{youtube_shiftlog_url}}
+3-minute video on SHIFTLOG: {{youtube_shiftlog_url}}
 
 If the price-per-user thing has been blocking you on software like this, the video is the shortest path to a yes or no — no signup, no call.
 
@@ -82,7 +82,7 @@ If the price-per-user thing has been blocking you on software like this, the vid
 
 **Only send if connection was accepted.**
 
-Thanks for connecting {{first_name}}. Won't flood you — if shift or inventory tracking is on the list for this quarter, here's the 90-second SHIFTLOG video: {{youtube_shiftlog_url}}
+Thanks for connecting {{first_name}}. Won't flood you — if shift or inventory tracking is on the list for this quarter, here's the 3-minute SHIFTLOG video: {{youtube_shiftlog_url}}
 
 Subscribe in two clicks if it fits, or ignore. No hard feelings either way.
 

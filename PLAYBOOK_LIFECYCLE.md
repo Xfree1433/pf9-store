@@ -67,7 +67,7 @@ All sequences stop immediately on human reply or conversion to next stage.
 >
 > - Flat **${{price}}/mo**. No per-user charge.
 > - Subscribe in 60 seconds. No demo to sit through, no sales call.
-> - 14-day money-back, cancel anytime.
+> - 30-day free trial, cancel anytime.
 >
 > If you want to compare against what you're using today or see a second app, the whole catalog is here: https://store.plainspokenfoundrynine.com
 >

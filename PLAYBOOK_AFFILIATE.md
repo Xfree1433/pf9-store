@@ -34,9 +34,19 @@ Create a Google Sheet named "PF9 Affiliates" with two tabs.
 | Affiliate code | Customer email | Customer name | Product | Monthly $ | Subscribed | Status | Commission/mo | Months paid | Total paid YTD |
 |---|---|---|---|---|---|---|---|---|---|
 
-**Status values:** Active, Refunded (14-day window), Churned, Past-12-months.
+**Status values:** Trialing (day 0–30, no commission yet), Active, Refunded (14-day window on first charge), Churned, Past-12-months.
 
 Update monthly by cross-referencing Stripe subscriptions against attribution.
+
+> ⚠️ **The 30-day free trial changes when commission starts, and this playbook predates it
+> (noted 2026-08-08).** A referred signup produces **no revenue until day 30** — the Stripe
+> subscription exists but `trial_period_days=30` means the first charge hasn't happened. So a
+> referral can look "Subscribed" in the sheet for a full month while being worth $0, and a
+> partner who reads "20% of monthly subscription revenue" may reasonably expect a payout in
+> month one. **Say the trial out loud in the partner agreement** — first commission accrues on
+> the first successful charge (day 30), and is reversed if refunded within 14 days of it.
+> This is a terms question, not a copy question: it needs the founder's sign-off before the
+> agreement goes to any partner.
 
 ---
 
@@ -93,7 +103,7 @@ The terms in 30 seconds:
 - 20% of monthly subscription revenue, every month, for 12 months per referred customer
 - Quarterly payouts via {ACH | PayPal}, $50 minimum
 - 90-day attribution window from click or mention
-- No commission on customers who refund within the 14-day guarantee
+- No commission on customers who cancel during the 30-day free trial, or who refund within the 14-day window on their first charge
 
 Questions on anything? Reply here. I read every email.
 

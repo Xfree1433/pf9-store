@@ -70,7 +70,7 @@
 
 ### YouTube channel
 **URL:** https://www.youtube.com/@plainspokenfoundrynine
-**14 videos live**, all linked from storefront product cards:
+**13 videos live**, all linked from storefront product cards:
 
 | Product | Video URL | Price |
 |---|---|---|
@@ -146,7 +146,7 @@ Subscribe promoted to the single CTA. JSON-LD re-validated: 14 → 13 VideoObjec
 ### Closed since last update (2026-06-03)
 - [x] **Paid traffic decision — property-first test at $300–500/mo.** Founder committed test budget on 2026-06-03 and chose property vertical first. `PLAYBOOK_GOOGLE_ADS_PROPERTY_TEST.md` (on PR #34 branch) is the click-by-click runbook; `PLAYBOOK_GOOGLE_ADS.md` remains strategy source of truth. Manufacturing campaign held paused at $0 until property proves out.
 - [x] **End-to-end funnel verified on real device** — 2026-06-03. Phone (not desktop ad-blocker browser) test passed all 5 steps: storefront loads → Watch Demo → YouTube plays → Subscribe modal opens → Stripe live checkout page loads. Funnel cleared for launch traffic. (Test contact in HubSpot from Step 4 should be deleted as housekeeping.)
-- [x] **PR #31 merged** — added click-by-click HN posting walkthrough as `PLAYBOOK_LAUNCH_POSTS.md` §F, completed end-screen pairing for all 14 videos in `PLAYBOOK_YOUTUBE.md` §D (added the missing 6 ops/compliance video loop).
+- [x] **PR #31 merged** — added click-by-click HN posting walkthrough as `PLAYBOOK_LAUNCH_POSTS.md` §F, completed end-screen pairing for all 13 videos in `PLAYBOOK_YOUTUBE.md` §D (added the missing 6 ops/compliance video loop).
 - [x] **PR #32 merged (2026-06-03)** — logged funnel test pass and original HN launch date.
 - [x] **PostHog instrumentation added by BRIDGR chat (mid-June)** — 34 storefront HTML pages now have PostHog loader + GA4 mirror shim (every existing gtag event auto-flows to PostHog). Full server-side events (signup/login/activation) wired into the major paid apps (FLOWTRACK, SHIFTLOG, MAINTAINR, REPORTR, INSPECTR, LANDLORDR, QUALIFI, PERMITR, EXTRACTR, SUPPORTR, TASKFLOW, TENANTLINKR). Client autocapture on the remaining Flask apps. Region: us.i.posthog.com. Funnel-data ready alongside GA4.
 
@@ -159,7 +159,7 @@ Subscribe promoted to the single CTA. JSON-LD re-validated: 14 → 13 VideoObjec
 - [x] **YouTube SEO applied** (PLAYBOOK_YOUTUBE.md sections A–C) — 2026-05-10:
   - Channel description, links, keywords published
   - 5 playlists created in correct binge-watch order
-  - All 14 video descriptions + tags updated per playbook template
+  - All 13 video descriptions + tags updated per playbook template
 - [x] **HubSpot CRM live** — leads from calculators, lead magnets, contact form, modal, Stripe checkout all push into HubSpot. Token rotated post-exposure. Server env vars set on bridgr.service.
 - [x] **Google Search Console** verified, sitemap submitted, 6 priority URLs requested for indexing.
 - [x] **Email capture modal smoke-tested** in production — fires on exit-intent + 60% scroll, lands in HubSpot.
@@ -178,8 +178,8 @@ Subscribe promoted to the single CTA. JSON-LD re-validated: 14 → 13 VideoObjec
 - [ ] **Install Reddit Pixel on storefront** (blocking prerequisite; agent can wire it given the pixel ID), then launch per `PLAYBOOK_REDDIT_ADS.md`: 1 property campaign, 3 ad groups (landlords/investors/property managers), $10/day, 3 founder-voice ad drafts ready.
 
 #### YouTube remaining (~85 min one-time)
-- [ ] **End screens on all 14 videos** (~5 min × 14 = 70 min). Subscribe element + best-for-viewer + cross-link per `PLAYBOOK_YOUTUBE.md` Section D pairing.
-- [ ] **Pinned comments on all 14 videos** (~1 min × 14 = 14 min). Template in `PLAYBOOK_YOUTUBE.md` Section E.
+- [ ] **End screens on all 13 videos** (~5 min × 13 = 65 min). Subscribe element + best-for-viewer + cross-link per `PLAYBOOK_YOUTUBE.md` Section D pairing.
+- [ ] **Pinned comments on all 13 videos** (~1 min × 13 = 13 min). Template in `PLAYBOOK_YOUTUBE.md` Section E.
 
 #### Directories (~75 min spread over the week, 2–3/day)
 - [ ] Tier 1 first: AlternativeTo, SaaSHub, Crunchbase, Product Hunt (other vertical), BetaList

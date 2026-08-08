@@ -17,7 +17,7 @@
 >
 > **Read every "Cowork will / Cowork owns" statement as aspirational.** No agency is running
 > this. The work that has actually happened was done in-house, and where it overlaps Phase 1
-> it is genuinely done — 14/14 product videos are live, HubSpot is wired, the lifecycle flows
+> it is genuinely done — 13/13 product videos are live, HubSpot is wired, the lifecycle flows
 > are built in Klaviyo. Where it doesn't overlap, it is simply not happening: no outbound
 > lists, no blog cadence, no weekly reporting, no SDR.
 >

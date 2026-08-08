@@ -170,7 +170,7 @@ Manufacturing Suite: $249/month flat for 5 apps (shift handoffs, inventory, qual
 
 Property Suite: $119/month flat (landlord software + tenant portal). Unlimited units, unlimited tenants. Built for landlords with 5-50 units.
 
-What's different about the go-to-market: no live demos, no booking calls. The funnel is YouTube product video → Stripe checkout. 14-day money-back replaces the trust-building function the demo used to serve.
+What's different about the go-to-market: no live demos, no booking calls. The funnel is YouTube product video → Stripe checkout. A 30-day free trial replaces the trust-building function the demo used to serve — you run it on your own data for a month before any card is charged.
 
 The honest part of the founder story: it's still early. Revenue isn't at scale, and I'm bootstrapped, so growth is deliberate rather than fast. The thesis: small-to-mid operators are increasingly software-fluent in 2026, and the no-code/AI tooling lets one founder ship product surface area that took a team in 2015.
 

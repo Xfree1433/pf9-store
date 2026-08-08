@@ -9,17 +9,30 @@
 
 ## Reusable submission assets
 
+> ⚠️ **Two corrections before you submit anything (2026-08-08).**
+>
+> 1. **"Free trial?" used to say "not free trial."** That was wrong. PF9 has a real **30-day free
+>    trial** on every subscription (`store_api.py:623,1845`, `trial_period_days=30`; `refund.html`
+>    says so too). The old answer both misinformed the directory *and* threw away the strongest
+>    thing on the listing. Directory listings are slow and painful to correct once indexed — get
+>    this field right the first time.
+> 2. **The $249 Manufacturing Suite currently has no purchase path.** There is no
+>    `MANUFACTURING_BUNDLE` in `PRICE_MAP`, so checkout rejects it; the only route a buyer can
+>    actually pay is the five apps individually at **$335/mo**. Submitting "$249/mo" to 15
+>    directories multiplies a price nobody can pay across 15 sites you don't control. **Resolve the
+>    $249 question (see `HN_LAUNCH_DAY.md`) before doing directory submissions**, not after.
+
 You'll be asked for the same fields over and over. Have these ready before you start:
 
 | Field | Value |
 |---|---|
 | **Product name** | Plainspoken Foundry Nine (PF9) |
 | **Tagline (one-liner, ~50 chars)** | Flat-rate software. No per-user fees. |
-| **Short description (~150 chars)** | Manufacturing and property software with flat-rate pricing. Unlimited users, no per-door fees. 14-day money-back. |
-| **Long description (~500 chars)** | PF9 ships practical operational software at flat monthly pricing. Manufacturing Suite (5 apps) is $249/month for unlimited users. Property Suite is $119/month for unlimited units. Built for small-to-mid manufacturers (20–250 employees) and independent landlords (5–50 units) who got tired of per-seat / per-door pricing growing with every hire. 14-day money-back, no contracts, deploy in days. |
+| **Short description (~150 chars)** | Manufacturing and property software with flat-rate pricing. Unlimited users, no per-door fees. 30-day free trial. |
+| **Long description (~500 chars)** | PF9 ships practical operational software at flat monthly pricing. Manufacturing Suite (5 apps) is $249/month for unlimited users. Property Suite is $119/month for unlimited units. Built for small-to-mid manufacturers (20–250 employees) and independent landlords (5–50 units) who got tired of per-seat / per-door pricing growing with every hire. 30-day free trial, no contracts, deploy in days. |
 | **Website** | https://store.plainspokenfoundrynine.com |
-| **Pricing** | Manufacturing $249/mo, Property $119/mo, individual apps from $49/mo |
-| **Free trial?** | 14-day money-back guarantee (technically paid trial with refund, not free trial) |
+| **Pricing** | Manufacturing $249/mo, Property $119/mo, individual apps from $49/mo — ⚠️ see the $249 warning below before submitting |
+| **Free trial?** | **Yes — 30 days, on every subscription.** Card at signup, first charge on day 30, cancel before then and you are not charged. (A 14-day refund window then applies to that first charge — that is the refund policy, not the trial.) |
 | **Categories** | Manufacturing Software, Property Management, MES, MRP Alternative, SaaS, Small Business |
 | **Logo** | Use `/og-image.png` from the storefront (or commission a square version if needed) |
 | **Screenshots** | Take 3–5 from the storefront homepage, vertical landings, and per-app demo videos |

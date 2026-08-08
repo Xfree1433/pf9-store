@@ -114,7 +114,7 @@ Each tweet is its own line below. Number them in your client (1/12, 2/12, etc.) 
 
 4/12 Same against Buildium for landlords. At 50 units, Buildium runs about $92/mo (base + per-unit fees). At 250 units it's about $392. PF9 stays at $119 the whole way.
 
-5/12 The funnel decision: no live demos. No "book a meeting." 14 product videos on YouTube, 90 seconds each. Visitor watches, clicks Subscribe, completes Stripe checkout. End to end self-serve.
+5/12 The funnel decision: no live demos. No "book a meeting." 13 product videos on YouTube, about three minutes each. Visitor watches, clicks Subscribe, completes Stripe checkout. End to end self-serve.
 
 6/12 The why: live demos gate purchase behind a calendar. They're a tax on the buyer's time and ours. We're flat-rate and cheap enough that the buyer can subscribe, try it for 14 days, refund if it's not the fit. The video does the explaining.
 
@@ -206,11 +206,11 @@ At 100 units on Buildium: ~$167. PF9: still $119.
 
 **Funnel decisions worth discussing:**
 
-1. No live demos. 14 product videos on YouTube (90 seconds each). Buyer watches, clicks Subscribe, completes Stripe checkout. Pure self-serve.
+1. No live demos. 13 product videos on YouTube (about three minutes each). Buyer watches, clicks Subscribe, completes Stripe checkout. Pure self-serve.
 
 2. Honest comparison pages. Each one has a "what they do well" section that names real competitor strengths. Buildium's mature accounting. Katana's Shopify-Xero sync. We say what they win on.
 
-3. 14-day money-back, no contracts, no per-X fees ever. Cancel anytime.
+3. 30-day free trial, no contracts, no per-X fees ever. Cancel anytime.
 
 **Stack (for the technically curious):**
 - Static HTML + Tailwind storefront (GitHub Pages)
@@ -234,7 +234,7 @@ Storefront: https://store.plainspokenfoundrynine.com
 Manufacturing landing: store.plainspokenfoundrynine.com/for-manufacturers.html
 Property landing: store.plainspokenfoundrynine.com/for-landlords.html
 All comparisons: store.plainspokenfoundrynine.com/comparisons/
-14 YouTube demos: youtube.com/@plainspokenfoundrynine
+13 YouTube demos: youtube.com/@plainspokenfoundrynine
 
 Happy to share more on the stack, the pricing model decision, or the no-demo pivot if there's interest.
 ```

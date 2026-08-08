@@ -8,6 +8,30 @@
 
 ---
 
+## ⚠️ The three facts this file kept getting wrong (corrected 2026-08-08)
+
+Copy them from here. All three were verified against code and against YouTube itself, not against
+another document.
+
+| Claim | ❌ What this file used to say | ✅ Truth | Source |
+|---|---|---|---|
+| **The offer** | "14-day money-back guarantee" | **30-day free trial** on every subscription. Card at signup, first charge day 30, cancel before then and you're never charged. The 14 days is the refund window *on that first charge* — it is the refund policy, not the trial. | `store_api.py:623,1845` (`trial_period_days=30`), `refund.html` |
+| **Video length** | "90-second product video" | **About three minutes.** Measured: 12 of the 13 run **156–196s**. The lone exception is the Property Suite bundle video (`63TRUxSKeho`) at **63s** — that one, and only that one, may be called a 1-minute demo. | YouTube `lengthSeconds`, measured 2026-08-08 |
+| **Video count** | "14 videos" | **13 live.** TASKFLOW's (`O2lUhXMeA34`) is a 404 and is correctly unlinked. | oEmbed 200/404 sweep of every ID in the site HTML |
+
+**Why this kept happening:** each wrong number lived in a dozen places, so fixing the one you
+noticed left eleven behind, and the next person read one of the eleven. If you change any of the
+three above, grep the whole repo for it — including the HTML — in the same sitting.
+
+> 🔴 **Separately, do not publish the $249 Manufacturing Suite price until it is purchasable.**
+> There is no `MANUFACTURING_BUNDLE` in `PRICE_MAP`, so checkout returns `400 Unknown product`.
+> The only route a buyer can complete is the five apps individually at **$335/mo** — meaning the
+> advertised price is $86/mo *cheaper* than anything payable. The Product Hunt and directory copy
+> below still quotes $249. That is a pricing decision for the founder (create the Stripe price, or
+> drop the claim) — see `HN_LAUNCH_DAY.md`. It is deliberately **not** silently rewritten here.
+
+---
+
 ## Product Hunt Listing — Manufacturing Suite
 
 **Product Name:** Plainspoken Foundry Nine — Manufacturing Suite
@@ -38,8 +62,8 @@ The PF9 Manufacturing Suite is 5 modern web apps designed for small-to-mid manuf
 
 - Flat monthly pricing — no per-user fees, no per-site fees
 - Deploys in days, not months
-- 14-day money-back guarantee, cancel anytime, no contract
-- 90-second product video for each app — watch before you subscribe, no signup needed
+- 30-day free trial, cancel anytime, no contract
+- 3-minute product video for each app — watch before you subscribe, no signup needed
 - Built on open standards — CSV import/export, QuickBooks-format export, no vendor lock-in
 
 **Watch the demos (one for each app):**
@@ -82,8 +106,8 @@ PF9 Property Suite is the flat-rate alternative. $119/mo for LANDLORDR + TENANTL
 
 - Flat monthly pricing — no per-unit fees, no per-tenant fees, no per-user fees
 - No 50-unit minimum (AppFolio), no 10-unit cap (DoorLoop), no undisclosed per-unit math (Buildium)
-- 14-day money-back guarantee, cancel anytime
-- 90-second product video — watch before you subscribe, no signup needed
+- 30-day free trial, cancel anytime
+- 3-minute product video — watch before you subscribe, no signup needed
 - CSV import from any current system. Most landlords migrate in an afternoon.
 
 **Watch the demo:**
@@ -120,7 +144,7 @@ We built the opposite:
 
 Bundle all 5 for $249/mo. Unlimited supervisors, inspectors, operators, office staff.
 
-90-second video for each app on YouTube — watch before you subscribe, no signup, no sales call:
+3-minute video for each app on YouTube — watch before you subscribe, no signup, no sales call:
 https://www.youtube.com/@plainspokenfoundrynine
 
 We're manufacturers who got tired of being told we need a $50k ERP system to track parts and shifts.
@@ -146,7 +170,7 @@ So we built FLOWTRACK:
 
 $99/mo flat. Not per user. Not per warehouse. Not per SKU.
 
-Watch the 90-second demo: https://youtu.be/VA_TKydOxuQ
+Watch the 3-minute demo: https://youtu.be/VA_TKydOxuQ
 
 Or run the math at your team size — per-user calculator with MRPeasy, Katana, and Fishbowl comparison: https://store.plainspokenfoundrynine.com/tools/per-user-calculator.html
 
@@ -174,7 +198,7 @@ SHIFTLOG fixes that for $49/mo flat:
 
 Walk in at 6am, see what happened, get on with the day.
 
-90-second demo: https://youtu.be/AZA8wj916Sc
+3-minute demo: https://youtu.be/AZA8wj916Sc
 
 #Manufacturing #ShiftManagement #Operations #LeanManufacturing
 
@@ -213,7 +237,7 @@ Here's what it costs to run a manufacturing floor on per-user software:
 
 PF9 Manufacturing Suite — 5 apps, unlimited users, any team size: **$249/mo flat.**
 
-Same operational coverage for shifts, inventory, quality, dashboards, and inspections. Modern UI. Browser-only — no IT setup. 14-day money-back if it's not the fit.
+Same operational coverage for shifts, inventory, quality, dashboards, and inspections. Modern UI. Browser-only — no IT setup. 30-day free trial if it's not the fit.
 
 Run the math at your team size: https://store.plainspokenfoundrynine.com/tools/per-user-calculator.html
 
@@ -241,7 +265,7 @@ We built the alternative: PF9 Property Suite — $119/mo flat. Unlimited units. 
 
 The price doesn't change whether you manage 5 units or 500.
 
-Watch the 90-second demo: https://youtu.be/63TRUxSKeho
+Watch the 1-minute demo: https://youtu.be/63TRUxSKeho
 
 Run the math at your portfolio size: https://store.plainspokenfoundrynine.com/tools/per-door-calculator.html
 
@@ -291,7 +315,7 @@ So we built Plainspoken Foundry Nine — 5 standalone apps that cover the basics
 
 All flat-rate. No per-user fees. Bundle all 5 for $249/mo, unlimited users.
 
-There's a 90-second video for each app on YouTube — watch first, decide later, no signup needed:
+There's a 3-minute video for each app on YouTube — watch first, decide later, no signup needed:
 https://www.youtube.com/@plainspokenfoundrynine
 
 We're still early. Would genuinely love feedback from other manufacturers who deal with this stuff daily. What's missing? What would make you switch from your current setup?
@@ -325,7 +349,7 @@ Honest comparison pages with the "what they do well" sections (because every ven
 - https://store.plainspokenfoundrynine.com/comparisons/appfolio-vs-pf9.html
 - https://store.plainspokenfoundrynine.com/comparisons/doorloop-vs-pf9.html
 
-90-second demo on YouTube: https://youtu.be/63TRUxSKeho
+1-minute demo on YouTube: https://youtu.be/63TRUxSKeho
 
 Per-door cost calculator (free, no signup): https://store.plainspokenfoundrynine.com/tools/per-door-calculator.html
 
@@ -364,7 +388,7 @@ Built for energy companies, contractors, and SMBs who need to manage compliance 
 - **Pro** (Contact us) — 3 frameworks, integrations, trust center, access reviews, PDF exports
 - **Enterprise** (Contact us) — Unlimited frameworks, SSO, auditor portal, priority support
 
-**Watch the 90-second demo:** https://youtu.be/Y-gxxXJ-EkQ
+**Watch the 3-minute demo:** https://youtu.be/Y-gxxXJ-EkQ
 
 **Start free:** https://compli.plainspokenfoundrynine.com/register
 
@@ -410,7 +434,7 @@ EXTRACTR reads the document and hands back structured data. Upload a stack, get 
 $149/mo for unlimited documents — no per-page or per-seat metering. The AI extraction runs on your
 own Anthropic API key, billed by Anthropic at pay-as-you-go rates, so that part is not included.
 
-90-second demo: https://youtu.be/0rpvA708nFI
+3-minute demo: https://youtu.be/0rpvA708nFI
 
 #DocumentAutomation #Operations #DataEntry
 
@@ -439,7 +463,7 @@ MAINTAINR keeps it in one place:
 
 $99/mo flat — not per asset, not per technician.
 
-90-second demo: https://youtu.be/eHUC-CvuQig
+3-minute demo: https://youtu.be/eHUC-CvuQig
 
 #Maintenance #CMMS #Manufacturing #Reliability
 
@@ -468,7 +492,7 @@ produce.
 
 $299/mo flat.
 
-90-second demo: https://youtu.be/RzKqlyjprMM
+3-minute demo: https://youtu.be/RzKqlyjprMM
 
 #ProcessSafety #PermitToWork #JSA #IndustrialSafety
 
@@ -496,7 +520,7 @@ SUPPORTR is $79/mo for the team, however many people are in it:
 
 Add the Friday person. The price does not move.
 
-90-second demo: https://youtu.be/jVm4NyP_Ssk
+3-minute demo: https://youtu.be/jVm4NyP_Ssk
 
 #CustomerSupport #Helpdesk #SmallBusiness
 
@@ -607,7 +631,7 @@ back — no SQL, no report builder. Scheduled digests and alert rules push the n
 >    separately by Anthropic at pay-as-you-go rates — **not** included in the $199/mo. The card says
 >    this in a highlighted box; any post that omits it is a worse promise than the site makes.
 > 2. **OPSIQ has no demo video *and* no open preview — it is the only sellable app with neither.**
->    Every other one has a 90-second video. The card's "Preview" button goes to
+>    Every other one has a 3-minute video. The card's "Preview" button goes to
 >    `https://opsiq.plainspokenfoundrynine.com`, and an earlier draft of this post described that as
 >    "click around the live app, no signup". **Checked on 2026-08-04: it returns 200 but renders a
 >    sign-in screen** (`Sign In` / `Password` in the markup). So the storefront offers a $199/mo
@@ -648,7 +672,7 @@ Quick one — most {{industry_descriptor, e.g. "small job shops"}} I talk to are
 
 Is that roughly the case at {{Company}}?
 
-If yes, I built a couple of small flat-rate apps for shops your size. No demo to sit through, no sales call. 90-second product video here: https://youtu.be/AZA8wj916Sc
+If yes, I built a couple of small flat-rate apps for shops your size. No demo to sit through, no sales call. 3-minute product video here: https://youtu.be/AZA8wj916Sc
 
 {{sender_first}}
 
@@ -670,7 +694,7 @@ Saw {{Company}} on {{source}} — a few quick numbers on what per-door pricing a
 
 At 20 units, Buildium runs ~$62/mo, AppFolio isn't available (50-unit minimum), DoorLoop Pro is $189/mo. PF9 Property Suite is $119/mo flat — and stays $119/mo if you grow to 250 units.
 
-90-second video on what's in the suite: https://youtu.be/63TRUxSKeho
+1-minute video on what's in the suite: https://youtu.be/63TRUxSKeho
 
 Run the math at your exact unit count: https://store.plainspokenfoundrynine.com/tools/per-door-calculator.html
 
@@ -711,5 +735,5 @@ on 2026-08-04**:
   gap as OPSIQ pointing the other way.
 
 When either ships, add a LinkedIn post and a Reddit launch following the pattern above — **and record
-a 90-second demo first.** Every other sellable app has one; OPSIQ shipped without one and its copy is
+a 3-minute demo first.** Every other sellable app has one; OPSIQ shipped without one and its copy is
 weaker for it.

@@ -94,7 +94,7 @@ When a new video ships, add the URL to the table above, swap the `href` on the m
 | **Stakes** | 6–15 | Why the pain matters: cost, time, risk. |
 | **Solution** | 15–45 | Show the app doing the thing. Real screenshots, narrated. |
 | **Proof** | 45–55 | Price, what's included, the differentiator (flat rate, no per-user fees). |
-| **CTA** | 55–60 | Subscribe URL + 14-day money-back. |
+| **CTA** | 55–60 | Subscribe URL + 30-day free trial. |
 
 > ⚠️ **The five-beat timings above, and every per-app shot list in this file, were written assuming a
 > ~60-second read. They are stale.** Corrected 2026-08-08: every script's word count was **measured**
@@ -157,7 +157,7 @@ When a new video ships, add the URL to the table above, swap the `href` on the m
 - **Description:**
   > Stop tracking down supervisors at 6 a.m. SHIFTLOG digitizes shift handoffs, incidents, and crew notes for $49/month flat — no per-user fees, no setup project, no enterprise contract.
   >
-  > Built for small-to-mid manufacturers. 14-day money-back guarantee.
+  > Built for small-to-mid manufacturers. 30-day free trial.
   >
   > → Subscribe: https://store.plainspokenfoundrynine.com
   > → Other apps: https://www.youtube.com/@plainspokenfoundrynine
@@ -216,7 +216,7 @@ When a new video ships, add the URL to the table above, swap the `href` on the m
 - **Description:**
   > Inventory tracking, WIP, and barcode scanning for $99/month flat. No per-user fees. No setup project. Built for small-to-mid manufacturers tired of spreadsheets and $500/seat MES quotes.
   >
-  > 14-day money-back guarantee.
+  > 30-day free trial.
   >
   > → Subscribe: https://store.plainspokenfoundrynine.com
   > → All PF9 apps: https://www.youtube.com/@plainspokenfoundrynine

@@ -64,7 +64,7 @@ Watch for queries on these topics. When one matches, respond within 24 hours (fa
 - "What does product-led growth actually look like for an early-stage SaaS?"
 - "How do you launch a SaaS without doing demos?"
 
-**PF9 angle:** the no-demo, video-led funnel. Concrete numbers: 14 product videos, exit-intent modal, calculator-driven lead capture, HubSpot integration.
+**PF9 angle:** the no-demo, video-led funnel. Concrete numbers: 13 product videos, exit-intent modal, calculator-driven lead capture, HubSpot integration.
 
 ### Topic 5 — Founder stories / bootstrapped SaaS
 
@@ -186,7 +186,7 @@ I'm Kennedy Pierce — I built Plainspoken Foundry Nine and we deliberately reje
 
 Live demos add friction in two places. First, on the buyer's side: a 20-minute calendar block costs the prospect more than $50 of opportunity cost, killing top-of-funnel conversion from anyone not yet sales-qualified. Second, on the vendor's side: a one-founder operation can support maybe 20 demos per week, capping reachable volume by the founder's calendar.
 
-We replaced both with a YouTube-hosted product demo (90 seconds per app, 14 apps total). The funnel is now: visitor lands on storefront → watches the video → clicks Subscribe → completes Stripe checkout. Everything is self-serve. 14-day money-back guarantee replaces the trust function the demo used to serve.
+We replaced both with a YouTube-hosted product demo (about three minutes per app, 13 apps total). The funnel is now: visitor lands on storefront → watches the video → clicks Subscribe → completes Stripe checkout. Everything is self-serve. A 30-day free trial replaces the trust function the demo used to serve — the buyer runs it on real data for a month before the first charge.
 
 Concrete trade-offs:
 - Buyers who'd need a custom demo for a complex use case never convert. That's fine for our segment (small-to-mid operators); not fine if you sell to enterprise.
@@ -209,9 +209,9 @@ I'm Kennedy Pierce — I bootstrapped Plainspoken Foundry Nine because I got tir
 
 PF9 ships two SaaS suites — Manufacturing ($249/mo flat, 5 apps, unlimited users) and Property ($119/mo flat, unlimited units). Built deliberately for the segment between Excel and enterprise: 20-250 employee manufacturers and 5-50 unit landlords. No VC funding, no sales team, no demos.
 
-The bootstrapped angle that's worth surfacing: the entire go-to-market is structured so a single founder can run it. Product education happens via 14 YouTube videos (90 seconds each, watch before you subscribe). Comparison pages and free interactive cost calculators handle pre-purchase research. HubSpot CRM + a Lifecycle agent (when it ships) handles email nurture. Stripe handles billing. The founder's role is product + customer success, not sales.
+The bootstrapped angle that's worth surfacing: the entire go-to-market is structured so a single founder can run it. Product education happens via 13 YouTube videos (about three minutes each, watch before you subscribe). Comparison pages and free interactive cost calculators handle pre-purchase research. HubSpot CRM + a Lifecycle agent (when it ships) handles email nurture. Stripe handles billing. The founder's role is product + customer success, not sales.
 
-This wouldn't work in 2015. It works in 2026 because (a) buyers in these segments are software-fluent now, (b) the no-code/low-code tooling makes the back-end achievable solo, and (c) AI-assisted content production lets one person ship 14 product videos in two weeks instead of two years.
+This wouldn't work in 2015. It works in 2026 because (a) buyers in these segments are software-fluent now, (b) the no-code/low-code tooling makes the back-end achievable solo, and (c) AI-assisted content production lets one person ship 13 product videos in two weeks instead of two years.
 
 The honest part: revenue isn't yet at "I-can-quit-my-day-job" levels. Bootstrapped means slow growth, deliberate trade-offs, and a long timeline. The model is durable, not fast.
 

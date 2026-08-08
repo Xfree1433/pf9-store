@@ -21,7 +21,7 @@ PF9 Manufacturing Suite — 5 apps for shop floor operations (shifts, inventory,
 
 PF9 Property Suite — Property management + tenant portal. $119/month flat for unlimited units.
 
-90-second video for every product. Subscribe directly through our storefront — no demo to book, no sales call.
+3-minute video for every product. Subscribe directly through our storefront — no demo to book, no sales call.
 
 → For manufacturers: https://store.plainspokenfoundrynine.com/for-manufacturers.html
 → For landlords: https://store.plainspokenfoundrynine.com/for-landlords.html
@@ -161,7 +161,7 @@ For each video, paste the matching block below into YouTube Studio → Content �
 
 {2–3 sentences expanding on the problem this app solves}
 
-Subscribe at flat-rate pricing — no per-user fees, no contracts, 14-day money-back:
+Subscribe at flat-rate pricing — no per-user fees, no contracts, 30-day free trial:
 → https://store.plainspokenfoundrynine.com/for-{manufacturers|landlords}.html
 
 Compare PF9 to per-seat competitors:
@@ -187,7 +187,7 @@ Run the cost math at your team size or portfolio:
   - `0:00 The 6am problem`
   - `0:15 What SHIFTLOG does`
   - `0:45 $49/month flat`
-  - `1:15 Subscribe & 14-day refund`
+  - `1:15 Subscribe & 30-day free trial`
 
 **FLOWTRACK (https://youtu.be/VA_TKydOxuQ)**
 - Tags: `inventory management, flowtrack, manufacturing inventory app, WIP tracking, barcode scanning, flat rate inventory software, mrp alternative, mrpeasy alternative, manufacturing saas`
@@ -280,7 +280,7 @@ Pinned comments stick to the top of each video's comment section. They get high 
 Paste this as a comment on each video, then click **Pin**:
 
 ```
-Subscribe in 60 seconds at store.plainspokenfoundrynine.com — no demo to book, no sales call, 14-day money-back guarantee.
+Subscribe in 60 seconds at store.plainspokenfoundrynine.com — no demo to book, no sales call, 30-day free trial.
 
 Cost math vs per-seat competitors: store.plainspokenfoundrynine.com/comparisons/
 ```
