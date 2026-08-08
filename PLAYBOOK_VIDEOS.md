@@ -19,13 +19,30 @@
 | COMPLI | ✅ Live | https://youtu.be/Y-gxxXJ-EkQ |
 | REPORTR | ✅ Live | https://youtu.be/YLrNw3ZMLXc |
 | PERMITR | ✅ Live | https://youtu.be/RzKqlyjprMM |
-| TASKFLOW | ✅ Live | https://youtu.be/O2lUhXMeA34 |
+| TASKFLOW | 🔴 **DEAD — needs re-record** | ~~`O2lUhXMeA34`~~ → **HTTP 404**, verified 2026-08-08 |
 | SUPPORTR | ✅ Live | https://youtu.be/jVm4NyP_Ssk |
 | MAINTAINR | ✅ Live | https://youtu.be/eHUC-CvuQig |
 | OPSIQ | 🚫 Not planned | Channel root — OPSIQ is on waitlist; no demo video by design |
 | MARKUPR | 🚫 Not planned | Channel root — MARKUPR is on waitlist |
 
-**14 of 14 shipped products now have a demo video on the storefront.** Channel: https://www.youtube.com/@plainspokenfoundrynine
+**🔴 13 of 14 — corrected 2026-08-08. This line previously read "14 of 14" and was wrong.** Every ID in
+the table above was probed via `https://www.youtube.com/oembed?url=…&format=json`: 13 return 200 with a
+real title, **TASKFLOW's returns 404 — the video does not exist.** The storefront's TASKFLOW Watch Demo
+button had been sending buyers to a dead page; it has been removed from `index.html` along with its
+(separately wrong) VideoObject. **TASKFLOW is the one outstanding recording.**
+
+⚠️ **These IDs decay — the table is a claim, not evidence.** Re-probe before trusting any "✅ Live" here:
+```bash
+for id in VA_TKydOxuQ 42TdtdcaUnk AZA8wj916Sc _1SQDCRjhf0 lpA0qVSOyBY w_02sqH1n3s 63TRUxSKeho \
+          0rpvA708nFI Y-gxxXJ-EkQ YLrNw3ZMLXc RzKqlyjprMM jVm4NyP_Ssk eHUC-CvuQig; do
+  printf '%-14s %s\n' "$id" "$(curl -s -o /dev/null -w '%{http_code}' \
+    "https://www.youtube.com/oembed?url=https://youtu.be/$id&format=json")"
+done
+```
+The watch page itself is JS-rendered and returns 200 even for a dead video, so **do not verify with
+`curl` on `youtu.be/<id>` — use the oEmbed endpoint above.**
+
+Channel: https://www.youtube.com/@plainspokenfoundrynine
 
 When a new video ships, add the URL to the table above, swap the `href` on the matching `<a data-product="...">Watch Demo</a>` in `index.html`, and append a `VideoObject` entry to the JSON-LD block in `<head>`.
 

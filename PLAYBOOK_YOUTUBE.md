@@ -69,7 +69,7 @@ manufacturing software, flat rate saas, per user pricing alternative, MES altern
 
 ## Section B — Playlist structure (one-time, ~10 min)
 
-Organize the 14 videos into thematic playlists so viewers binge-watch within a vertical instead of bouncing after one. YouTube's algorithm favors channels with strong playlist watch-through.
+Organize the 13 live videos into thematic playlists so viewers binge-watch within a vertical instead of bouncing after one. YouTube's algorithm favors channels with strong playlist watch-through.
 
 **Create 5 playlists**, in this order:
 
@@ -109,12 +109,12 @@ Flat-rate property management for landlords with 5–50 units. LANDLORDR + TENAN
 
 **Description:**
 ```
-Standalone apps that pair with the Manufacturing Suite. COMPLI (free compliance), EXTRACTR (document extraction), MAINTAINR (preventive maintenance), SUPPORTR (help desk), PERMITR (permit tracking), TASKFLOW (work order dispatch).
+Standalone apps that pair with the Manufacturing Suite. COMPLI (free compliance), EXTRACTR (document extraction), MAINTAINR (preventive maintenance), SUPPORTR (help desk), PERMITR (permit tracking), TASKFLOW (project & task management).
 
 → Browse all: https://store.plainspokenfoundrynine.com/
 ```
 
-**Video order:** COMPLI, EXTRACTR, MAINTAINR, SUPPORTR, PERMITR, TASKFLOW
+**Video order:** COMPLI, EXTRACTR, MAINTAINR, SUPPORTR, PERMITR — **(TASKFLOW dropped: no video, see §D)**
 
 ### Playlist 4: Per-Seat Pricing vs Flat Rate
 
@@ -229,7 +229,7 @@ Run the cost math at your team size or portfolio:
 - Tags: `document extraction software, extractr, AI document processing, PDF data extraction, invoice processing, purchase order processing, no per document fee`
 - Chapters: `0:00 The PDF problem`, `0:15 What EXTRACTR does`, `0:45 $149/month flat`, `1:15 Subscribe`
 
-**REPORTR, PERMITR, TASKFLOW, SUPPORTR, MAINTAINR** — apply the same template structure, using the video titles in `PLAYBOOK_VIDEOS.md` as the chapter hook and the storefront price as the pricing chapter.
+**REPORTR, PERMITR, SUPPORTR, MAINTAINR** (TASKFLOW omitted — no video exists) — apply the same template structure, using the video titles in `PLAYBOOK_VIDEOS.md` as the chapter hook and the storefront price as the pricing chapter.
 
 ---
 
@@ -243,7 +243,14 @@ YouTube Studio → Content → click video → Editor → **End screen**:
 2. **Best for viewer** element (top-right, full duration — YouTube auto-picks based on watch history)
 3. **Video element** pointing to the next-relevant video in the same vertical (bottom-center, last 10 seconds)
 
-Pair videos for cross-promotion. **All 14 videos are listed — every one has a defined "next video" so no video dead-ends.**
+Pair videos for cross-promotion. **13 videos are listed — every one has a defined "next video" so no
+video dead-ends.**
+
+> 🔴 **Corrected 2026-08-08 — this line used to say "All 14".** TASKFLOW's video (`O2lUhXMeA34`)
+> returns **HTTP 404**; it does not exist. Left as-was, the chain `PERMITR → TASKFLOW → COMPLI` would
+> have pointed an end screen at a dead video and broken the loop — i.e. the "no dead-ends" guarantee
+> was already false. **PERMITR now loops directly to COMPLI.** Restore the three-step chain only if
+> the video is re-recorded.
 
 Manufacturing Suite (5):
 - SHIFTLOG → FLOWTRACK (manufacturing flow continuation)
@@ -257,13 +264,12 @@ Property Suite (3):
 - TENANTLINK → PROPERTY_BUNDLE
 - PROPERTY_BUNDLE → LANDLORDR (loop)
 
-Operations & Compliance (6):
+Operations & Compliance (5):
 - COMPLI → EXTRACTR
 - EXTRACTR → MAINTAINR
 - MAINTAINR → SUPPORTR
 - SUPPORTR → PERMITR
-- PERMITR → TASKFLOW
-- TASKFLOW → COMPLI (loop)
+- PERMITR → COMPLI (loop) — *was TASKFLOW; TASKFLOW's video is 404, see the note above*
 
 ---
 
@@ -298,7 +304,7 @@ Cost math vs per-seat competitors: store.plainspokenfoundrynine.com/comparisons/
 - Suggest tag additions based on storefront search-term data from GA4
 - Draft pinned comments for specific videos or topical occasions (Product Hunt launch day, etc.)
 - Update this playbook as YouTube's algorithm changes
-- Write a YouTube Shorts strategy if you decide to repurpose any of the 14 videos as <60-second shorts (different optimization, separate playbook)
+- Write a YouTube Shorts strategy if you decide to repurpose any of the 13 videos as <60-second shorts (different optimization, separate playbook)
 
 ## What I cannot do
 

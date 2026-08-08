@@ -502,40 +502,47 @@ Add the Friday person. The price does not move.
 
 ---
 
-### TASKFLOW — $69/mo (🛑 do not post until the video is checked)
+### TASKFLOW — $69/mo (⚠️ no demo video exists — see below)
 
 **Store description (the card):** Project and task management for operations teams. Kanban boards,
 Gantt timelines, assignments, dependencies, and progress tracking.
 
-> ## 🛑 The storefront contradicts itself about what TASKFLOW is
+> ## ✅ RESOLVED 2026-08-08 — the contradiction is settled, but the video is gone
 >
-> Found while sourcing the video ID for this post, and it is the one item in this section that
-> should stop a launch rather than inform one.
+> **The earlier instruction in this section — "open https://youtu.be/O2lUhXMeA34 and see which
+> product it shows" — is impossible. That video does not exist.** `O2lUhXMeA34` returns **HTTP 404**
+> from YouTube's oEmbed endpoint. Swept all 14 storefront video IDs the same way: the other 13 return
+> 200 with real titles. **TASKFLOW is the only dead one.**
 >
-> The **card** sells project management — *"Kanban boards, Gantt timelines, assignments,
-> dependencies"* — and its **Watch Demo** button points at `O2lUhXMeA34`.
+> So the live storefront had two separate defects, not one:
 >
-> The **VideoObject schema on the same page**, describing that same video ID, says something else
-> entirely:
+> 1. The card's **Watch Demo** button sent buyers to a **404**.
+> 2. The **VideoObject schema** asserted a video that does not exist, *and* described the wrong
+>    product — *"Property Maintenance Dispatch Software… vendor scorecards"* — while the card sells
+>    project management.
 >
-> > *"TASKFLOW — Property Maintenance Dispatch Software ($69/mo). Dispatch maintenance tickets to
-> > vendors with photos, ETAs, and tenant updates. Vendor scorecards and time-to-resolution reports.
-> > $69/month flat — unlimited vendors and tickets."* (`uploadDate: 2026-05-06`)
+> **Which one was wrong: the schema.** Settled from a third source rather than by guessing between
+> the two. `memory/taskflow.md` and the app itself (Flask, :5004, workspaces/projects/tasks/calendar)
+> are **project management**. The card is right; the schema described a different product entirely.
 >
-> Same price, same product name, same video — **two different products.** One of these is wrong and
-> I cannot tell which from the repo: I can read both strings but not watch the video.
+> **Fixed in `index.html` (this commit):** the TASKFLOW VideoObject is **deleted** — it was wrong on
+> two independent counts, so correcting its text would still have left it pointing at a 404. The
+> dead **Watch Demo** button is **removed**, leaving Subscribe as the single full-width CTA. All four
+> JSON-LD blocks re-validated after the edit: 14 → 13 VideoObjects, still parses.
 >
-> **Why this matters more than a typo.** Google reads that schema. It is what can surface as the rich
-> result for TASKFLOW, so the storefront may currently be advertising property-dispatch software to
-> people who land on a project-management card. And a launch post that pitches Kanban and Gantt over
-> a video showing vendor dispatch discredits the post *and* the product in one click, in public,
-> where the correction never catches up.
+> **Deliberately NOT done, and why:**
+> - **Did not point Watch Demo at the channel** (the way MARKUPR's card does). The channel has 13
+>   videos and none is TASKFLOW — that is a bait-and-switch, worse than no button.
+> - **Did not add a Preview link.** `taskflow.plainspokenfoundrynine.com` returns 200 but gates
+>   behind sign-in, which is the exact OPSIQ weakness this document already criticises below.
 >
-> **What to do — two minutes:** open https://youtu.be/O2lUhXMeA34 and see which product it shows.
-> Then pick the matching angle below, and fix whichever of the card or the schema is wrong. Both
-> angles are written; neither is publishable until you know.
+> **What is still open:** TASKFLOW is now the only paid product with **neither a demo video nor an
+> open preview** — the same hole OPSIQ has. The real fix is **recording a replacement video**; it is
+> the last of the 14 missing. Until then TASKFLOW is postable, but the copy below must not link a
+> demo. If a replacement is recorded, restore a VideoObject using the **project-management** text —
+> never the dispatch text, which was always wrong.
 
-**Angle A — if the video shows project management (matches the card):**
+**Angle A — project management (matches the card and the app):**
 
 Most project tools are built for software teams and then sold to everyone else.
 
@@ -551,30 +558,18 @@ TASKFLOW is that, for operations:
 
 $69/mo flat for the whole team.
 
-90-second demo: https://youtu.be/O2lUhXMeA34
+https://plainspokenfoundrynine.com
 
 #ProjectManagement #Operations #Kanban
 
-**Angle B — if the video shows vendor dispatch (matches the schema):**
-
-"Did the plumber ever actually show up?"
-
-Between the tenant reporting it and the vendor invoicing for it, a maintenance ticket usually lives
-in three text threads and one memory. So the same vendor who took nine days in March gets called
-again in April, because nobody is keeping score.
-
-TASKFLOW dispatches the ticket and keeps the record:
-
-→ Send to the vendor with photos and an ETA attached
-→ Tenant gets the update without you relaying it
-→ Vendor scorecards, so "who is slow" is data
-→ Time-to-resolution reports across the portfolio
-
-$69/mo flat — unlimited vendors and tickets.
-
-90-second demo: https://youtu.be/O2lUhXMeA34
-
-#PropertyManagement #Maintenance #Landlords
+> **Note — no demo link in the copy above, on purpose.** There is no TASKFLOW video (see the
+> resolved block at the top of this section). Do not re-add a `youtu.be` link to this post until a
+> replacement is actually recorded and verified live.
+>
+> **Angle B (vendor dispatch) has been deleted.** It was written to match the VideoObject schema
+> back when it was unclear which of the card or the schema was correct. The schema was the wrong
+> one — TASKFLOW is not dispatch software — so that copy described a product that does not exist.
+> Leaving it in a copy bank was an invitation to post it by mistake.
 
 ---
 
@@ -676,7 +671,7 @@ mechanical, not editorial — compare `PRICE_MAP` against the `data-product` car
 minute:
 
 ```bash
-cd ~/Documents/PlainSpokenFoundryNine/pf9-store
+cd ~/Documents/PlainSpokenFoundryNine/infra/pf9-store   # path changed in the 2026-08-07 reorg
 grep -o "openSubscribe('[A-Z_]*'" index.html | sort -u        # what the storefront sells
 ./venv/bin/python -c "import os;os.environ.setdefault('KLAVIYO_API_KEY','');\
 import store_api as s;print(sorted(s.PRICE_MAP))"             # what checkout accepts

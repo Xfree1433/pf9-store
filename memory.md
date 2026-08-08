@@ -83,13 +83,24 @@
 | TENANTLINK | https://youtu.be/w_02sqH1n3s | $49/mo |
 | PROPERTY_BUNDLE | https://youtu.be/63TRUxSKeho | $119/mo |
 | PERMITR | https://youtu.be/RzKqlyjprMM | $299/mo |
-| TASKFLOW | https://youtu.be/O2lUhXMeA34 | $69/mo |
+| TASKFLOW | 🔴 **NONE — `O2lUhXMeA34` is 404 (verified 08-08)** | $69/mo |
 | EXTRACTR | https://youtu.be/0rpvA708nFI | $149/mo |
 | SUPPORTR | https://youtu.be/jVm4NyP_Ssk | $79/mo |
 | MAINTAINR | https://youtu.be/eHUC-CvuQig | $99/mo |
 | COMPLI | https://youtu.be/Y-gxxXJ-EkQ | Free tier |
 
 **Waitlist (no video by design):** OPSIQ, MARKUPR
+
+🔴 **TASKFLOW video is GONE — found 2026-08-08.** `O2lUhXMeA34` returns **404** via YouTube's oEmbed
+endpoint; the other 13 IDs all return 200, so this is not a probe artefact. Two live defects followed
+from it, both now fixed in `index.html`: the card's **Watch Demo sent buyers to a 404**, and the
+**VideoObject schema asserted that dead video while describing the wrong product** ("Property
+Maintenance Dispatch… vendor scorecards" — TASKFLOW is project management, per `memory/taskflow.md`
+and the app itself). **The card was right, the schema was wrong**; schema deleted, dead button removed,
+Subscribe promoted to the single CTA. JSON-LD re-validated: 14 → 13 VideoObjects, all 4 blocks parse.
+⚠️ **Verify video liveness ONLY via oEmbed** — `curl` on the watch page returns 200 even when dead.
+⚠️ TASKFLOW now joins OPSIQ as a paid product with **neither video nor open preview** (its own domain
+200s but gates behind sign-in). **Re-recording that video is the open item.**
 
 ---
 

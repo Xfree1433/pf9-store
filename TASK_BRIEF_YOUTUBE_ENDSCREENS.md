@@ -17,9 +17,10 @@ Everything below is done at **studio.youtube.com** on a **desktop browser** (the
 
 ---
 
-## Part A — End screens (~5 min × 14 = ~70 min)
+## Part A — End screens (~5 min × 13 = ~65 min)
 
-For **each** of the 14 videos:
+For **each** of the 13 videos (**not 14 — TASKFLOW's video is 404, see the note in the pairing
+tables below**):
 
 1. YouTube Studio → **Content** → click the video's title.
 2. In the video's left menu, click **Editor** (or find **End screen** in the right rail of the detail page).
@@ -58,8 +59,13 @@ Each video points to the next in its group, looping so none dead-ends.
 | EXTRACTR | https://youtu.be/0rpvA708nFI | MAINTAINR |
 | MAINTAINR | https://youtu.be/eHUC-CvuQig | SUPPORTR |
 | SUPPORTR | https://youtu.be/jVm4NyP_Ssk | PERMITR |
-| PERMITR | https://youtu.be/RzKqlyjprMM | TASKFLOW |
-| TASKFLOW | https://youtu.be/O2lUhXMeA34 | COMPLI (loop) |
+| PERMITR | https://youtu.be/RzKqlyjprMM | **COMPLI (loop)** — was TASKFLOW, see note |
+
+> 🔴 **TASKFLOW's row was removed 2026-08-08 — its video (`O2lUhXMeA34`) returns HTTP 404 and does
+> not exist.** The chain used to run PERMITR → TASKFLOW → COMPLI; with the middle link dead it would
+> have sent viewers to a 404 and broken the loop, so **PERMITR now points straight at COMPLI.**
+> If a TASKFLOW video is ever re-recorded, restore it by setting PERMITR → TASKFLOW → COMPLI again.
+> **This also means Part A is 13 videos, not 14.**
 
 **Gotchas:**
 - If a video still shows "processing," end-screen options may be greyed out — come back once it finishes.
@@ -67,9 +73,9 @@ Each video points to the next in its group, looping so none dead-ends.
 
 ---
 
-## Part B — Pinned comments (~1 min × 14 = ~15 min)
+## Part B — Pinned comments (~1 min × 13 = ~13 min)
 
-For **each** of the 14 videos, open the video's public watch page (while signed into the channel), post this exact comment, then click the **⋮ (three dots) → Pin**:
+For **each** of the 13 videos, open the video's public watch page (while signed into the channel), post this exact comment, then click the **⋮ (three dots) → Pin**:
 
 ```
 Subscribe in 60 seconds at store.plainspokenfoundrynine.com — no demo to book, no sales call, 14-day money-back guarantee.
@@ -83,8 +89,8 @@ Cost math vs per-seat competitors: store.plainspokenfoundrynine.com/comparisons/
 
 ## Definition of done
 
-- [ ] All 14 videos have an end screen with a Subscribe element + a "watch next" video per the pairing table.
-- [ ] All 14 videos have the pinned comment above.
+- [ ] All 13 videos have an end screen with a Subscribe element + a "watch next" video per the pairing table.
+- [ ] All 13 videos have the pinned comment above.
 - [ ] Spot-check 2–3 videos on the live watch page to confirm the end screen renders in the final seconds and the comment is pinned to the top.
 
 ---
