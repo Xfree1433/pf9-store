@@ -1,5 +1,37 @@
 # HN Launch Day — One-Screen Kit
 
+> # 🛑 DO NOT POST YET — ONE BLOCKER, AND IT IS THE HEADLINE
+>
+> **The $249 Manufacturing Suite cannot be bought.** Found 2026-08-08. The title of this post leads
+> with `$249` and the first bullet sells it, but there is **no purchase path** for it:
+>
+> - No `MANUFACTURING_BUNDLE` key in `store_api.py`'s `PRICE_MAP` — and checkout **rejects any
+>   product not in that map** (`store_api.py:1747`, `:1832` → `400 Unknown product`).
+> - `BUNDLE_APPS` (`store_api.py:654`) defines exactly one bundle: `PROPERTY_BUNDLE`. There is no
+>   manufacturing equivalent anywhere in the code, HTML, or JS — a repo-wide search returns nothing.
+> - The `$249` "Subscribe" button on `for-manufacturers.html:348` links to **`/#products`**, the app
+>   grid. The grid has 14 Subscribe buttons and **none of them is a $249 bundle.**
+> - So a buyer who wants the advertised suite lands on the five apps priced individually:
+>   `$49 + $99 + $79 + $59 + $49 =` **$335/mo**. The page itself admits this — it prints
+>   "$335/mo standalone. **$249/mo bundled.** Save $86/mo" — but the $249 is not purchasable.
+>   **The advertised price is $86/mo cheaper than the only price a customer can actually pay.**
+> - `for-manufacturers.html` also emits JSON-LD `"price": "249.00"`, so Google is being told an
+>   offer exists that does not.
+>
+> By contrast the **$119 Property Suite is real** — `PROPERTY_BUNDLE` is in `PRICE_MAP`, has a
+> Subscribe button, and maps to `['LANDLORDR','TENANTLINK']`. So this is specifically the
+> manufacturing half.
+>
+> **This needs your decision, not mine — it's pricing:**
+> 1. **Create the bundle** — add a $249 recurring price in Stripe, set `STRIPE_MANUFACTURING_BUNDLE_PRICE_ID`,
+>    add the key to `PRICE_MAP` + `BUNDLE_APPS`, and add a real Subscribe button. (Only you can create
+>    the Stripe price.) — or —
+> 2. **Drop the $249 claim** from the title, body, `for-manufacturers.html`, its JSON-LD, and
+>    `comparisons/index.html`, and sell the five apps individually at $335.
+>
+> Posting as-is sends HN traffic to a headline offer with no checkout — the one thing worse than not
+> launching. Everything else in this file is verified and ready.
+
 **This is the only file you need open on launch morning.** Everything is copy-paste ready and in order. Work top to bottom.
 
 **When:** the next **Tuesday** (or Wednesday), **8:00–9:00am Pacific** = 11am–12pm Eastern. Not Mon, not Fri, not a holiday.
@@ -53,11 +85,11 @@ The pricing math vs the alternatives:
 
 Six head-to-head comparison pages with honest "where they win" sections at store.plainspokenfoundrynine.com/comparisons/ — Buildium, AppFolio, DoorLoop, MRPeasy, Katana, Fishbowl. The "where they win" sections name real competitor strengths (Buildium's mature accounting, Katana's Shopify-Xero sync, Fishbowl's QuickBooks bidirectional). Pretending otherwise just makes comparison content untrustworthy.
 
-Stack: static HTML + Tailwind front-end (GitHub Pages), Flask + SQLite back-end (Stripe webhooks, Resend email, HubSpot CRM push), 14 product demo videos on YouTube. Each app runs as its own subdomain microservice.
+Stack: static HTML + Tailwind front-end (GitHub Pages), Flask + SQLite back-end (Stripe webhooks, Resend email, HubSpot CRM push), 13 product demo videos on YouTube. Each app runs as its own subdomain microservice.
 
 Free interactive cost calculators (per-door for property, per-user for manufacturing). Free downloadable templates (shift handoff, NCR/CAPA log, property inspection checklist) at /lead-magnets/.
 
-Funnel is fully self-serve: no live demos, no sales calls, no "book a meeting." YouTube video → Stripe checkout. 14-day money-back guarantee, cancel anytime.
+Funnel is fully self-serve: no live demos, no sales calls, no "book a meeting." YouTube video → Stripe checkout. Every subscription starts with a 30-day free trial (card up front, first charge on day 30, cancel any time before then); if it does convert and you didn't mean to continue, there's a 14-day refund window on that first charge.
 
 Looking for honest feedback — especially from anyone running small manufacturing operations (20–250 employees) or small landlord portfolios (5–50 units). What's missing? What would make you switch?
 
@@ -65,7 +97,7 @@ Storefront: https://store.plainspokenfoundrynine.com
 Comparisons: https://store.plainspokenfoundrynine.com/comparisons/
 Manufacturing landing: https://store.plainspokenfoundrynine.com/for-manufacturers.html
 Property landing: https://store.plainspokenfoundrynine.com/for-landlords.html
-YouTube channel (14 demos): https://www.youtube.com/@plainspokenfoundrynine
+YouTube channel (13 demos): https://www.youtube.com/@plainspokenfoundrynine
 ```
 
 ## 4. Then click **submit**. Copy your post's URL. Keep the tab open.
@@ -80,7 +112,15 @@ Keep these here and adapt to the real comment — never paste verbatim. HN can s
 > Mostly flat pricing — those vendors do real things we don't (Buildium's mature accounting, Katana's Shopify sync). The comparison pages cover the trade-offs explicitly. Honest answer is we're the right pick if (a) you have 6+ users / 30+ units and per-seat math hurts, and (b) you don't need the deep features the established vendors built over 10+ years.
 
 **"Why no free tier?"**
-> 14-day money-back acts as a free trial without us building separate gated feature paths. The flat $119/$249/mo is intentionally low enough that "subscribe, try, refund if it's not the fit" is the simplest path for both sides.
+> There is a free trial — 30 days, on every subscription. Card up front, first charge on day 30, cancel any time before it. If it does convert and you didn't mean to continue, there's a 14-day refund window on that first charge. What we don't have is a permanently free *tier*, because that means building and maintaining gated feature paths, and at $119/$249 flat the trial does the same job for both sides.
+
+> 🔴 **This answer was WRONG until 2026-08-08 and would have cost you the thread.** It used to read
+> "14-day money-back acts as a free trial" — i.e. it denied having a free trial. **PF9 has a 30-day
+> free trial**, implemented (`store_api.py:623,1845` — `trial_period_days=30`), documented
+> (`refund.html`: "Every new subscription begins with a 30-day free trial"), and advertised in the
+> storefront hero. Telling HN "no free tier" while your own landing page says **30-Day Free Trial**
+> is a one-click catch, on the exact audience that checks. The 14-day figure is real but it is the
+> **refund window on the first charge**, not the trial — don't conflate them again.
 
 **"Where's the moat?"**
 > Honestly, pricing model + speed-to-deploy. Established vendors can't switch to flat without cannibalizing their core revenue. Speed is easier to copy, but we've already shipped the structural work — the per-seat vendors are years deep in their architecture.

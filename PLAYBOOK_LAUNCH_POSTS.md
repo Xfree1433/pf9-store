@@ -43,11 +43,11 @@ The pricing math vs the alternatives:
 
 Six head-to-head comparison pages with honest "where they win" sections at store.plainspokenfoundrynine.com/comparisons/ — Buildium, AppFolio, DoorLoop, MRPeasy, Katana, Fishbowl. The "where they win" sections name real competitor strengths (Buildium's mature accounting, Katana's Shopify-Xero sync, Fishbowl's QuickBooks bidirectional). Pretending otherwise just makes comparison content untrustworthy.
 
-Stack: static HTML + Tailwind front-end (GitHub Pages), Flask + SQLite back-end (Stripe webhooks, Resend email, HubSpot CRM push), 14 product demo videos on YouTube. Each app runs as its own subdomain microservice.
+Stack: static HTML + Tailwind front-end (GitHub Pages), Flask + SQLite back-end (Stripe webhooks, Resend email, HubSpot CRM push), 13 product demo videos on YouTube. Each app runs as its own subdomain microservice.
 
 Free interactive cost calculators (per-door for property, per-user for manufacturing). Free downloadable templates (shift handoff, NCR/CAPA log, property inspection checklist) at /lead-magnets/.
 
-Funnel is fully self-serve: no live demos, no sales calls, no "book a meeting." YouTube video → Stripe checkout. 14-day money-back guarantee, cancel anytime.
+Funnel is fully self-serve: no live demos, no sales calls, no "book a meeting." YouTube video → Stripe checkout. Every subscription starts with a 30-day free trial (card up front, first charge on day 30, cancel any time before then); if it does convert and you didn't mean to continue, there's a 14-day refund window on that first charge.
 
 Looking for honest feedback — especially from anyone running small manufacturing operations (20–250 employees) or small landlord portfolios (5–50 units). What's missing? What would make you switch?
 
@@ -55,7 +55,7 @@ Storefront: https://store.plainspokenfoundrynine.com
 Comparisons: https://store.plainspokenfoundrynine.com/comparisons/
 Manufacturing landing: https://store.plainspokenfoundrynine.com/for-manufacturers.html
 Property landing: https://store.plainspokenfoundrynine.com/for-landlords.html
-YouTube channel (14 demos): https://www.youtube.com/@plainspokenfoundrynine
+YouTube channel (13 demos): https://www.youtube.com/@plainspokenfoundrynine
 ```
 
 ### First-hour comment templates
@@ -66,7 +66,13 @@ HN comments are often pointed. Have these reply-templates ready (don't paste ver
 > Mostly flat pricing — those vendors do real things we don't (Buildium's mature accounting, Katana's Shopify sync). The comparison pages cover the trade-offs explicitly. Honest answer is we're the right pick if (a) you have 6+ users / 30+ units and per-seat math hurts, and (b) you don't need the deep features the established vendors built over 10+ years.
 
 **Q: "Why no free tier?"**
-> 14-day money-back acts as a free trial without us building separate gated feature paths. The flat $119/$249/mo is intentionally low enough that "subscribe, try, refund if it's not the fit" is the simplest path for both sides.
+> There is a free trial — 30 days, on every subscription. Card up front, first charge on day 30, cancel any time before it. If it does convert and you didn't mean to continue, there's a 14-day refund window on that first charge. What we don't have is a permanently free *tier*, because that means building and maintaining gated feature paths, and at $119/$249 flat the trial does the same job for both sides.
+
+> 🔴 **Corrected 2026-08-08 — this used to deny having a free trial.** PF9 ships a **30-day free
+> trial**: `store_api.py:623,1845` (`trial_period_days=30`), `refund.html` ("Every new subscription
+> begins with a 30-day free trial"), and the storefront hero all agree. The 14-day figure is the
+> **refund window on the first charge**, a different thing. Don't conflate them — saying "no free
+> tier" while the landing page advertises **30-Day Free Trial** is a one-click catch.
 
 **Q: "Where's the moat?"**
 > Honestly, pricing model + speed-to-deploy. Established vendors can't switch to flat without cannibalizing their core revenue. Speed is easier to copy, but we've already shipped the structural work — the per-seat vendors are years deep in their architecture.
@@ -100,7 +106,7 @@ HN comments are often pointed. Have these reply-templates ready (don't paste ver
 Each tweet is its own line below. Number them in your client (1/12, 2/12, etc.) or use X's threading.
 
 ```
-1/12 I shipped 14 product demo videos in two weeks for Plainspoken Foundry Nine — flat-rate manufacturing and property software. No per-seat fees, no per-door fees, no $50k ERP quotes. Here's what I learned and the math against per-seat competitors.
+1/12 I shipped 13 product demo videos in two weeks for Plainspoken Foundry Nine — flat-rate manufacturing and property software. No per-seat fees, no per-door fees, no $50k ERP quotes. Here's what I learned and the math against per-seat competitors.
 
 2/12 The pricing model came first. Manufacturing Suite is $249/mo flat for 5 apps. Property Suite is $119/mo flat for the bundle. Unlimited users. The price doesn't change whether you have 5 employees or 250, 5 units or 250.
 
@@ -153,7 +159,7 @@ Honest comparison pages for each: https://store.plainspokenfoundrynine.com/compa
 ```
 
 ```
-Built 14 product demo videos in 2 weeks for our flat-rate SaaS. Each one is 90 seconds. No signup, no sales call.
+Built 13 product demo videos in 2 weeks for our flat-rate SaaS. Most run about 3 minutes. No signup, no sales call.
 
 The funnel: visitor → YouTube → Stripe. End to end self-serve.
 
@@ -222,7 +228,7 @@ At 100 units on Buildium: ~$167. PF9: still $119.
 - Honest feedback on the comparison-page approach (the "what they do well" sections specifically)
 - Pricing critique — am I leaving money on the table at $249/$119?
 - What's missing that would block you from switching from your current setup?
-- Other indie hackers who've shipped product video pipelines at this scale (14 videos in 2 weeks) — how did you maintain quality?
+- Other indie hackers who've shipped product video pipelines at this scale (13 videos in 2 weeks) — how did you maintain quality?
 
 Storefront: https://store.plainspokenfoundrynine.com
 Manufacturing landing: store.plainspokenfoundrynine.com/for-manufacturers.html

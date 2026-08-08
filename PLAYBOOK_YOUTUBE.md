@@ -1,7 +1,7 @@
 # PF9 YouTube Channel SEO Playbook
 
 **Channel:** https://www.youtube.com/@plainspokenfoundrynine
-**Videos live:** 14 product demos
+**Videos live:** 13 product demos (verified 2026-08-08 — TASKFLOW's is a 404; see `PLAYBOOK_VIDEOS.md`)
 **Goal:** lift YouTube's organic discovery of each video for category-relevant search queries inside YouTube itself, plus drive traffic from YouTube → storefront.
 
 **Time to ship everything in this playbook:** ~45 minutes of pasting into YouTube Studio.
@@ -43,7 +43,7 @@ Built by operators who got tired of per-seat pricing growing every time they hir
 
 **Banner copy:**
 - Line 1 (large): **Flat-rate software. No per-seat fees.**
-- Line 2 (medium): 14 product demos · 90 seconds each · subscribe in 60 seconds
+- Line 2 (medium): 13 product demos · ~3 minutes each · subscribe in 60 seconds
 - Line 3 (small): store.plainspokenfoundrynine.com
 
 ### A3. Channel links (sidebar)

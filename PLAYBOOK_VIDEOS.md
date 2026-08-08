@@ -42,6 +42,21 @@ done
 The watch page itself is JS-rendered and returns 200 even for a dead video, so **do not verify with
 `curl` on `youtu.be/<id>` — use the oEmbed endpoint above.**
 
+> 🔴 **This file is the PLAN. It does not describe what is actually published.** Measured 2026-08-08
+> by reading `lengthSeconds` off each watch page (identities confirmed via oEmbed titles):
+>
+> | Claim in this file | Reality on YouTube |
+> |---|---|
+> | "60 seconds preferred, **90 seconds maximum**" (Global standards) | **12 of 13 run 156–196s** (2.6–3.3 min). Only PROPERTY_BUNDLE (63s) is inside the limit. Median ~184s — **2× the stated maximum.** |
+> | Per-app **Title** metadata, e.g. `SHIFTLOG — End-of-Shift Handoffs in 15 Seconds ($49/mo Flat)` | Published title is `SHIFTLOG: Digital Shift Handoff Management \| …` — **the titles in this file were never applied.** |
+> | Measured script lengths (37–57s of speech) | Videos are 3–4× longer than their scripts, so the published cuts contain a lot that is not in these scripts. |
+>
+> **Consequences:** (1) don't quote this file's durations or titles in marketing — `PLAYBOOK_LAUNCH_POSTS.md`
+> claimed "each one is 90 seconds" and was wrong by ~2×; (2) treat the metadata blocks as *proposed*,
+> not *live* — check YouTube Studio before asserting anything about a published video; (3) if the
+> 90-second maximum is still the real standard, **the existing library already violates it** and that
+> is a re-edit decision, not a doc fix.
+
 Channel: https://www.youtube.com/@plainspokenfoundrynine
 
 When a new video ships, add the URL to the table above, swap the `href` on the matching `<a data-product="...">Watch Demo</a>` in `index.html`, and append a `VideoObject` entry to the JSON-LD block in `<head>`.
