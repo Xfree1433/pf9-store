@@ -81,6 +81,22 @@ When a new video ships, add the URL to the table above, swap the `href` on the m
 | **Proof** | 45–55 | Price, what's included, the differentiator (flat rate, no per-user fees). |
 | **CTA** | 55–60 | Subscribe URL + 14-day money-back. |
 
+> ⚠️ **The five-beat timings above, and every per-app shot list in this file, were written assuming a
+> ~60-second read. They are stale.** Corrected 2026-08-08: every script's word count was **measured**
+> and every one came in short — by 14 to 60 words. What each section used to call a "Length target"
+> was an aspiration written *before* the script and never reconciled with it; those counts have been
+> replaced with **measured** values and relabelled `Measured length`.
+>
+> **Consequences to handle at record time — do not skip:**
+> 1. **Re-time the shot list against the real read.** A shot list ending at `0:55–0:60` against a
+>    37-second script (INSPECTR) leaves ~23 seconds unaccounted for. Time the voiceover first, then
+>    distribute shots across the actual duration.
+> 2. **Do NOT pad the script to reach 60 seconds.** Sub-60 is explicitly preferred in the standards
+>    above, and improvised padding is exactly how an unshipped feature ends up in marketing copy —
+>    see the Gantt incident in §10 and `MARKETING.md`. If a script must grow, add a **verified**
+>    feature, checked against the app's source, not a plausible-sounding one.
+> 3. **Re-measure after any script edit** and update both the word count and `Measured length`.
+
 ---
 
 # Manufacturing Suite
@@ -90,9 +106,9 @@ When a new video ships, add the URL to the table above, swap the `href` on the m
 **Tagline:** *Walk in at 6am. See what happened on second shift.*
 **Slug:** `shiftlog`
 **Voice:** Daniel
-**Length target:** 60 seconds
+**Measured length:** ~54 seconds (from the word count below, at the 150 wpm house pace)
 
-### Voiceover script (155 words)
+### Voiceover script (134 words — MEASURED, ~54s at 150 wpm)
 
 > It's 6 a.m. You're walking the floor. Second shift left four hours ago.
 >
@@ -145,9 +161,9 @@ When a new video ships, add the URL to the table above, swap the `href` on the m
 **Tagline:** *Inventory that doesn't live in a spreadsheet.*
 **Slug:** `flowtrack`
 **Voice:** Daniel
-**Length target:** 75 seconds
+**Measured length:** ~56 seconds (from the word count below, at the 150 wpm house pace)
 
-### Voiceover script (185 words)
+### Voiceover script (141 words — MEASURED, ~56s at 150 wpm)
 
 > If you're tracking inventory in a spreadsheet, here's what's true.
 >
@@ -199,9 +215,9 @@ When a new video ships, add the URL to the table above, swap the `href` on the m
 **Tagline:** *Quality management without the paper.*
 **Slug:** `qualifi`
 **Voice:** Daniel
-**Length target:** 70 seconds
+**Measured length:** ~53 seconds (from the word count below, at the 150 wpm house pace)
 
-### Voiceover script (170 words)
+### Voiceover script (132 words — MEASURED, ~53s at 150 wpm)
 
 > Paper inspection forms are a tax. Time to fill out, time to file, time to find again when the customer calls back six weeks later asking about lot 4-7-2.
 >
@@ -248,9 +264,9 @@ When a new video ships, add the URL to the table above, swap the `href` on the m
 **Tagline:** *Operations dashboards without a BI consultant.*
 **Slug:** `reportr`
 **Voice:** Daniel
-**Length target:** 60 seconds
+**Measured length:** ~40 seconds (from the word count below, at the 150 wpm house pace)
 
-### Voiceover script (150 words)
+### Voiceover script (101 words — MEASURED, ~40s at 150 wpm)
 
 > Most operations dashboards live in a BI tool that costs ten thousand dollars a year and a consultant who built it twice.
 >
@@ -294,9 +310,9 @@ When a new video ships, add the URL to the table above, swap the `href` on the m
 **Tagline:** *Field inspections from your phone.*
 **Slug:** `inspectr`
 **Voice:** Daniel
-**Length target:** 60 seconds
+**Measured length:** ~37 seconds (from the word count below, at the 150 wpm house pace)
 
-### Voiceover script (150 words)
+### Voiceover script (92 words — MEASURED, ~37s at 150 wpm)
 
 > Field inspections live on a clipboard, a camera roll, and a memory.
 >
@@ -338,9 +354,9 @@ When a new video ships, add the URL to the table above, swap the `href` on the m
 **Tagline:** *Property management without per-door fees.*
 **Slug:** `landlordr`
 **Voice:** Charlotte
-**Length target:** 75 seconds
+**Measured length:** ~48 seconds (from the word count below, at the 150 wpm house pace)
 
-### Voiceover script (180 words)
+### Voiceover script (121 words — MEASURED, ~48s at 150 wpm)
 
 > If you have eight rental units, you don't need a fifty-thousand-dollar property management system.
 >
@@ -388,9 +404,9 @@ When a new video ships, add the URL to the table above, swap the `href` on the m
 **Tagline:** *A tenant portal your tenants will actually use.*
 **Slug:** `tenantlink`
 **Voice:** Charlotte
-**Length target:** 60 seconds
+**Measured length:** ~42 seconds (from the word count below, at the 150 wpm house pace)
 
-### Voiceover script (150 words)
+### Voiceover script (106 words — MEASURED, ~42s at 150 wpm)
 
 > Tenants want three things from a portal. Pay rent. Submit a maintenance request. See the lease.
 >
@@ -432,9 +448,9 @@ When a new video ships, add the URL to the table above, swap the `href` on the m
 **Tagline:** *The full property suite, $119/month flat.*
 **Slug:** `property-bundle`
 **Voice:** Charlotte
-**Length target:** 60 seconds
+**Measured length:** ~40 seconds (from the word count below, at the 150 wpm house pace)
 
-### Voiceover script (150 words)
+### Voiceover script (101 words — MEASURED, ~40s at 150 wpm)
 
 > If you manage rental property, here's the math.
 >
@@ -474,9 +490,9 @@ When a new video ships, add the URL to the table above, swap the `href` on the m
 **Tagline:** *Permit tracking for property managers and contractors.*
 **Slug:** `permitr`
 **Voice:** Charlotte
-**Length target:** 75 seconds
+**Measured length:** ~48 seconds (from the word count below, at the 150 wpm house pace)
 
-### Voiceover script (180 words)
+### Voiceover script (120 words — MEASURED, ~48s at 150 wpm)
 
 > Permits expire. Inspections get missed. Renewal letters land on someone's desk and stay there. Then the city calls.
 >
@@ -532,9 +548,9 @@ When a new video ships, add the URL to the table above, swap the `href` on the m
 **Tagline:** *Project management for teams that do not run sprints.*
 **Slug:** `taskflow`
 **Voice:** Daniel (operations app, not property — the old spec's `Charlotte` was part of the mixup)
-**Length target:** 60 seconds
+**Measured length:** ~54 seconds (from the word count below, at the 150 wpm house pace)
 
-### Voiceover script (150 words)
+### Voiceover script (136 words — MEASURED, ~54s at 150 wpm)
 
 > Most project tools are built for software teams, then sold to everyone else. So the operations
 > crew quietly goes back to a shared spreadsheet.
@@ -603,6 +619,19 @@ Removed when the video 404'd; put back **only** once the new video is live and v
 > table and has no video — but had one been recorded from this section it would have quoted a price
 > less than half the real one, on camera, permanently.
 >
+> 🔴 **Second pass, same day — the first correction was incomplete and that is the lesson here.**
+> Only the section header was fixed. The two fields that are actually *used* still carried the error:
+> the **voiceover script** spoke "Three tiers. Seventy-nine dollars… one ninety-nine… three ninety-nine",
+> and the **YouTube title** read `(from $79/mo)`. A warning banner above a wrong script does not
+> stop anyone reading the script aloud. **When correcting a price, grep the whole section and fix
+> every field a recordist or uploader touches — header, script, shot list, title, thumbnail.**
+>
+> 🔴 **The tier structure itself does not exist.** `BILLING.md` lists Starter $79 / Growth $199 /
+> Operations $399 — but **all three rows read "(create in Stripe)", meaning no Stripe price was ever
+> created for any of them.** `index.html` offers exactly one button: `openSubscribe('OPSIQ','$199/mo')`.
+> So the old script sold a three-tier menu of which **zero tiers were purchasable**. The script now
+> states the single flat $199 that the live button actually charges.
+>
 > ⚠️ **OPSIQ is BYO-Claude-API-key** (each customer brings their own). Any price stated on camera
 > must carry that caveat, or $199/mo reads as all-in when it is not. EXTRACTR is the other BYO-key
 > product — same rule applies there.
@@ -610,9 +639,9 @@ Removed when the video 404'd; put back **only** once the new video is live and v
 **Tagline:** *Ask your operations data a question. Get an answer.*
 **Slug:** `opsiq`
 **Voice:** Daniel
-**Length target:** 75 seconds
+**Measured length:** ~57 seconds (from the word count below, at the 150 wpm house pace)
 
-### Voiceover script (185 words)
+### Voiceover script (143 words — MEASURED, ~57s at 150 wpm)
 
 > Most operations dashboards answer the questions you already knew to ask.
 >
@@ -624,7 +653,7 @@ Removed when the video 404'd; put back **only** once the new video is live and v
 >
 > Plain English in. Procurement, production, quality, workforce, maintenance — connected through your existing PF9 apps or via CSV import.
 >
-> Three tiers. Seventy-nine dollars for the team plan, one hundred ninety-nine for multi-site, three hundred ninety-nine for full ops intelligence with custom alerts and forecasting.
+> One hundred ninety-nine dollars a month, flat, however many people are in it. You bring your own Claude API key, so the model usage is billed to you at cost — no markup from us.
 >
 > No data warehouse. No prompt engineering. No analyst hire.
 >
@@ -638,12 +667,12 @@ Removed when the video 404'd; put back **only** once the new video is live and v
 | 2 | 0:10–0:25 | OPSIQ natural-language query box being typed in | `screenshots/opsiq_*` shot A |
 | 3 | 0:25–0:40 | Returned answer with tiles | shot B |
 | 4 | 0:40–0:55 | Connected sources panel | shot C |
-| 5 | 0:55–1:10 | Pricing tier comparison | static |
+| 5 | 0:55–1:10 | Single flat price card: `$199/mo · unlimited users · BYO API key` | static |
 | 6 | 1:10–1:15 | End frame | static |
 
 ### YouTube metadata
 
-- **Title:** `OPSIQ — Ask Your Operations Data a Question (from $79/mo)`
+- **Title:** `OPSIQ — Ask Your Operations Data a Question ($199/mo, Unlimited Users)`
 - **Tags:** `operations intelligence, AI dashboard, natural language BI, manufacturing analytics, ask AI operations data`
 - **Thumbnail copy:** `TYPE THE QUESTION · GET THE ANSWER · OPSIQ`
 
@@ -654,9 +683,9 @@ Removed when the video 404'd; put back **only** once the new video is live and v
 **Tagline:** *Document data extraction without the manual entry.*
 **Slug:** `extractr`
 **Voice:** Daniel
-**Length target:** 60 seconds
+**Measured length:** ~38 seconds (from the word count below, at the 150 wpm house pace)
 
-### Voiceover script (150 words)
+### Voiceover script (95 words — MEASURED, ~38s at 150 wpm)
 
 > POs, packing slips, COIs, invoices. Every one of them is a document somebody has to read, then re-type into a system.
 >
@@ -693,9 +722,9 @@ Removed when the video 404'd; put back **only** once the new video is live and v
 **Tagline:** *A help desk that doesn't price you out.*
 **Slug:** `supportr`
 **Voice:** Daniel
-**Length target:** 60 seconds
+**Measured length:** ~41 seconds (from the word count below, at the 150 wpm house pace)
 
-### Voiceover script (150 words)
+### Voiceover script (103 words — MEASURED, ~41s at 150 wpm)
 
 > Most help desk software charges per agent. Eighty dollars. A hundred. More if you want the AI features.
 >
@@ -733,9 +762,9 @@ Removed when the video 404'd; put back **only** once the new video is live and v
 **Tagline:** *Preventive maintenance that doesn't live on a sticky note.*
 **Slug:** `maintainr`
 **Voice:** Daniel
-**Length target:** 60 seconds
+**Measured length:** ~39 seconds (from the word count below, at the 150 wpm house pace)
 
-### Voiceover script (150 words)
+### Voiceover script (98 words — MEASURED, ~39s at 150 wpm)
 
 > Preventive maintenance fails at the calendar.
 >
