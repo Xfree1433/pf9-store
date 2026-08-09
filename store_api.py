@@ -107,8 +107,8 @@ HUBSPOT_LIST_SUBSCRIBERS   = int(os.environ.get('HUBSPOT_LIST_SUBSCRIBERS', '14'
 # industrial/field operations and belongs on the manufacturing list rather than
 # in neither; MARKUPR follows its own storefront card, which is
 # data-category="property operations", so the two agree instead of the CRM
-# quietly disagreeing with the shop page. Neither is part of the $335
-# Manufacturing Suite or the $119 Property Suite — this set is read solely by
+# quietly disagreeing with the shop page. Neither is part of the $225
+# Manufacturing Suite or the $89 Property Suite — this set is read solely by
 # the two HubSpot/Klaviyo list routers below and carries no pricing.
 #
 # Note the matching is `app in p`, a SUBSTRING test, so a new key must not be a
@@ -657,13 +657,13 @@ PRICE_MAP = {
     'EXTRACTR': os.environ.get('STRIPE_EXTRACTR_PRICE_ID', ''),
     'SUPPORTR': os.environ.get('STRIPE_SUPPORTR_PRICE_ID', ''),
     'MAINTAINR': os.environ.get('STRIPE_MAINTAINR_PRICE_ID', ''),
-    # $299/mo, the price the storefront card has been advertising while the
+    # $69/mo, the price the storefront card has been advertising while the
     # product sat on a waitlist. Until STRIPE_FIELDVIEWR_PRICE_ID is set on the
     # store host this resolves to '' and checkout returns 400 rather than
     # creating a Stripe session — the storefront card stays on Join Waitlist
     # until that env var exists, so no customer can reach the dead path.
     'FIELDVIEWR': os.environ.get('STRIPE_FIELDVIEWR_PRICE_ID', ''),
-    # $59/mo, likewise already advertised on a waitlist card. Same rule as
+    # $29/mo, likewise already advertised on a waitlist card. Same rule as
     # FIELDVIEWR above: unset means '' means checkout 400s, and the card stays
     # on Join Waitlist until STRIPE_MARKUPR_PRICE_ID exists on the store host.
     'MARKUPR': os.environ.get('STRIPE_MARKUPR_PRICE_ID', ''),

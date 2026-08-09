@@ -162,7 +162,7 @@
             <p class="text-xs text-gray-500 mb-6">Last verified against vendor pricing pages April 2026. Vendors increasingly move to quote-based pricing — numbers below are approximations of entry-tier cost.</p>
             <div class="space-y-6 text-sm text-gray-700">
                 <div>
-                    <h3 class="font-semibold mb-1">PF9 Property Suite — $119/mo flat</h3>
+                    <h3 class="font-semibold mb-1">PF9 Property Suite — $89/mo flat</h3>
                     <p>LANDLORDR + TENANTLINK bundle. No per-unit fee, no per-user fee. Price does not change from 1 unit to 500. Published on our <a href="/for-landlords.html" class="text-black underline">property page</a>.</p>
                 </div>
                 <div>
@@ -225,7 +225,7 @@
         const savingsYearlyEl = document.getElementById('savingsYearly');
 
         const providers = [
-            { name: 'PF9 Property Suite', tag: 'Flat rate — no per-unit fee, any portfolio size', cost: () => ({ value: 119, label: '$119' }), color: 'bg-green-600', isPF9: true },
+            { name: 'PF9 Property Suite', tag: 'Flat rate — no per-unit fee, any portfolio size', cost: () => ({ value: 89, label: '$89' }), color: 'bg-green-600', isPF9: true },
             { name: 'Buildium Essential', tag: 'From $62/mo; per-unit fees not publicly disclosed', cost: u => {
                 const est = Math.max(62, 62 + Math.max(0, u - 30) * 1.5);
                 return { value: est, label: '~$' + Math.round(est).toLocaleString('en-US') };
@@ -305,7 +305,7 @@
                     <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                         <div>
                             <p class="text-sm font-semibold text-blue-900">At ${units} units, PF9 isn't the cheapest — yet.</p>
-                            <p class="text-xs text-blue-800 mt-1">Per-unit vendors start cheap, then scale with your portfolio. PF9 stays at $119/mo forever — unlimited units, unlimited tenants, unlimited team. You're buying predictability.</p>
+                            <p class="text-xs text-blue-800 mt-1">Per-unit vendors start cheap, then scale with your portfolio. PF9 stays at $89/mo forever — unlimited units, unlimited tenants, unlimited team. You're buying predictability.</p>
                         </div>
                         <a href="/for-landlords.html" class="inline-flex items-center justify-center bg-black text-white font-semibold px-5 py-2.5 rounded-lg text-sm hover:bg-gray-800 transition-colors whitespace-nowrap">Why flat pricing →</a>
                     </div>`;
@@ -315,7 +315,7 @@
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div>
                             <p class="text-sm font-semibold text-gray-900">Your portfolio size is bigger than most vendors publish pricing for.</p>
-                            <p class="text-xs text-gray-600 mt-1">PF9 stays at $119/mo regardless. Most competitors want a custom quote at this scale.</p>
+                            <p class="text-xs text-gray-600 mt-1">PF9 stays at $89/mo regardless. Most competitors want a custom quote at this scale.</p>
                         </div>
                         <a href="/for-landlords.html" class="inline-flex items-center justify-center bg-black text-white font-semibold px-5 py-2.5 rounded-lg text-sm hover:bg-gray-800 transition-colors whitespace-nowrap">See PF9 Property Suite →</a>
                     </div>`;

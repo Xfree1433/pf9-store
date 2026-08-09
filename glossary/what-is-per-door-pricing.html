@@ -28,7 +28,7 @@
     {"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://store.plainspokenfoundrynine.com/"},{"@type":"ListItem","position":2,"name":"Glossary","item":"https://store.plainspokenfoundrynine.com/glossary/"},{"@type":"ListItem","position":3,"name":"Per-Door Pricing","item":"https://store.plainspokenfoundrynine.com/glossary/what-is-per-door-pricing.html"}]}
     </script>
     <script type="application/ld+json">
-    {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What does per-door pricing mean?","acceptedAnswer":{"@type":"Answer","text":"Per-door (also called per-unit) pricing means the property management software charges a monthly fee for each rental unit you manage. Common rates run $1-$5 per unit per month, often on top of a base monthly fee. A 50-unit portfolio at $2/door is $100/mo in per-unit fees plus the base."}},{"@type":"Question","name":"Why do vendors use per-door pricing?","acceptedAnswer":{"@type":"Answer","text":"Per-unit pricing aligns the vendor's revenue with the landlord's portfolio growth. As you add units, the vendor's bill grows proportionally. From the vendor's perspective it's a fair value-capture model. From the landlord's perspective it means software is one of the few costs that grows linearly with you instead of staying fixed."}},{"@type":"Question","name":"Is flat-rate always cheaper?","acceptedAnswer":{"@type":"Answer","text":"No — at very small portfolios (1-10 units), per-door pricing often undercuts flat-rate. Buildium at 5 units is roughly $62/mo, cheaper than PF9 Property Suite at $119/mo. The math flips around 30 units depending on the vendor. Flat-rate becomes meaningfully cheaper at 50+ units and significantly cheaper at 100+."}}]}
+    {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What does per-door pricing mean?","acceptedAnswer":{"@type":"Answer","text":"Per-door (also called per-unit) pricing means the property management software charges a monthly fee for each rental unit you manage. Common rates run $1-$5 per unit per month, often on top of a base monthly fee. A 50-unit portfolio at $2/door is $100/mo in per-unit fees plus the base."}},{"@type":"Question","name":"Why do vendors use per-door pricing?","acceptedAnswer":{"@type":"Answer","text":"Per-unit pricing aligns the vendor's revenue with the landlord's portfolio growth. As you add units, the vendor's bill grows proportionally. From the vendor's perspective it's a fair value-capture model. From the landlord's perspective it means software is one of the few costs that grows linearly with you instead of staying fixed."}},{"@type":"Question","name":"Is flat-rate always cheaper?","acceptedAnswer":{"@type":"Answer","text":"No — at very small portfolios (1-10 units), per-door pricing often undercuts flat-rate. Buildium at 5 units is roughly $62/mo, cheaper than PF9 Property Suite at $89/mo. Where the math flips depends on the vendor: around 11 units against DoorLoop, closer to 50 against Buildium. Past 100 units flat-rate is cheaper by a wide margin against both."}}]}
     </script>
 </head>
 <body class="bg-gray-50 text-gray-900 antialiased">
@@ -42,7 +42,7 @@
 
             <div class="bg-green-50 border border-green-200 rounded-xl p-5 mb-8">
                 <div class="text-xs font-semibold uppercase tracking-wider text-green-700 mb-2">TL;DR</div>
-                <p class="text-sm text-gray-800">Per-door is $1–$5 per unit per month, usually on top of a base fee. At small portfolios (1–10 units), per-door can be cheaper than flat-rate. Above ~30 units, flat-rate is almost always cheaper.</p>
+                <p class="text-sm text-gray-800">Per-door is $1–$5 per unit per month, usually on top of a base fee. At small portfolios (1–10 units), per-door can be cheaper than flat-rate. Above ~50 units, flat-rate is almost always cheaper.</p>
             </div>
 
             <h2 class="text-2xl font-bold mt-10 mb-3">The basic mechanics</h2>
@@ -69,17 +69,17 @@
                 <li>You aren't using the vendor's premium features (screening, marketing, etc.) and you're paying anyway</li>
                 <li>You want predictable monthly costs that don't change with portfolio size</li>
             </ul>
-            <p class="text-gray-700 mb-4">At those points, flat-rate alternatives like PF9 Property Suite ($119/mo for any portfolio size) often save hundreds-to-thousands of dollars per year.</p>
+            <p class="text-gray-700 mb-4">At those points, flat-rate alternatives like PF9 Property Suite ($89/mo for any portfolio size) often save hundreds-to-thousands of dollars per year.</p>
 
             <h2 class="text-2xl font-bold mt-10 mb-3">The actual math at common portfolio sizes</h2>
             <div class="overflow-x-auto bg-white rounded-xl border border-gray-200 mb-4">
                 <table class="w-full text-sm">
                     <thead class="bg-gray-50 border-b border-gray-200"><tr><th class="text-left px-4 py-3 font-semibold">Units</th><th class="text-right px-4 py-3 font-semibold">Buildium</th><th class="text-right px-4 py-3 font-semibold">DoorLoop Pro</th><th class="text-right px-4 py-3 font-semibold">PF9 Flat</th></tr></thead>
                     <tbody class="divide-y divide-gray-100">
-                        <tr><td class="px-4 py-3">10</td><td class="px-4 py-3 text-right">~$62</td><td class="px-4 py-3 text-right">$69 (Starter)</td><td class="px-4 py-3 text-right font-bold text-green-700">$119</td></tr>
-                        <tr><td class="px-4 py-3">50</td><td class="px-4 py-3 text-right">~$92</td><td class="px-4 py-3 text-right">$189</td><td class="px-4 py-3 text-right font-bold text-green-700">$119</td></tr>
-                        <tr><td class="px-4 py-3">100</td><td class="px-4 py-3 text-right">~$167</td><td class="px-4 py-3 text-right">$189</td><td class="px-4 py-3 text-right font-bold text-green-700">$119</td></tr>
-                        <tr><td class="px-4 py-3">250</td><td class="px-4 py-3 text-right">~$392</td><td class="px-4 py-3 text-right">$189</td><td class="px-4 py-3 text-right font-bold text-green-700">$119</td></tr>
+                        <tr><td class="px-4 py-3">10</td><td class="px-4 py-3 text-right">~$62</td><td class="px-4 py-3 text-right">$69 (Starter)</td><td class="px-4 py-3 text-right font-bold text-green-700">$89</td></tr>
+                        <tr><td class="px-4 py-3">50</td><td class="px-4 py-3 text-right">~$92</td><td class="px-4 py-3 text-right">$189</td><td class="px-4 py-3 text-right font-bold text-green-700">$89</td></tr>
+                        <tr><td class="px-4 py-3">100</td><td class="px-4 py-3 text-right">~$167</td><td class="px-4 py-3 text-right">$189</td><td class="px-4 py-3 text-right font-bold text-green-700">$89</td></tr>
+                        <tr><td class="px-4 py-3">250</td><td class="px-4 py-3 text-right">~$392</td><td class="px-4 py-3 text-right">$189</td><td class="px-4 py-3 text-right font-bold text-green-700">$89</td></tr>
                     </tbody>
                 </table>
             </div>
