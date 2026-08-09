@@ -657,11 +657,11 @@ PRICE_MAP = {
     'EXTRACTR': os.environ.get('STRIPE_EXTRACTR_PRICE_ID', ''),
     'SUPPORTR': os.environ.get('STRIPE_SUPPORTR_PRICE_ID', ''),
     'MAINTAINR': os.environ.get('STRIPE_MAINTAINR_PRICE_ID', ''),
-    # $199/mo, the price the storefront card has been advertising while the
-    # product sat on a waitlist. Until STRIPE_FIELDVIEWR_PRICE_ID is set on the
-    # store host this resolves to '' and checkout returns 400 rather than
-    # creating a Stripe session — the storefront card stays on Join Waitlist
-    # until that env var exists, so no customer can reach the dead path.
+    # $199/mo. LIVE as of 2026-08-09: the env var is set on the store host and the
+    # storefront card now calls openSubscribe, so this is a reachable money path.
+    # The empty-string default still matters as the failure mode — if the var ever
+    # goes missing this resolves to '' and checkout 400s instead of creating a
+    # session against a bogus price.
     'FIELDVIEWR': os.environ.get('STRIPE_FIELDVIEWR_PRICE_ID', ''),
     # $59/mo, likewise already advertised on a waitlist card. Same rule as
     # FIELDVIEWR above: unset means '' means checkout 400s, and the card stays
