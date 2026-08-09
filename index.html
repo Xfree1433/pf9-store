@@ -598,24 +598,22 @@
                 </div>
 
                 <!-- FIELDVIEWR -->
-                <div class="product-card bg-white rounded-xl shadow-sm card-hover accent-operations relative" data-category="operations manufacturing" data-product="FIELDVIEWR">
-                    <span class="absolute top-3 right-3 text-[10px] font-semibold bg-amber-500 text-white px-2 py-0.5 rounded-full uppercase tracking-wider">Coming Soon</span>
+                <div class="product-card bg-white rounded-xl shadow-sm card-hover accent-operations" data-category="operations manufacturing" data-product="FIELDVIEWR">
                     <div class="p-6">
                         <div class="flex items-start justify-between mb-4">
                             <div class="w-10 h-10 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                             </div>
-                            <span class="text-xs font-medium bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full mr-24">Operations</span>
+                            <span class="text-xs font-medium bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full">Operations</span>
                         </div>
                         <h3 class="text-lg font-bold mb-1">FIELDVIEWR</h3>
                         <p class="text-sm text-gray-500 mb-4">SCADA visualization for field operations. Live HMI mimic diagrams, real-time alarms, historian trends, and P&amp;ID schematics &mdash; in the browser, no control-room hardware.</p>
-                        <p class="text-xs text-amber-600 bg-amber-50 rounded px-2 py-1 mb-3">Launching soon. Join the waitlist to be notified at launch and see a live demo.</p>
                         <div class="flex items-baseline gap-1 mb-5">
                             <span class="text-2xl font-bold">$199</span>
                             <span class="text-sm text-gray-500">/mo</span>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="openWaitlist('FIELDVIEWR')" class="flex-1 text-center text-sm font-medium py-2 px-4 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors">Join Waitlist</button>
+                            <button onclick="openSubscribe('FIELDVIEWR','$199/mo')" class="flex-1 text-center text-sm font-medium py-2 px-4 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors">Subscribe</button>
                         </div>
                     </div>
                 </div>
@@ -878,7 +876,8 @@
         'COMPLI': 'Compli',
         'EXTRACTR': 'Extractr',
         'SUPPORTR': 'Supportr',
-        'MAINTAINR': 'Maintainr'
+        'MAINTAINR': 'Maintainr',
+        'FIELDVIEWR': 'FieldViewr'
     };
 
     const API_URL = 'https://app.plainspokenfoundrynine.com/store-api';

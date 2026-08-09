@@ -1717,9 +1717,11 @@ def demo_request():
         # not about markup; it is about the sentence.
         #
         # `^[A-Z0-9]{2,20}$` is not a guess at what looks safe — it is exactly
-        # what the two live callers send. index.html has precisely two:
-        # openWaitlist('MARKUPR') and openWaitlist('FIELDVIEWR'). Anything else
-        # falls through to the template's `|default:'PF9'`, which reads fine.
+        # what the live callers send. index.html now has precisely ONE:
+        # openWaitlist('MARKUPR'). FIELDVIEWR was the second until its card
+        # flipped to Subscribe (2026-08-09); the pattern is unchanged because it
+        # was never a whitelist of those two names. Anything else falls through
+        # to the template's `|default:'PF9'`, which reads fine.
         if lead_type == 'waitlist' and product:
             bare = product.split(' (')[0].strip()
             if re.fullmatch(r'[A-Z0-9]{2,20}', bare):

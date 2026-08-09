@@ -98,12 +98,15 @@ r, ev = post({'name': 'sam', 'email': 'sam@example.com', 'company': '',
 p = (ev or {}).get('properties', {})
 print('   ', json.dumps(p, sort_keys=True))
 expect('lead_type=waitlist', p.get('lead_type') == 'waitlist')
-expect('no product property (MARKUPR not in PRICE_MAP)', 'product' not in p)
+expect("no product property ('MARKUPR (waitlist)' is not a PRICE_MAP key)", 'product' not in p)
 expect('product_tag keeps the raw string', p.get('product_tag') == 'MARKUPR (waitlist)')
 expect('no company key when blank', 'company' not in p)
 expect('no has_question outside question leads', 'has_question' not in p)
 expect('no source_page without a Referer', 'source_page' not in p)
 expect('product_name is the bare name', p.get('product_name') == 'MARKUPR')
+# A suffix-stripping test, not a launch-status one. FIELDVIEWR's card flipped to
+# Subscribe on 2026-08-09 so index.html no longer sends its tag, but old rows and
+# any re-flip still have to parse, and the parser must not be name-specific.
 for tag, want in [('FIELDVIEWR (waitlist)', 'FIELDVIEWR'), ('MARKUPR (waitlist)', 'MARKUPR')]:
     _, e2 = post({'name': 'w', 'email': 'w@example.com', 'product': tag, 'message': 'x'})
     expect(f'{tag:24} -> {want}', (e2 or {}).get('properties', {}).get('product_name') == want)
