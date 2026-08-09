@@ -376,13 +376,13 @@
                 </div>
 
                 <!-- MARKUPR -->
-                <div class="product-card bg-white rounded-xl shadow-sm card-hover accent-property relative" data-category="property operations" data-product="MARKUPR">
-                    <span class="absolute top-3 right-3 text-[10px] font-semibold bg-amber-500 text-white px-2 py-0.5 rounded-full uppercase tracking-wider">Coming Soon</span>
+                <div class="product-card bg-white rounded-xl shadow-sm card-hover accent-property" data-category="property operations" data-product="MARKUPR">
                     <div class="p-6">
                         <div class="flex items-start justify-between mb-4">
                             <div class="w-10 h-10 bg-green-100 text-green-600 rounded-lg flex items-center justify-center">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                             </div>
+                            <span class="text-xs font-medium bg-green-50 text-green-700 px-2 py-0.5 rounded-full">New</span>
                         </div>
                         <h3 class="text-lg font-bold mb-1">MARKUPR</h3>
                         <p class="text-sm text-gray-500 mb-4">PDF markup, measurement & real-time collaboration. Redline plans, take off quantities, and collaborate live on drawings with version control and an embeddable viewer.</p>
@@ -392,7 +392,7 @@
                         </div>
                         <div class="flex gap-2">
                             <a href="https://www.youtube.com/@plainspokenfoundrynine" target="_blank" rel="noopener" data-product="MARKUPR" class="flex-1 text-center text-sm font-medium py-2 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Watch Demo</a>
-                            <button onclick="openWaitlist('MARKUPR')" class="flex-1 text-center text-sm font-medium py-2 px-4 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors">Join Waitlist</button>
+                            <button onclick="openSubscribe('MARKUPR','$59/mo')" class="flex-1 text-center text-sm font-medium py-2 px-4 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors">Subscribe</button>
                         </div>
                     </div>
                 </div>
@@ -604,7 +604,7 @@
                             <div class="w-10 h-10 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                             </div>
-                            <span class="text-xs font-medium bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full">Operations</span>
+                            <span class="text-xs font-medium bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full">New</span>
                         </div>
                         <h3 class="text-lg font-bold mb-1">FIELDVIEWR</h3>
                         <p class="text-sm text-gray-500 mb-4">SCADA visualization for field operations. Live HMI mimic diagrams, real-time alarms, historian trends, and P&amp;ID schematics &mdash; in the browser, no control-room hardware.</p>
@@ -938,7 +938,15 @@
         document.body.style.overflow = '';
     }
 
-    // Waitlist for products that aren't ready to sell yet
+    // Waitlist for products that aren't ready to sell yet.
+    //
+    // ⚠️ As of 2026-08-09 this has ZERO callers — FIELDVIEWR and MARKUPR were the
+    // last two waitlist cards and both now call openSubscribe. Kept rather than
+    // deleted because the next unreleased app will want it and it is the only
+    // client half of a server contract that is still live: store_api.py still
+    // parses the ' (waitlist)' suffix, and rows in that shape exist in
+    // store_leads.db. If you re-add a waitlist card, wire it here — do not
+    // reinvent the suffix, the server keys off it.
     function openWaitlist(product) {
         if (typeof gtag === 'function') {
             gtag('event', 'waitlist_open', { product: product });

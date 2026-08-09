@@ -663,9 +663,10 @@ PRICE_MAP = {
     # goes missing this resolves to '' and checkout 400s instead of creating a
     # session against a bogus price.
     'FIELDVIEWR': os.environ.get('STRIPE_FIELDVIEWR_PRICE_ID', ''),
-    # $59/mo, likewise already advertised on a waitlist card. Same rule as
-    # FIELDVIEWR above: unset means '' means checkout 400s, and the card stays
-    # on Join Waitlist until STRIPE_MARKUPR_PRICE_ID exists on the store host.
+    # $59/mo. LIVE as of 2026-08-09, same as FIELDVIEWR above — env var set on
+    # the store host, card calls openSubscribe. The '' default remains the
+    # failure mode: a missing var 400s checkout rather than building a session
+    # against a bogus price.
     'MARKUPR': os.environ.get('STRIPE_MARKUPR_PRICE_ID', ''),
 }
 
@@ -1684,12 +1685,11 @@ def demo_request():
         # so writing them here would make `product` mean two different things
         # depending on the surface.
         #
-        # MARKUPR was the third example here and no longer is: it is in
-        # PRICE_MAP now. It still does not reach this branch, but for a
-        # different reason — the waitlist form sends 'MARKUPR (waitlist)'
-        # (index.html:964), and the suffixed string is not a PRICE_MAP key. Once
-        # its card flips to Subscribe the plain name will be sold and this
-        # branch will start writing it, which is correct.
+        # MARKUPR was the third example here and no longer is. It went into
+        # PRICE_MAP on 08-08 and its card flipped to Subscribe on 08-09, so the
+        # plain name is now sold and this branch writes it — which is correct.
+        # The suffixed 'MARKUPR (waitlist)' string is still not a PRICE_MAP key,
+        # so legacy rows and any future waitlist card behave as before.
         if product in PRICE_MAP:
             lead_properties['product'] = product
         if company:
@@ -1717,11 +1717,13 @@ def demo_request():
         # not about markup; it is about the sentence.
         #
         # `^[A-Z0-9]{2,20}$` is not a guess at what looks safe — it is exactly
-        # what the live callers send. index.html now has precisely ONE:
-        # openWaitlist('MARKUPR'). FIELDVIEWR was the second until its card
-        # flipped to Subscribe (2026-08-09); the pattern is unchanged because it
-        # was never a whitelist of those two names. Anything else falls through
-        # to the template's `|default:'PF9'`, which reads fine.
+        # what the callers sent. As of 2026-08-09 index.html has NO waitlist
+        # callers at all: FIELDVIEWR and MARKUPR were the last two and both
+        # flipped to Subscribe. This stays because the shape is still reachable
+        # — openWaitlist() is still defined for the next unreleased app, and
+        # rows in this shape are already in store_leads.db. The pattern was
+        # never a whitelist of those two names, so nothing here changes.
+        # Anything else falls through to the template's `|default:'PF9'`.
         if lead_type == 'waitlist' and product:
             bare = product.split(' (')[0].strip()
             if re.fullmatch(r'[A-Z0-9]{2,20}', bare):

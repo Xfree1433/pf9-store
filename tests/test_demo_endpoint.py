@@ -92,7 +92,12 @@ r = client.post('/store-api/demo-request',
 expect('blank name is a 400, not a silent suppression', r.status_code == 400, f'got {r.status_code}')
 
 print()
-print('=== index.html waitlist: pre-launch product, not sellable ===')
+# As of 2026-08-09 no card sends a waitlist lead — FIELDVIEWR and MARKUPR were the
+# last two and both flipped to Subscribe. This block is now a SERVER-CONTRACT test,
+# not a description of live traffic: openWaitlist() is still defined for the next
+# unreleased app, and rows in this shape already exist in store_leads.db, so the
+# parsing must keep working. Don't delete it because "nothing sends this".
+print('=== waitlist-shaped lead: suffixed tag is not sellable ===')
 r, ev = post({'name': 'sam', 'email': 'sam@example.com', 'company': '',
               'product': 'MARKUPR (waitlist)', 'message': 'Waitlist signup for MARKUPR'})
 p = (ev or {}).get('properties', {})
@@ -104,9 +109,9 @@ expect('no company key when blank', 'company' not in p)
 expect('no has_question outside question leads', 'has_question' not in p)
 expect('no source_page without a Referer', 'source_page' not in p)
 expect('product_name is the bare name', p.get('product_name') == 'MARKUPR')
-# A suffix-stripping test, not a launch-status one. FIELDVIEWR's card flipped to
-# Subscribe on 2026-08-09 so index.html no longer sends its tag, but old rows and
-# any re-flip still have to parse, and the parser must not be name-specific.
+# A suffix-stripping test, not a launch-status one — the parser must not be
+# name-specific, which is exactly why both names still belong here now that
+# neither card sends the tag.
 for tag, want in [('FIELDVIEWR (waitlist)', 'FIELDVIEWR'), ('MARKUPR (waitlist)', 'MARKUPR')]:
     _, e2 = post({'name': 'w', 'email': 'w@example.com', 'product': tag, 'message': 'x'})
     expect(f'{tag:24} -> {want}', (e2 or {}).get('properties', {}).get('product_name') == want)
