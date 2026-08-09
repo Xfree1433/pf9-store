@@ -657,13 +657,13 @@ PRICE_MAP = {
     'EXTRACTR': os.environ.get('STRIPE_EXTRACTR_PRICE_ID', ''),
     'SUPPORTR': os.environ.get('STRIPE_SUPPORTR_PRICE_ID', ''),
     'MAINTAINR': os.environ.get('STRIPE_MAINTAINR_PRICE_ID', ''),
-    # $69/mo, the price the storefront card has been advertising while the
+    # $199/mo, the price the storefront card has been advertising while the
     # product sat on a waitlist. Until STRIPE_FIELDVIEWR_PRICE_ID is set on the
     # store host this resolves to '' and checkout returns 400 rather than
     # creating a Stripe session — the storefront card stays on Join Waitlist
     # until that env var exists, so no customer can reach the dead path.
     'FIELDVIEWR': os.environ.get('STRIPE_FIELDVIEWR_PRICE_ID', ''),
-    # $29/mo, likewise already advertised on a waitlist card. Same rule as
+    # $59/mo, likewise already advertised on a waitlist card. Same rule as
     # FIELDVIEWR above: unset means '' means checkout 400s, and the card stays
     # on Join Waitlist until STRIPE_MARKUPR_PRICE_ID exists on the store host.
     'MARKUPR': os.environ.get('STRIPE_MARKUPR_PRICE_ID', ''),
