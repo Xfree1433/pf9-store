@@ -32,7 +32,7 @@ jobs:
         run: |
           set -eux
           # NB: templates/ is public — the lead-magnet emails link to it.
-          rm -rf node_modules tests src __pycache__ .github tools/google-ads
+          rm -rf node_modules tests src __pycache__ .github
           find . -name '*.md' -delete
           find . -name '*.py' -delete
           find . -name '*.sh' -delete
