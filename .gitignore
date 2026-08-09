@@ -22,3 +22,7 @@ node_modules/
 .vscode/
 .idea/
 .DS_Store
+
+# Internal docs (playbooks, runbooks, plans) are kept outside this repo.
+# It is public, so anything committed here is world-readable.
+*.md
