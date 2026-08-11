@@ -189,6 +189,17 @@
                             <option value="SUPPORTR">SUPPORTR</option>
                             <option value="MAINTAINR">MAINTAINR</option>
                             <option value="COMPLI">COMPLI</option>
+                            <!-- Not products: these are the deployment enquiries from
+                                 index.html#deployment. store_api.py needs no change for
+                                 them — _lead_type_for falls through to 'question' (a human
+                                 is waiting on a reply, which is right) and
+                                 _hubspot_list_for_product returns None, so the contact is
+                                 upserted without being filed under Manufacturing or
+                                 Property. Keep the values free of any app name: both
+                                 helpers substring-match _MANUFACTURING_APPS/_PROPERTY_APPS
+                                 against this string. -->
+                            <option value="SELF_HOSTED">Self-hosting an app</option>
+                            <option value="CUSTOM_BUILD">A custom build</option>
                         </select>
                     </div>
                     <div>
@@ -223,6 +234,25 @@
             var btn = document.getElementById('demoSubmit');
             var msg = document.getElementById('demoMsg');
             if (!form) return;
+
+            // Preselect from ?topic= so the deployment CTAs on index.html arrive
+            // tagged. Without this the link is a dead promise: every self-hosting
+            // and custom-build enquiry files as "General" and can't be told apart
+            // from someone who hasn't decided yet. Match against the option values
+            // actually present rather than a second hardcoded list, so a renamed
+            // or removed option degrades to "General" instead of selecting nothing.
+            try {
+                var topic = new URLSearchParams(window.location.search).get('topic');
+                var select = document.getElementById('demoProduct');
+                if (topic && select) {
+                    for (var i = 0; i < select.options.length; i++) {
+                        if (select.options[i].value === topic) {
+                            select.selectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+            } catch (err) { /* no URLSearchParams: the form still works, just untagged */ }
             form.addEventListener('submit', function (e) {
                 e.preventDefault();
                 msg.textContent = '';
