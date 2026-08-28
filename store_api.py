@@ -149,7 +149,11 @@ KLAVIYO_LIST_CONSENT = os.environ.get('KLAVIYO_LIST_CONSENT', 'W7gYXU')
 # `product` string:
 #
 #   'SHIFTLOG' and other bare keys           contact.html — someone asking us a question
-#   'MARKUPR (waitlist)'                     index.html — pre-launch signup
+#   'SHOWJUDGR (waitlist)'                   index.html — pre-launch signup. The
+#                                            live example as of 2026-08-28; older
+#                                            rows carry 'FIELDVIEWR (waitlist)'
+#                                            and 'MARKUPR (waitlist)' from before
+#                                            those two went on sale
 #   'PROPERTY_SUITE (calculator lead)'       tools/*-calculator.html — wants a PDF
 #   'PROPERTY_LEAD_MAGNET (…)'               lead-magnets/*.html — wants a template
 #   'AFFILIATE_PROGRAM_SIGNUP'               refer/ — wants to resell
@@ -668,6 +672,23 @@ PRICE_MAP = {
     # failure mode: a missing var 400s checkout rather than building a session
     # against a bogus price.
     'MARKUPR': os.environ.get('STRIPE_MARKUPR_PRICE_ID', ''),
+    # NOT sellable yet — the storefront card is "Coming Soon" and calls
+    # openWaitlist, so nothing reaches checkout. No Stripe price exists, so this
+    # resolves to '' and checkout would 400 even if a card were flipped early.
+    # That is the whole point of listing it now: the tables that provisioning
+    # and the lifecycle emails read are populated and test-covered BEFORE the
+    # money path opens, which is the ordering that kept FIELDVIEWR safe on
+    # 08-08. Flipping the card is the LAST step, after the price ID is set on
+    # the store host and the API is restarted.
+    #
+    # ⚠️ This line is not only about checkout. /store-api/app-activity gates on
+    # `product not in PRICE_MAP` (see :1933), so until now every ping SHOWJUDGR
+    # sent was answered 400 "unknown product" — the app has had a live activity
+    # client since 08-26 (app/services/activity.py posts product="SHOWJUDGR").
+    # Adding the key here is what starts accepting them. It does NOT start
+    # recording them: the _owned_apps() consent gate still drops anyone who is
+    # not a paying customer, and there are none yet.
+    'SHOWJUDGR': os.environ.get('STRIPE_SHOWJUDGR_PRICE_ID', ''),
 }
 
 # Bundle definitions — maps bundle name to list of individual products
@@ -693,6 +714,7 @@ APP_URL_MAP = {
     'MAINTAINR': 'https://maintainr.plainspokenfoundrynine.com',
     'FIELDVIEWR': 'https://fieldviewr.plainspokenfoundrynine.com',
     'MARKUPR': 'https://markupr.plainspokenfoundrynine.com',
+    'SHOWJUDGR': 'https://showjudgr.plainspokenfoundrynine.com',
 }
 
 # Product → the app we suggest next, for the paid month-3 expansion email.
@@ -842,6 +864,19 @@ APP_LOGIN_PATH = {
     # path to /login when logged out, so a probe cannot tell a real route from
     # a made-up one.
     'MARKUPR':    '/login',
+    # Flask, cloned from PERMITR's scaffold, so it follows the /auth/login shape
+    # rather than the bare /login one. Read off the app's own routing first
+    # (app/__init__.py registers auth_bp with url_prefix="/auth" and
+    # app/routes/auth.py declares @auth_bp.route("/login")), THEN confirmed
+    # against the live host with a negative control, because unlike MARKUPR this
+    # app does not 307 everything to a login page: /auth/login -> 200 with a
+    # type="password" field, /auth/zzznotaroute -> 404 (so the 200 is not a
+    # catch-all), and the fleet-standard bare /login -> 404. That last probe is
+    # the point. Copying '/login' from its neighbours here would have shipped a
+    # dead link, and no offline test could have caught it — a wrong path just
+    # degrades to STORE_URL and the suite still passes. Only
+    # tests/test_app_links.py --live sees it.
+    'SHOWJUDGR':  '/auth/login',
 }
 
 # Product → the PATH where the account owner adds colleagues.
@@ -883,6 +918,16 @@ APP_LOGIN_PATH = {
 #               the filesystem check earning its keep — the pattern would have
 #               produced a broken link inside the email that promises free
 #               seats.
+#   SHOWJUDGR   it DOES have seat management and still gets no entry, which is
+#               a different reason from the rest of this list. Judges are added
+#               by `POST /events/<event_id>/judge` (routes/events.py:164,
+#               admin-only), a form embedded on the event detail page that
+#               redirects back to events.detail. So the page a customer would
+#               need is /events/<id> — there is no event-independent URL, and
+#               this table cannot carry an id. A new customer has no events
+#               yet, so even /events would be an empty list. The storefront
+#               fallback is the honest answer until an account-level users page
+#               exists.
 #   QUALIFI INSPECTR SUPPORTR LANDLORDR TASKFLOW PROPERTY_BUNDLE
 #               nothing found. Whether that means the seat-management UI is
 #               missing or the pricing claim does not apply to them is a founder
@@ -1218,6 +1263,31 @@ ONBOARDING_COPY = {
             "against, and locking a version stops two people redlining the same one at once — "
             "which is the argument this replaces."),
     },
+    # Present before the product is sellable, which is deliberate rather than
+    # premature: the table has to cover every PRICE_MAP key or a SHOWJUDGR
+    # customer inherits whatever their previous app wrote into these profile
+    # properties. Written from the app's own routing — events_bp (/events/new,
+    # /events/<id>/class, /events/<id>/criterion), registration_bp's public
+    # /r/<token>, parking_bp (/parking/event/<id>/plan, map-picker) and
+    # series_bp — not from the storefront's marketing sentence.
+    'SHOWJUDGR': {
+        'step1': ('Create your show and open registration',
+            "Add the show you are actually running next, then flip it to open and send entrants "
+            "the public sign-up link. They fill in their own car details, which is the half of "
+            "show morning that otherwise happens on paper at a folding table."),
+        'step2': ('Build the judging sheet your classes really use',
+            "Add your classes, then the criteria judges score against. A criterion can belong to "
+            "one class instead of the whole show, so the class you judge on originality stops "
+            "inheriting the standard sheet everything else uses."),
+        'day3': ('Lay out the field before show day',
+            "Frame your venue on the satellite map, drop spots on it and drag them to follow the "
+            "real drives and islands, then print the sheet. Deciding where 300 cars go is the "
+            "job that eats the week before a show, and it is the one worth doing early."),
+        'month1': ('Turn your calendar into a season series',
+            "Link this year's shows into a series and points carry across all of them on their "
+            "own. Standings that lived in one volunteer's spreadsheet become a page you can hand "
+            "to every entrant, which is the part nobody else in this category does well."),
+    },
 }
 
 
@@ -1494,6 +1564,13 @@ REGISTER_PATH = {
     # redirect bug and MARKUPR did. Fixed on the app side; recorded here so
     # nobody "corrects" this line to match the others.
     'MARKUPR':    '/api/register',
+    # The fleet-standard path and the fleet-standard env var name
+    # (PROVISION_SECRET, not an app-prefixed one). Verified on the app side:
+    # api_register_bp is registered with url_prefix="/api/auth". Fail-closed
+    # like FIELDVIEWR — 404 while the secret env is unset, 403 on a bad header,
+    # so a forgotten env var reads as "provisioning broken", never as open
+    # self-registration. Already armed on the host as of 2026-08-26.
+    'SHOWJUDGR':  '/api/auth/register',
 }
 
 
@@ -1690,6 +1767,13 @@ def demo_request():
         # plain name is now sold and this branch writes it — which is correct.
         # The suffixed 'MARKUPR (waitlist)' string is still not a PRICE_MAP key,
         # so legacy rows and any future waitlist card behave as before.
+        #
+        # SHOWJUDGR (added 08-28) is the case that shows why the test is
+        # membership and not truthiness: it IS a PRICE_MAP key but its price ID
+        # resolves to '' until the live price exists. Membership means "a product
+        # we know", which is the right thing to write here — and its Coming Soon
+        # card posts 'SHOWJUDGR (waitlist)', which is not a key, so a pre-launch
+        # lead still gets no `product` property.
         if product in PRICE_MAP:
             lead_properties['product'] = product
         if company:
@@ -1702,8 +1786,9 @@ def demo_request():
             lead_properties['has_question'] = bool(message)
 
         # The bare product name, for copy that has to read as a sentence.
-        # index.html:964 sends 'MARKUPR (waitlist)', and "You're on the MARKUPR
-        # (waitlist) waitlist" is not a sentence. Only emitted here, where the
+        # openWaitlist() in index.html (the post is at :1106 as of 08-28) sends
+        # 'SHOWJUDGR (waitlist)', and "You're on the SHOWJUDGR (waitlist)
+        # waitlist" is not a sentence. Only emitted here, where the
         # marker is a known suffix and stripping it leaves exactly the thing
         # being waited on — the other tags carry no name worth extracting.
         #
@@ -1717,12 +1802,13 @@ def demo_request():
         # not about markup; it is about the sentence.
         #
         # `^[A-Z0-9]{2,20}$` is not a guess at what looks safe — it is exactly
-        # what the callers sent. As of 2026-08-09 index.html has NO waitlist
-        # callers at all: FIELDVIEWR and MARKUPR were the last two and both
-        # flipped to Subscribe. This stays because the shape is still reachable
-        # — openWaitlist() is still defined for the next unreleased app, and
-        # rows in this shape are already in store_leads.db. The pattern was
-        # never a whitelist of those two names, so nothing here changes.
+        # what the callers sent. Between 2026-08-09 and 2026-08-28 index.html had
+        # NO waitlist callers at all (FIELDVIEWR and MARKUPR were the last two and
+        # both flipped to Subscribe); the code stayed because the shape was still
+        # reachable via store_leads.db rows. As of 2026-08-28 it is live again —
+        # SHOWJUDGR ships as a Coming Soon card and sends 'SHOWJUDGR (waitlist)'.
+        # It matches for the same reason the other two did: the pattern was never
+        # a whitelist of specific names, so nothing here changes.
         # Anything else falls through to the template's `|default:'PF9'`.
         if lead_type == 'waitlist' and product:
             bare = product.split(' (')[0].strip()
