@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SHOWJUDGR — Car Show Software Without Per-Entry Fees</title>
+<meta name="description" content="Run car-show registration, judging, People's Choice, parking layout, and season points at one flat price. 30-day free trial. No per-entry or per-judge fees." />
+<style>
+  :root{
+    --ink:#0f172a; --paper:#f8fafc; --accent:#2563eb; --accent-dark:#1d4ed8;
+    --muted:#64748b; --rule:#e2e8f0; --card:#ffffff;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink); background:var(--paper); line-height:1.55; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1080px; margin:0 auto; padding:0 24px}
+  a{color:var(--accent); text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* Buttons */
+  .pill{
+    display:inline-block; background:var(--ink); color:#fff; border:none;
+    border-radius:999px; padding:14px 28px; font-size:1rem; font-weight:600;
+    cursor:pointer; transition:background .15s ease;
+  }
+  .pill:hover{background:#1e293b; text-decoration:none; color:#fff}
+  .link-arrow{font-weight:600}
+
+  /* Nav */
+  header.nav{background:#fff; border-bottom:1px solid var(--rule); position:sticky; top:0; z-index:20}
+  .nav-inner{display:flex; align-items:center; justify-content:space-between; height:64px}
+  .brand{display:flex; align-items:center; gap:10px; font-weight:800; font-size:1.05rem; color:var(--ink)}
+  .brand:hover{text-decoration:none}
+  .badge{background:var(--ink); color:#fff; border-radius:8px; padding:4px 8px; font-size:.72rem; font-weight:800; letter-spacing:.5px}
+  .nav-links{display:flex; align-items:center; gap:26px}
+  .nav-links a{color:var(--ink); font-weight:500; font-size:.95rem}
+  .nav-links .pill{padding:9px 18px; font-size:.9rem}
+  @media(max-width:720px){ .nav-links a:not(.pill){display:none} }
+
+  /* Hero */
+  .hero{padding:72px 0 56px; text-align:center}
+  .hero h1{font-size:2.85rem; line-height:1.1; margin:0 0 18px; letter-spacing:-.02em}
+  .hero p.sub{font-size:1.2rem; color:var(--muted); max-width:680px; margin:0 auto 32px}
+  .cta-row{display:flex; gap:18px; align-items:center; justify-content:center; flex-wrap:wrap}
+  .trust{margin-top:22px; color:var(--muted); font-size:.9rem; font-weight:500}
+  .trust b{color:var(--ink)}
+  @media(max-width:720px){ .hero h1{font-size:2.1rem} }
+
+  /* Sections */
+  section{padding:56px 0}
+  section h2{font-size:2rem; letter-spacing:-.02em; margin:0 0 8px}
+  section .lead{color:var(--muted); font-size:1.1rem; margin:0 0 32px}
+  .center{text-align:center}
+
+  /* Wedge cards */
+  .cards{display:grid; grid-template-columns:repeat(3,1fr); gap:22px}
+  @media(max-width:820px){ .cards{grid-template-columns:1fr} }
+  .card{
+    background:var(--card); border:1px solid var(--rule); border-top:3px solid var(--accent);
+    border-radius:12px; padding:26px 24px; box-shadow:0 1px 3px rgba(15,23,42,.06);
+  }
+  .card h3{margin:0 0 10px; font-size:1.15rem}
+  .card p{margin:0; color:var(--muted); font-size:.97rem}
+
+  /* Core strip */
+  .strip{background:#fff; border:1px solid var(--rule); border-radius:12px; padding:26px 28px; box-shadow:0 1px 3px rgba(15,23,42,.06)}
+  .strip h3{margin:0 0 12px; font-size:1.1rem}
+  .strip p{margin:0; color:var(--muted)}
+  .strip b{color:var(--ink)}
+
+  /* Pricing table */
+  .price-wrap{overflow-x:auto}
+  table.price{width:100%; border-collapse:collapse; background:#fff; border:1px solid var(--rule); border-radius:12px; overflow:hidden}
+  table.price th, table.price td{padding:13px 16px; text-align:center; border-bottom:1px solid var(--rule); font-size:.94rem}
+  table.price thead th{background:#fff; font-size:1.05rem; vertical-align:top}
+  table.price thead th .amt{display:block; font-size:1.5rem; font-weight:800; margin-top:4px}
+  table.price thead th .amt small{font-size:.85rem; font-weight:600; color:var(--muted)}
+  table.price tbody td:first-child, table.price thead th:first-child{text-align:left; color:var(--muted); font-weight:500}
+  table.price .feat{font-weight:600; color:var(--ink)}
+  table.price td.yes{color:var(--accent-dark); font-weight:700}
+  table.price td.no{color:#cbd5e1}
+  table.price .season{background:#f0f6ff}
+  table.price thead .season{border-top:3px solid var(--accent)}
+  .under-table{color:var(--muted); margin:18px 0 0; max-width:760px}
+  .under-table b{color:var(--ink)}
+
+  /* Math block */
+  .math{background:var(--ink); color:#fff; border-radius:14px; padding:40px 34px}
+  .math h2{color:#fff}
+  .math p{color:#cbd5e1; max-width:680px}
+  table.math-t{width:100%; border-collapse:collapse; margin-top:20px; max-width:640px}
+  table.math-t td, table.math-t th{padding:12px 14px; text-align:left; border-bottom:1px solid rgba(255,255,255,.12); font-size:1rem}
+  table.math-t th{color:#94a3b8; font-weight:600}
+  table.math-t .big{font-size:1.15rem; font-weight:800; color:#fff; text-align:right}
+  table.math-t .win{color:#4ade80}
+  table.math-t td:last-child{text-align:right}
+  .math .foot{margin-top:20px; color:#cbd5e1}
+  .math .foot b{color:#fff}
+
+  /* Crossover */
+  .crossover{background:#fff; border:1px solid var(--rule); border-left:3px solid var(--accent); border-radius:12px; padding:28px 30px}
+  .crossover h3{margin:0 0 10px; font-size:1.25rem}
+  .crossover p{margin:0; color:var(--muted)}
+  .crossover b{color:var(--ink)}
+
+  /* Founder */
+  .founder{max-width:720px; margin:0 auto; text-align:center}
+  .founder p{font-size:1.12rem; color:var(--ink)}
+  .founder .sig{font-weight:700; margin-top:6px}
+
+  /* Footer */
+  footer{background:var(--ink); color:#94a3b8; padding:44px 0; margin-top:24px}
+  footer a{color:#cbd5e1}
+  .foot-inner{display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px}
+  .foot-trust{font-size:.9rem}
+  .foot-trust b{color:#fff}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="/"><span class="badge">PF9</span> SHOWJUDGR</a>
+    <nav class="nav-links">
+      <a href="/#products">Products</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#demo">Demo</a>
+      <a class="pill" href="#trial">Start free trial</a>
+    </nav>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="wrap">
+    <h1>Run your whole car-show season.<br>Not just one show.</h1>
+    <p class="sub">Registration, judging, People's Choice, parking, and season points — in one place, at a flat price. No per-entry fees. No per-judge fees. No "contact sales."</p>
+    <div class="cta-row">
+      <a class="pill" id="trial" href="#pricing">Start a 30-day free trial</a>
+      <a class="link-arrow" id="demo" href="#demo-video">Watch the 90-second demo →</a>
+    </div>
+    <div class="trust">Flat pricing · 30-day free trial · Cancel anytime</div>
+  </div>
+</section>
+
+<!-- WEDGE CARDS -->
+<section>
+  <div class="wrap">
+    <div class="cards">
+      <div class="card">
+        <h3>Parking &amp; site-plan editor</h3>
+        <p>Lay out your field the way it really is. Drag, rotate, and size spots on a grid, photo, or PDF. Color-code by class, block reserved rows, and let entrants claim their own spot from a live map. Nobody else in car-show software does this.</p>
+      </div>
+      <div class="card">
+        <h3>Season points that actually add up</h3>
+        <p>Link your shows into a series and the standings compute themselves — across every event, all season. Post a public, login-free championship page spectators can watch. Real season racing, without the spreadsheet.</p>
+      </div>
+      <div class="card">
+        <h3>Your whole season at a glance</h3>
+        <p>One back-office view across every show: turnout, revenue, votes, top makes, and which competitors keep coming back. The numbers that tell you whether the season worked — no rival gives you this.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CORE STRIP -->
+<section style="padding-top:0">
+  <div class="wrap">
+    <div class="strip">
+      <h3>The core is all here too</h3>
+      <p>Everything you'd expect, done right: digital class judging with per-class criteria · <b>Concours point-deduction judging</b> (every car starts perfect) · QR People's Choice voting (event-wide <i>and</i> scan-a-car) · day-of check-in · live leaderboard for the projector · printable award certificates · online entry-fee collection that pays <b>straight into your own account</b>.</p>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing">
+  <div class="wrap">
+    <h2>Simple pricing. Pick the rung that fits your season.</h2>
+    <p class="lead">Free to try. A flat one-time pass for the once-a-year show. Unlimited everything when you run a season.</p>
+    <div class="price-wrap">
+      <table class="price">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Free<span class="amt">$0</span></th>
+            <th>Show Pass<span class="amt">$19 <small>one-time / show</small></span></th>
+            <th class="season">Season<span class="amt">$49<small>/mo</small> <small>or $399/yr</small></span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Best for</td><td>Trying it out</td><td>One show a year</td><td class="season">Running a season</td></tr>
+          <tr><td>Active shows</td><td>1</td><td>1 (60-day window)</td><td class="season">Unlimited</td></tr>
+          <tr><td>Entrants</td><td>Up to 35</td><td>Unlimited</td><td class="season">Unlimited</td></tr>
+          <tr><td class="feat">Digital + concours judging</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes season">✓</td></tr>
+          <tr><td class="feat">QR People's Choice voting</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes season">✓</td></tr>
+          <tr><td class="feat">Live leaderboard</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes season">✓</td></tr>
+          <tr><td class="feat">Parking &amp; site-plan editor</td><td class="no">—</td><td class="yes">✓</td><td class="yes season">✓</td></tr>
+          <tr><td class="feat">Entry-fee payments (your Stripe)</td><td class="no">—</td><td class="yes">✓</td><td class="yes season">✓</td></tr>
+          <tr><td class="feat">Award certificates &amp; dash cards</td><td class="no">—</td><td class="yes">✓</td><td class="yes season">✓</td></tr>
+          <tr><td class="feat">Series / season points</td><td class="no">—</td><td class="no">—</td><td class="yes season">✓</td></tr>
+          <tr><td class="feat">Cross-show analytics</td><td class="no">—</td><td class="no">—</td><td class="yes season">✓</td></tr>
+          <tr><td class="feat">Public championship standings</td><td class="no">—</td><td class="no">—</td><td class="yes season">✓</td></tr>
+          <tr><td class="feat">Club branding &amp; share cards</td><td class="no">—</td><td class="no">—</td><td class="yes season">✓</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="under-table">The Season plan is billed one flat price — whether you run 2 shows or 20, register 40 cars or 4,000. No per-entry cut. No per-judge seat. Annual saves you $189 and matches how a season actually runs: pay once in spring, run all summer. <b>Most local shows run on a shoestring — the $19 Show Pass is priced so it never eats your gate.</b></p>
+    <div class="cta-row" style="justify-content:flex-start; margin-top:26px">
+      <a class="pill" href="#trial">Start a 30-day free trial</a>
+      <span style="color:var(--muted); font-size:.95rem">Load your real show — cancel before day 30 and you're never charged.</span>
+    </div>
+  </div>
+</section>
+
+<!-- MATH BLOCK -->
+<section>
+  <div class="wrap">
+    <div class="math">
+      <h2>What "6% per registration" really costs you.</h2>
+      <p>Some car-show tools are "free to the organizer" — then take a cut of every entry. On a busy show, that adds up fast.</p>
+      <table class="math-t">
+        <thead>
+          <tr><th>A 200-car show, $25 entry</th><th>Their cut</th><th>Your cost</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Percentage tool (6% + $0.66/entry)</td><td>$2.16 × 200</td><td class="big">$432 <span style="font-weight:500;color:#94a3b8">— one show</span></td></tr>
+          <tr><td><b style="color:#fff">SHOWJUDGR Season</b></td><td>flat</td><td class="big win">$399 <span style="font-weight:500;color:#94a3b8">— all year</span></td></tr>
+        </tbody>
+      </table>
+      <p class="foot">Run a second show and the gap isn't close. We charge one flat price and hand you a tool to collect entry fees into <b>your</b> account — we don't skim them.</p>
+    </div>
+  </div>
+</section>
+
+<!-- CROSSOVER -->
+<section style="padding-top:0">
+  <div class="wrap">
+    <div class="crossover">
+      <h3>Running one small show a year?</h3>
+      <p>Then don't buy a subscription. Grab a <b>$19 Show Pass</b>, run your show with every feature, and you're done. When your club grows into a season, the Season plan will be here. We'd rather tell you the truth than sell you a plan you won't use.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FOUNDER -->
+<section id="demo-video">
+  <div class="wrap">
+    <div class="founder">
+      <p>I build SHOWJUDGR myself, and I support it myself. It started because the tools out there either hide their pricing, nickel-and-dime you per entry, or can't handle the one thing every big show fights with — parking the field. So I built the back-office I'd want to run a season with, and I priced it flat so you're never punished for a good turnout.</p>
+      <p>Try it with your real show. If it's not right, cancel before day 30 and you're never charged.</p>
+      <p class="sig">— Mark</p>
+      <div class="cta-row" style="margin-top:24px">
+        <a class="pill" href="#pricing">Start your 30-day free trial</a>
+      </div>
+      <div class="trust" style="margin-top:18px">Flat pricing · 30-day free trial · Cancel anytime</div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="wrap foot-inner">
+    <div><span class="badge">PF9</span> &nbsp;Plainspoken Foundry Nine</div>
+    <div class="foot-trust"><b>Flat pricing</b> · <b>30-day free trial</b> · <b>Cancel anytime</b></div>
+    <div><a href="mailto:support@plainspokenfoundrynine.com">support@plainspokenfoundrynine.com</a></div>
+  </div>
+</footer>
+
+</body>
+</html>
