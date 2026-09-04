@@ -106,6 +106,11 @@
   .crossover p{margin:0; color:var(--muted)}
   .crossover b{color:var(--ink)}
 
+  /* Demo video */
+  .vid-title{text-align:center; font-size:1.6rem; margin:0 0 22px; letter-spacing:-.01em}
+  .video-embed{position:relative; width:100%; max-width:900px; margin:0 auto 40px; aspect-ratio:16/9; border-radius:14px; overflow:hidden; box-shadow:0 10px 30px rgba(15,23,42,.12); background:#000}
+  .video-embed iframe{position:absolute; inset:0; width:100%; height:100%; border:0}
+
   /* Founder */
   .founder{max-width:720px; margin:0 auto; text-align:center}
   .founder p{font-size:1.12rem; color:var(--ink)}
@@ -118,6 +123,27 @@
   .foot-trust{font-size:.9rem}
   .foot-trust b{color:#fff}
 </style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "VideoObject",
+  "name": "Run Your Whole Car-Show Season in One App — SHOWJUDGR",
+  "description": "A full tour of SHOWJUDGR: online registration and walk-ins, QR dash-card check-in, a drag-and-rotate parking & site-plan editor, self-serve spot claiming, digital judging by class plus concours deduction judging, People's Choice voting from any phone, a live leaderboard, season/series points, and a back-office that tracks turnout and revenue — all at one flat price with no per-entry fees.",
+  "thumbnailUrl": [
+    "https://i.ytimg.com/vi/BAvCrlPsk5Y/hqdefault.jpg",
+    "https://i.ytimg.com/vi/BAvCrlPsk5Y/maxresdefault.jpg"
+  ],
+  "uploadDate": "2026-09-04",
+  "duration": "PT2M42S",
+  "embedUrl": "https://www.youtube.com/embed/BAvCrlPsk5Y",
+  "contentUrl": "https://www.youtube.com/watch?v=BAvCrlPsk5Y",
+  "publisher": {
+    "@type": "Organization",
+    "name": "Plainspoken Foundry Nine",
+    "url": "https://store.plainspokenfoundrynine.com"
+  }
+}
+</script>
 </head>
 <body>
 
@@ -141,7 +167,7 @@
     <p class="sub">Registration, judging, People's Choice, parking, and season points — in one place, at a flat price. No per-entry fees. No per-judge fees. No "contact sales."</p>
     <div class="cta-row">
       <a class="pill" id="trial" href="#pricing">Start a 30-day free trial</a>
-      <a class="link-arrow" id="demo" href="#demo-video">Watch the 90-second demo →</a>
+      <a class="link-arrow" id="demo" href="#demo-video">Watch the full tour →</a>
     </div>
     <div class="trust">Flat pricing · 30-day free trial · Cancel anytime</div>
   </div>
@@ -247,9 +273,13 @@
   </div>
 </section>
 
-<!-- FOUNDER -->
+<!-- DEMO VIDEO + FOUNDER -->
 <section id="demo-video">
   <div class="wrap">
+    <h2 class="vid-title">See SHOWJUDGR run a full show</h2>
+    <div class="video-embed">
+      <iframe src="https://www.youtube-nocookie.com/embed/BAvCrlPsk5Y" title="Run Your Whole Car-Show Season in One App — SHOWJUDGR" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+    </div>
     <div class="founder">
       <p>I build SHOWJUDGR myself, and I support it myself. It started because the tools out there either hide their pricing, nickel-and-dime you per entry, or can't handle the one thing every big show fights with — parking the field. So I built the back-office I'd want to run a season with, and I priced it flat so you're never punished for a good turnout.</p>
       <p>Try it with your real show. If it's not right, cancel before day 30 and you're never charged.</p>
