@@ -691,6 +691,37 @@ PRICE_MAP = {
     'SHOWJUDGR': os.environ.get('STRIPE_SHOWJUDGR_PRICE_ID', ''),
 }
 
+# SHOWJUDGR is the one product sold as a 3-rung LADDER, not the single monthly
+# price every other app uses, so it gets its own plan table on top of the one
+# PRICE_MAP slot above. Car shows are episodic and low-margin, so the ladder is:
+#   showpass — $19 ONE-TIME per show   (Stripe mode='payment', NO trial)
+#   season   — $49 / month             (mode='subscription', 30-day trial)
+#   annual   — $399 / year             (mode='subscription', 30-day trial)
+#
+# Why a plan table and not three PRICE_MAP keys: every downstream table
+# (APP_URL_MAP, REGISTER_PATH, APP_LOGIN_PATH, ONBOARDING_COPY) and the
+# app-activity gate key on the *product*, and tests/test_app_links.py asserts
+# every PRICE_MAP key has a full set of those rows. Three tier keys would force
+# three near-duplicate rows in each and still all point at the same app. So the
+# product stays 'SHOWJUDGR' everywhere; the chosen rung rides in the checkout
+# `plan` field, is resolved here to a price id + Stripe mode, and is echoed into
+# session metadata so the webhook knows which rung completed.
+#
+# Empty-string defaults are the failure mode, exactly like PRICE_MAP: a missing
+# env var 400s checkout instead of building a session against a bogus price. All
+# three are unset today — the storefront card therefore stays Coming Soon (the
+# JS SHOWJUDGR_SELLABLE flag in index.html degrades it to the waitlist) until the
+# live prices exist and these vars are set on the store host and it is restarted.
+SHOWJUDGR_PLANS = {
+    'showpass': {'price': os.environ.get('STRIPE_SHOWJUDGR_SHOWPASS_PRICE_ID', ''),
+                 'mode': 'payment',      'trial': False},
+    'season':   {'price': os.environ.get('STRIPE_SHOWJUDGR_SEASON_PRICE_ID', ''),
+                 'mode': 'subscription', 'trial': True},
+    'annual':   {'price': os.environ.get('STRIPE_SHOWJUDGR_ANNUAL_PRICE_ID', ''),
+                 'mode': 'subscription', 'trial': True},
+}
+DEFAULT_SHOWJUDGR_PLAN = 'season'
+
 # Bundle definitions — maps bundle name to list of individual products
 BUNDLE_MAP = {
     'PROPERTY_BUNDLE': ['LANDLORDR', 'TENANTLINK'],
@@ -2022,27 +2053,50 @@ def create_checkout_session():
     if not product or not email or not name:
         return _cors_response(jsonify({'error': 'Product, name, and email are required'}), 400)
 
-    price_id = PRICE_MAP.get(product)
+    # SHOWJUDGR is the one product sold as a plan ladder: resolve its price + Stripe
+    # mode from the plan the card sent, rather than the single PRICE_MAP slot every
+    # other product uses. Everything else keeps the existing single-price path.
+    plan_key = ''
+    checkout_mode = 'subscription'
+    want_trial = True
+    if product == 'SHOWJUDGR':
+        plan_key = (data.get('plan') or DEFAULT_SHOWJUDGR_PLAN).strip().lower()
+        plan = SHOWJUDGR_PLANS.get(plan_key)
+        if not plan:
+            return _cors_response(jsonify({'error': f'Unknown plan: {plan_key}'}), 400)
+        price_id = plan['price']
+        checkout_mode = plan['mode']
+        want_trial = plan['trial']
+    else:
+        price_id = PRICE_MAP.get(product)
     if not price_id:
         return _cors_response(jsonify({'error': f'Unknown product: {product}'}), 400)
 
     try:
-        session = stripe.checkout.Session.create(
-            mode='subscription',
+        session_kwargs = dict(
+            mode=checkout_mode,
             line_items=[{'price': price_id, 'quantity': 1}],
             customer_email=email,
             success_url=f'{STORE_URL}/login.html?subscribed={product.lower()}&session_id={{CHECKOUT_SESSION_ID}}',
             cancel_url=f'{STORE_URL}/#products',
-            # 30-day free trial. Card is collected up front (payment_method_collection
-            # defaults to 'always' for trials) but not charged until the trial ends,
-            # at which point Stripe auto-converts to the paid subscription.
-            subscription_data={'trial_period_days': TRIAL_PERIOD_DAYS},
+            # `plan` is echoed so the webhook knows which SHOWJUDGR rung completed;
+            # it is '' for every other product and for SHOWJUDGR's own webhook that
+            # simply means "not a plan-ladder purchase", which never happens here.
             metadata={
                 'product': product,
                 'name': name,
                 'company': company,
+                'plan': plan_key,
             },
         )
+        # 30-day free trial, but ONLY on subscription-mode plans. Card is collected
+        # up front (payment_method_collection defaults to 'always' for trials) but
+        # not charged until the trial ends, at which point Stripe auto-converts to
+        # the paid subscription. A one-time Show Pass has no subscription to trial,
+        # and passing subscription_data in payment mode is a Stripe API error.
+        if checkout_mode == 'subscription' and want_trial:
+            session_kwargs['subscription_data'] = {'trial_period_days': TRIAL_PERIOD_DAYS}
+        session = stripe.checkout.Session.create(**session_kwargs)
     except Exception as e:
         print(f'[Store API] Stripe error: {e}')
         return _cors_response(jsonify({'error': 'Failed to create checkout session'}), 500)
@@ -2223,7 +2277,114 @@ def create_portal_session():
 
 
 # ── Checkout/Webhook Handlers ──
+def _handle_one_time_completed(session):
+    """Fulfil a one-time purchase (today: the SHOWJUDGR Show Pass, $19/show).
+
+    Deliberately isolated from the subscription path. It reuses the SAME
+    provisioning + welcome-email helpers so a Show Pass buyer lands in the app
+    exactly like a subscriber, but it skips everything that only makes sense for
+    a recurring plan: no Subscription.retrieve, no trial dates, no trial Klaviyo
+    onboarding flow. Money-completion code — review before the card is flipped
+    live, and note it cannot be exercised end-to-end without live Stripe keys.
+    """
+    meta        = session.get('metadata', {})
+    product     = meta.get('product', '')
+    plan        = meta.get('plan', '')
+    name        = meta.get('name', '')
+    company     = meta.get('company', '')
+    email       = session.get('customer_email', '') or session.get('customer_details', {}).get('email', '')
+    customer_id = session.get('customer', '')
+    # No subscription id on a one-time payment. The payment_intent is the stable,
+    # unique id Stripe redelivers, so it takes the UNIQUE stripe_subscription_id
+    # slot purely as the idempotency key (a 'pi_…' can never collide with a
+    # 'sub_…'). Fall back to the session id if a PI is somehow absent.
+    order_id = session.get('payment_intent', '') or session.get('id', '')
+
+    if not product or not email:
+        print(f'[Store API] One-time webhook missing product or email: {meta}')
+        return
+
+    # Idempotency — Stripe redelivers webhooks.
+    with get_db() as conn:
+        existing = conn.execute(
+            'SELECT id FROM subscriptions WHERE stripe_subscription_id = ?', (order_id,)
+        ).fetchone()
+        if existing:
+            print(f'[Store API] One-time order {order_id} already processed')
+            return
+
+    temp_password = _generate_password()
+
+    # A Show Pass is not a subscription; status 'active' with no trial_end is the
+    # honest shape. Stored in the same table so the login page and provisioning
+    # bookkeeping see it like any other purchase.
+    with get_db() as conn:
+        conn.execute(
+            '''INSERT INTO subscriptions
+               (stripe_customer_id, stripe_subscription_id, email, name, company, product, status, temp_password, created_at, trial_end)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+            (customer_id, order_id, email, name, company, product, 'active', temp_password, datetime.utcnow().isoformat(), None)
+        )
+        conn.commit()
+
+    result = _provision_account(product, email, name, company, temp_password)
+    provisioned = (result == 'ok')
+
+    if not provisioned:
+        try:
+            _send_provisioning_alert(email, product, {product: result}, order_id)
+        except Exception as e:
+            print(f'[Store API] Provisioning alert error: {e}')
+    else:
+        with get_db() as conn:
+            conn.execute('UPDATE subscriptions SET provisioned = 1, temp_password = NULL WHERE stripe_subscription_id = ?', (order_id,))
+            conn.commit()
+
+    try:
+        _send_welcome_email(email, name, product, temp_password, provisioned)
+    except Exception as e:
+        print(f'[Store API] Welcome email error: {e}')
+
+    try:
+        _hubspot_push_contact(email=email, name=name, company=company,
+                              list_id=HUBSPOT_LIST_SUBSCRIBERS)
+    except Exception as e:
+        print(f'[Store API] HubSpot subscriber push error: {e}')
+
+    # Close out the L2 cart-abandon flow (it filters on "has not Placed Order
+    # since starting"), same as the subscription path — a completed Show Pass is
+    # still a placed order. Keyed on the order id so redelivery stays idempotent.
+    try:
+        amount = session.get('amount_total')
+        _klaviyo_event(
+            metric='Placed Order',
+            email=email,
+            name=name,
+            unique_id=order_id,
+            value=(amount / 100.0) if isinstance(amount, (int, float)) else None,
+            properties={
+                'app_name': product,
+                'product': product,
+                'company': company or None,
+                'plan': plan or None,
+            },
+        )
+    except Exception as e:
+        print(f'[Store API] Klaviyo Placed Order error: {e}')
+
+    print(f'[Store API] One-time {product} ({plan}) fulfilled for {email}: provisioned={provisioned}')
+
+
 def _handle_checkout_completed(session):
+    # A one-time purchase (SHOWJUDGR Show Pass, mode='payment') completes on this
+    # same event, but there is no Subscription object behind it — so everything
+    # below (Subscription.retrieve, trial dates, the trial Klaviyo flow, the
+    # subscription_id idempotency key) does not apply. Hand it to the dedicated
+    # one-time handler and return before any of that runs.
+    if session.get('mode') == 'payment':
+        _handle_one_time_completed(session)
+        return
+
     meta = session.get('metadata', {})
     product = meta.get('product', '')
     name    = meta.get('name', '')

@@ -647,6 +647,40 @@
                     </div>
                 </div>
 
+                <!-- SHOWJUDGR go-live ladder. Kept OUT of the live card above and held
+                     in a <template> so it renders NOTHING until activateShowjudgrLadder()
+                     copies it in — which only happens when SHOWJUDGR_SELLABLE === true.
+                     That is the whole card body (badge-free: a sellable card is not
+                     "Coming Soon"). Three rungs: Show Pass one-time, Season monthly
+                     (primary), Season annual. The Free tier is the top link — self-serve
+                     signup lives in the app itself. All three buy buttons call
+                     openSubscribe('SHOWJUDGR', <price label>, <plan>). -->
+                <template id="showjudgrLadderTpl">
+                    <div class="p-6">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="w-10 h-10 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.783-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+                            </div>
+                            <span class="text-xs font-medium bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full">Operations</span>
+                        </div>
+                        <h3 class="text-lg font-bold mb-1">SHOWJUDGR</h3>
+                        <p class="text-sm text-gray-500 mb-3">Car show registration and judging. Online entry sign-up, per-class score sheets, People&rsquo;s Choice voting, printable parking layouts, and season points that carry across every show in your series.</p>
+                        <p class="text-xs text-gray-500 mb-4">Running just one show? <a href="https://showjudgr.plainspokenfoundrynine.com" target="_blank" rel="noopener" class="text-purple-700 font-medium hover:underline">Start free &rarr;</a></p>
+                        <div class="flex items-baseline gap-1 mb-1">
+                            <span class="text-3xl font-bold">$49</span>
+                            <span class="text-sm text-gray-500">/mo &middot; Season</span>
+                        </div>
+                        <p class="text-xs text-gray-400 mb-4">30-day free trial &middot; or $399/yr (save $189) &middot; $19 one-time per show</p>
+                        <div class="flex flex-col gap-2">
+                            <button onclick="openSubscribe('SHOWJUDGR','$49/mo &middot; Season &middot; 30-day free trial','season')" class="w-full text-center text-sm font-medium py-2 px-4 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors">Subscribe &mdash; Season $49/mo</button>
+                            <div class="flex gap-2">
+                                <button onclick="openSubscribe('SHOWJUDGR','$399/yr &middot; Season &middot; save $189','annual')" class="flex-1 text-center text-sm font-medium py-2 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">$399/yr</button>
+                                <button onclick="openSubscribe('SHOWJUDGR','$19 one-time &middot; one show','showpass')" class="flex-1 text-center text-sm font-medium py-2 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Show Pass $19</button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
                 <!-- COMPLI -->
                 <div class="product-card bg-white rounded-xl shadow-sm card-hover accent-free" data-category="free operations" data-product="COMPLI">
                     <div class="p-6">
@@ -961,10 +995,13 @@
             <button onclick="closeSubscribe()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
-            <h3 class="text-xl font-bold mb-1">Subscribe to <span id="modalProductName"></span></h3>
+            <h3 class="text-xl font-bold mb-1" id="modalHeading">Subscribe to <span id="modalProductName"></span></h3>
             <p class="text-sm text-gray-500 mb-6" id="modalProductPrice"></p>
             <form id="subscribeForm" class="space-y-4">
                 <input type="hidden" id="modalProduct" name="product">
+                <!-- SHOWJUDGR ladder rung (showpass|season|annual); '' for every
+                     single-price product, which the server reads as "not a plan buy". -->
+                <input type="hidden" id="modalPlan" name="plan" value="">
                 <div>
                     <label class="block text-sm font-medium mb-1" for="subName">Full Name</label>
                     <input type="text" id="subName" name="name" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent">
@@ -1011,10 +1048,24 @@
         'EXTRACTR': 'Extractr',
         'SUPPORTR': 'Supportr',
         'MAINTAINR': 'Maintainr',
-        'FIELDVIEWR': 'FieldViewr'
+        'FIELDVIEWR': 'FieldViewr',
+        'SHOWJUDGR': 'ShowJudgr'
     };
 
     const API_URL = 'https://app.plainspokenfoundrynine.com/store-api';
+
+    // SHOWJUDGR go-live switch. FALSE ships the Coming Soon / waitlist card;
+    // flipping it to TRUE swaps in the 3-rung pricing ladder (Show Pass / Season
+    // monthly / Season annual) on load — see activateShowjudgrLadder() below.
+    //
+    // ⚠️ This is the LAST step of going sellable and must land in the SAME change
+    // that (1) sets the three live Stripe price IDs on the store host
+    // (STRIPE_SHOWJUDGR_SHOWPASS_PRICE_ID / _SEASON_ / _ANNUAL_) and (2) restarts
+    // pf9-store-api. Ordering rule: while it is false, a premature deploy degrades
+    // safely to lead capture; if it were true with the prices still unset, every
+    // ladder button would 400 at checkout. Same tables-first ordering that kept
+    // FIELDVIEWR safe on 08-08.
+    const SHOWJUDGR_SELLABLE = false;
 
     // Mobile menu
     document.getElementById('mobileMenuBtn').addEventListener('click', function() {
@@ -1055,15 +1106,25 @@
         });
     });
 
-    // Subscribe modal
-    function openSubscribe(product, price) {
+    // Subscribe modal.
+    //
+    // `plan` is optional and only SHOWJUDGR uses it (showpass|season|annual). It
+    // rides along in a hidden field and the server maps it to the right Stripe
+    // price + mode. A one-time Show Pass is a purchase, not a subscription, so the
+    // heading verb and button copy change for it — "Subscribe to" would be wrong.
+    function openSubscribe(product, price, plan) {
+        plan = plan || '';
+        var name = displayNames[product] || product;
+        var oneTime = (plan === 'showpass');
         document.getElementById('modalProduct').value = product;
-        document.getElementById('modalProductName').textContent = displayNames[product] || product;
+        document.getElementById('modalPlan').value = plan;
+        document.getElementById('modalHeading').textContent =
+            (oneTime ? 'Get the Show Pass for ' : 'Subscribe to ') + name;
         document.getElementById('modalProductPrice').textContent = price;
         document.getElementById('subscribeModal').classList.remove('hidden');
         document.body.style.overflow = 'hidden';
         if (typeof gtag === 'function') {
-            gtag('event', 'subscribe_modal_open', { product: product, price: price });
+            gtag('event', 'subscribe_modal_open', { product: product, price: price, plan: plan });
         }
     }
 
@@ -1154,6 +1215,21 @@
     if (document.readyState === 'complete') pf9ProductDeepLink();
     else window.addEventListener('load', function() { setTimeout(pf9ProductDeepLink, 0); });
 
+    // Swap the SHOWJUDGR Coming Soon card for the pricing ladder, but ONLY when the
+    // go-live switch is on. While it is off this is a no-op and the waitlist card
+    // stands — so nothing here can turn a not-yet-priced app into broken buy
+    // buttons. Runs at parse time (the card + template are already above it).
+    (function activateShowjudgrLadder() {
+        try {
+            if (!SHOWJUDGR_SELLABLE) return;
+            var card = document.querySelector('.product-card[data-product="SHOWJUDGR"]');
+            var tpl  = document.getElementById('showjudgrLadderTpl');
+            if (!card || !tpl) return;
+            card.innerHTML = tpl.innerHTML;   // badge-free ladder body replaces Coming Soon
+            card.classList.remove('relative'); // the badge it cleared is gone now
+        } catch (e) {}
+    })();
+
     // `subscription_started` used to fire from here on ?checkout=success, and never could:
     // Stripe lands on login.html?subscribed=<app>. Moved there 2026-08-04. Adding &email= to
     // success_url would revive it — don't: that puts a customer address in a URL, where it
@@ -1167,20 +1243,21 @@
         btn.disabled = true;
 
         var product = document.getElementById('modalProduct').value;
+        var plan = document.getElementById('modalPlan').value;
         var email = document.getElementById('subEmail').value;
         var name = document.getElementById('subName').value;
         var company = document.getElementById('subCompany').value;
         var consent = document.getElementById('subConsent').checked;
 
         if (typeof gtag === 'function') {
-            gtag('event', 'checkout_started', { product: product });
+            gtag('event', 'checkout_started', { product: product, plan: plan });
         }
 
         fetch(API_URL + '/create-checkout-session', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                product: product, email: email, name: name, company: company,
+                product: product, plan: plan, email: email, name: name, company: company,
                 // Ignored by any build older than the consent change. Ship the
                 // API side first: this field arriving at a server that does not
                 // read it means the customer ticks the box and nothing happens.
