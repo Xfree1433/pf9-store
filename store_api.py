@@ -2327,7 +2327,7 @@ def _handle_one_time_completed(session):
         )
         conn.commit()
 
-    result = _provision_account(product, email, name, company, temp_password)
+    result = _provision_account(product, email, name, company, temp_password, plan=plan)
     provisioned = (result == 'ok')
 
     if not provisioned:
@@ -2438,7 +2438,12 @@ def _handle_checkout_completed(session):
 
     # Provision account in the app (bundles provision multiple apps)
     products_to_provision = BUNDLE_MAP.get(product, [product])
-    results = {p: _provision_account(p, email, name, company, temp_password)
+    # The plan code is product-specific (SHOWJUDGR's rungs), so only forward it to
+    # the app it belongs to — a bundled sibling should never receive it.
+    sub_plan = meta.get('plan', '')
+    results = {p: _provision_account(
+                   p, email, name, company, temp_password,
+                   plan=(sub_plan if p == 'SHOWJUDGR' else None))
                for p in products_to_provision}
 
     # Only claim the account is ready when every app said 'ok'. 'exists' counts
@@ -2959,12 +2964,17 @@ def _send_provisioning_alert(email, product, results, subscription_id):
                 f'[PF9 Store] Provisioning failed — {email} ({product})', body)
 
 
-def _provision_account(product, email, name, company, password):
+def _provision_account(product, email, name, company, password, plan=None):
     """Create the customer's account in one app.
 
     Returns 'ok', 'exists', or a short failure reason. 'exists' is deliberately
     not 'ok': the account is usable, but it keeps whatever password it already
     had, so the temp password in the welcome email would not work.
+
+    ``plan`` is the purchased ladder rung (e.g. SHOWJUDGR's 'showpass' / 'season'
+    / 'annual'). It is forwarded only when set; apps that don't do tiering ignore
+    the extra key, and the app that does records it against the new org so it can
+    enforce that tier's limits.
     """
     register_url = _register_url(product)
     if not register_url:
@@ -2986,6 +2996,11 @@ def _provision_account(product, email, name, company, password):
         'organizationName': org,
         'companyName': org,
     }
+
+    # Forward the purchased plan so a tiered app (SHOWJUDGR) records the rung the
+    # customer bought and enforces its limits. Untiered apps ignore the key.
+    if plan:
+        payload['plan'] = plan
 
     # Identify ourselves rather than riding the default 'python-requests/x.y.z'.
     # A Cloudflare rule on these zones returns 403 (error 1010) to some scripted
