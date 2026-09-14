@@ -1614,6 +1614,58 @@ def _register_url(product):
     return base.rstrip('/') + path
 
 
+# Which products expose a lifecycle-relay endpoint (a sibling of /register that
+# accepts a subscription status change). Only SHOWJUDGR enforces per-tier limits
+# today, so it's the only app that needs the store to push cancel/renew/plan
+# changes; the rest gate access at the store layer and ignore lifecycle here.
+# The path mirrors the register path with the trailing segment swapped, so it
+# stays fail-closed behind the same PROVISION_SECRET.
+PLAN_RELAY_PRODUCTS = {'SHOWJUDGR'}
+
+
+def _plan_relay_url(product):
+    """Lifecycle-relay endpoint for a product, or None if it has none."""
+    if product not in PLAN_RELAY_PRODUCTS:
+        return None
+    reg = _register_url(product)
+    if not reg or not reg.endswith('/register'):
+        return None
+    return reg[:-len('/register')] + '/plan'
+
+
+def _notify_app_plan_change(product, subscription_id, status, plan=None):
+    """Push a subscription lifecycle change to a tiered app so its caps stay in
+    sync with billing. Best-effort: a failure here must never break the store's
+    own webhook handling, so it's logged and swallowed.
+
+    ``status`` is the store's word ('cancelled' / 'active' / a Stripe status);
+    the app collapses any non-active status back to its free tier. ``plan`` is
+    only sent on an actual rung change.
+    """
+    url = _plan_relay_url(product)
+    if not url or not subscription_id or not status:
+        return
+    payload = {'stripeSubscriptionId': subscription_id, 'status': status}
+    if plan:
+        payload['plan'] = plan
+    headers = {'User-Agent': 'PF9-Store/1.0'}
+    if PROVISION_SECRET:
+        headers['X-PF9-Provision-Secret'] = PROVISION_SECRET
+    try:
+        resp = http_requests.post(url, json=payload, headers=headers, timeout=20)
+        if resp.status_code == 200:
+            print(f'[Store API] {product} plan synced: {subscription_id} -> {status}')
+        elif resp.status_code == 404:
+            # The app has no org carrying that handle (e.g. a subscription that
+            # predates handle-forwarding). Not an error worth alerting on.
+            print(f'[Store API] {product} has no org for {subscription_id} (skip)')
+        else:
+            print(f'[Store API] {product} plan sync failed: '
+                  f'HTTP {resp.status_code} {resp.text[:200]}')
+    except Exception as e:
+        print(f'[Store API] {product} plan sync error for {subscription_id}: {e}')
+
+
 # ── Database setup ──
 def get_db():
     conn = sqlite3.connect(DB_PATH)
@@ -2443,7 +2495,9 @@ def _handle_checkout_completed(session):
     sub_plan = meta.get('plan', '')
     results = {p: _provision_account(
                    p, email, name, company, temp_password,
-                   plan=(sub_plan if p == 'SHOWJUDGR' else None))
+                   plan=(sub_plan if p == 'SHOWJUDGR' else None),
+                   stripe_customer_id=(customer_id if p == 'SHOWJUDGR' else None),
+                   stripe_subscription_id=(subscription_id if p == 'SHOWJUDGR' else None))
                for p in products_to_provision}
 
     # Only claim the account is ready when every app said 'ok'. 'exists' counts
@@ -2635,6 +2689,10 @@ def _handle_subscription_cancelled(sub):
     email = row['email']
     cancelled_product = row['product']
 
+    # Push the cancellation to a tiered app so it collapses that org back to its
+    # free-tier caps. Best-effort; independent of the Klaviyo lifecycle below.
+    _notify_app_plan_change(cancelled_product, subscription_id, 'canceled')
+
     # Recomputed AFTER the status update above, so this is what the customer
     # still pays for — the subscription just cancelled is already excluded.
     remaining = _owned_apps(email)
@@ -2731,6 +2789,13 @@ def _handle_subscription_updated(sub):
         )
         conn.commit()
     print(f'[Store API] Subscription {subscription_id} status -> {status}')
+
+    # Keep a tiered app's caps in step with every status change Stripe reports
+    # (renewal keeps 'active', past_due/unpaid lapse to Free, a recovered payment
+    # restores paid). The app is idempotent, so the repeated 'active' updates on
+    # each renewal cost nothing. Uses the product on the existing row.
+    if previous and previous['product']:
+        _notify_app_plan_change(previous['product'], subscription_id, status)
 
     # trialing -> active is the day-30 conversion: hand them off from the trial
     # flow to paid onboarding. Guarded on the previous status so the repeated
@@ -2964,7 +3029,8 @@ def _send_provisioning_alert(email, product, results, subscription_id):
                 f'[PF9 Store] Provisioning failed — {email} ({product})', body)
 
 
-def _provision_account(product, email, name, company, password, plan=None):
+def _provision_account(product, email, name, company, password, plan=None,
+                       stripe_customer_id=None, stripe_subscription_id=None):
     """Create the customer's account in one app.
 
     Returns 'ok', 'exists', or a short failure reason. 'exists' is deliberately
@@ -2975,6 +3041,11 @@ def _provision_account(product, email, name, company, password, plan=None):
     / 'annual'). It is forwarded only when set; apps that don't do tiering ignore
     the extra key, and the app that does records it against the new org so it can
     enforce that tier's limits.
+
+    ``stripe_customer_id`` / ``stripe_subscription_id`` are the Stripe handles for
+    a subscription purchase. Forwarded (camelCase) only when set so a tiered app
+    stores them against the org — that handle is what a later lifecycle relay
+    (cancel / renew / plan change) matches on to keep the app's caps in sync.
     """
     register_url = _register_url(product)
     if not register_url:
@@ -3001,6 +3072,13 @@ def _provision_account(product, email, name, company, password, plan=None):
     # customer bought and enforces its limits. Untiered apps ignore the key.
     if plan:
         payload['plan'] = plan
+    # Forward the Stripe handles so the app can match a later lifecycle relay to
+    # this org. camelCase to match the app's register parser. Untiered apps and
+    # one-time purchases (no subscription handle) simply omit what's absent.
+    if stripe_customer_id:
+        payload['stripeCustomerId'] = stripe_customer_id
+    if stripe_subscription_id:
+        payload['stripeSubscriptionId'] = stripe_subscription_id
 
     # Identify ourselves rather than riding the default 'python-requests/x.y.z'.
     # A Cloudflare rule on these zones returns 403 (error 1010) to some scripted
