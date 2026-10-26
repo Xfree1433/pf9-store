@@ -402,7 +402,8 @@
                 headers:{'Content-Type':'application/json'},
                 body:JSON.stringify({email:email})
             }).then(function(r){return r.json()}).then(function(d){
-                if(d.url){window.location.href=d.url;}
+                if(d.sent){err.textContent=d.message;err.style.color='#059669';err.style.display='block';btn.textContent='Email sent';}
+                else if(d.url){window.location.href=d.url;}
                 else{err.textContent=d.error||'No subscription found';err.style.display='block';btn.textContent='Open Billing Portal';btn.disabled=false;}
             }).catch(function(){
                 err.textContent='Connection error';err.style.display='block';btn.textContent='Open Billing Portal';btn.disabled=false;

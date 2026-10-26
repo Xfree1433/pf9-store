@@ -2299,6 +2299,10 @@ def stripe_webhook():
     return jsonify({'received': True})
 
 
+# Per-address throttle for portal-link emails (per worker; resets on restart).
+_PORTAL_LINK_SENT = {}
+
+
 @store_bp.route('/create-portal-session', methods=['POST', 'OPTIONS'])
 def create_portal_session():
     if request.method == 'OPTIONS':
@@ -2313,19 +2317,36 @@ def create_portal_session():
     if not email:
         return _cors_response(jsonify({'error': 'Email is required'}), 400)
 
+    # Security audit 2026-10-26: this used to return the portal URL to whoever
+    # typed the email, so anyone could open any customer's billing (invoices,
+    # address, card last-4, cancel). The link now goes only to the address
+    # itself, and the answer is the same whether or not it is a customer.
+    sent_reply = {'sent': True, 'message': 'If that email has a subscription, '
+                  'we have emailed it a link to manage billing. It works for a short time.'}
+    key = email.lower()
+    now = time.time()
+    if now - _PORTAL_LINK_SENT.get(key, 0) < 60:
+        return _cors_response(jsonify(sent_reply))
+    _PORTAL_LINK_SENT[key] = now
+
     try:
         customers = stripe.Customer.list(email=email, limit=1)
-        if not customers.data:
-            return _cors_response(jsonify({'error': 'No subscription found for this email'}), 404)
-
-        portal = stripe.billing_portal.Session.create(
-            customer=customers.data[0].id,
-            return_url=f'{STORE_URL}/login.html',
-        )
-        return _cors_response(jsonify({'url': portal.url}))
+        if customers.data:
+            portal = stripe.billing_portal.Session.create(
+                customer=customers.data[0].id,
+                return_url=f'{STORE_URL}/login.html',
+            )
+            body = (
+                '<p>Here is your link to manage your Plain Spoken Foundry Nine subscription '
+                '(invoices, payment method, plan or cancellation):</p>'
+                f'<p><a href="{html.escape(portal.url, quote=True)}">Open the billing portal</a></p>'
+                '<p>The link works for a short time. If you did not ask for it, you can ignore '
+                'this email; nothing has changed on your account.</p>'
+            )
+            _send_email(EMAIL_FROM_CUSTOMER, email, 'Your billing portal link', body)
     except Exception as e:
         print(f'[Store API] Portal error: {e}')
-        return _cors_response(jsonify({'error': 'Failed to create portal session'}), 500)
+    return _cors_response(jsonify(sent_reply))
 
 
 # ── Checkout/Webhook Handlers ──
