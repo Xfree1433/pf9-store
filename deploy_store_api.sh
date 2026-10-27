@@ -82,14 +82,25 @@ PYEOF
 chown "$DB_OWNER:$DB_GROUP" "$WSGI"
 
 # ── override env (the two new vars + explicit DB path) ───────────────────────
-say "Write $OVERRIDE_ENV (loaded AFTER $BRIDGR_ENV so it wins)"
-cat > "$OVERRIDE_ENV" <<EOF
-# Store-API-only overrides. Loaded after /opt/bridgr/.env.
-SUBSCRIPTION_STATUS_SECRET=wcjSY-J6pTKzQCiqseXGglATvEikZ6BSpAfoIg-e5VcrE5C0jZ_lImjMP2-68Y-l
-TRIAL_PERIOD_DAYS=30
-STORE_DB_PATH=$DB
-EOF
+say "Update $OVERRIDE_ENV (loaded AFTER $BRIDGR_ENV so it wins)"
+# This repo is PUBLIC, so no secret value may ever be written here (one was,
+# until 2026-10-26, and had to be rotated). SUBSCRIPTION_STATUS_SECRET keeps
+# whatever the server already has and is only generated on a first install.
+# The file is updated key by key rather than rewritten, so other keys set on the
+# server (PROVISION_SECRET, LEADS_SECRET, ...) survive a re-run.
+touch "$OVERRIDE_ENV"
 chmod 600 "$OVERRIDE_ENV"
+set_env_key() {
+  if grep -q "^$1=" "$OVERRIDE_ENV"; then
+    sed -i "s|^$1=.*|$1=$2|" "$OVERRIDE_ENV"
+  else
+    printf '%s=%s\n' "$1" "$2" >> "$OVERRIDE_ENV"
+  fi
+}
+grep -q '^SUBSCRIPTION_STATUS_SECRET=.' "$OVERRIDE_ENV" \
+  || set_env_key SUBSCRIPTION_STATUS_SECRET "$(openssl rand -hex 32)"
+set_env_key TRIAL_PERIOD_DAYS 30
+set_env_key STORE_DB_PATH "$DB"
 chown "$DB_OWNER:$DB_GROUP" "$OVERRIDE_ENV"
 
 # ── systemd unit ────────────────────────────────────────────────────────────

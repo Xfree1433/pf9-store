@@ -1966,7 +1966,8 @@ def demo_request():
 @store_bp.route('/leads', methods=['GET'])
 def get_leads():
     expected = os.environ.get('LEADS_SECRET', '')
-    provided = request.headers.get('X-PF9-Secret', '') or request.args.get('secret', '')
+    # Header only: a ?secret= query string lands in proxy and access logs (audit 2026-10-26).
+    provided = request.headers.get('X-PF9-Secret', '')
     if not expected or not secrets.compare_digest(provided, expected):
         return _cors_response(jsonify({'error': 'Unauthorized'}), 401)
 
@@ -2215,7 +2216,8 @@ def subscription_status():
     """
     if not SUBSCRIPTION_STATUS_SECRET:
         return jsonify({'error': 'status endpoint not configured'}), 401
-    provided = request.headers.get('X-PF9-Secret', '') or request.args.get('secret', '')
+    # Header only: a ?secret= query string lands in proxy and access logs (audit 2026-10-26).
+    provided = request.headers.get('X-PF9-Secret', '')
     if not secrets.compare_digest(provided, SUBSCRIPTION_STATUS_SECRET):
         return jsonify({'error': 'unauthorized'}), 401
 
@@ -2283,6 +2285,12 @@ def stripe_webhook():
 
     if event['type'] == 'checkout.session.completed':
         _handle_checkout_completed(obj)
+
+    elif event['type'] == 'checkout.session.async_payment_succeeded':
+        # A delayed payment method (bank debit etc.) settling later. Only the
+        # one-time path needs it: it is the moment a Show Pass is actually paid.
+        if obj.get('mode') == 'payment':
+            _handle_one_time_completed(obj)
 
     elif event['type'] == 'customer.subscription.deleted':
         _handle_subscription_cancelled(obj)
@@ -2375,6 +2383,15 @@ def _handle_one_time_completed(session):
 
     if not product or not email:
         print(f'[Store API] One-time webhook missing product or email: {meta}')
+        return
+
+    # checkout.session.completed also fires for delayed payment methods before
+    # the money has arrived (payment_status 'unpaid'). Fulfil only once Stripe
+    # says it is paid; async_payment_succeeded brings it back here when it is
+    # (audit 2026-10-26).
+    if session.get('payment_status') != 'paid':
+        print(f'[Store API] One-time checkout {session.get("id")} not paid yet '
+              f'({session.get("payment_status")}); waiting for async_payment_succeeded')
         return
 
     # Idempotency — Stripe redelivers webhooks.
