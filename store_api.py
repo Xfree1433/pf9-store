@@ -382,6 +382,52 @@ def _trial_price_display(sub):
         return None
 
 
+def _subscription_coupons(sub):
+    """The coupon objects attached to a subscription, across Stripe API shapes.
+
+    Stripe exposes a single `discount` (older) and/or a `discounts` list; each
+    carries a `coupon`. Bare id strings (unexpanded) are skipped — we only act
+    on coupons we can actually read."""
+    out = []
+    d = sub.get('discount')
+    if isinstance(d, dict) and isinstance(d.get('coupon'), dict):
+        out.append(d['coupon'])
+    for d in (sub.get('discounts') or []):
+        if isinstance(d, dict) and isinstance(d.get('coupon'), dict):
+            out.append(d['coupon'])
+    return out
+
+
+def _is_comped(sub):
+    """True when the subscription is effectively free: a $0 line item, a
+    100%-off coupon, or a coupon whose amount_off covers the whole line item.
+
+    A comped customer must never get a 'your card is about to be charged'
+    notice — that drip alarmed a comped customer on 2026-10-28, who'd been told
+    their use was on the house. Fail-open (return False) on any odd shape, so a
+    genuinely-charged customer is never silently denied their warning."""
+    price = _trial_price_display(sub)
+    if price is not None:
+        try:
+            if float(price) == 0:
+                return True
+        except ValueError:
+            pass
+    unit = None
+    try:
+        items = ((sub.get('items') or {}).get('data')) or []
+        unit = ((items[0].get('price') or {}).get('unit_amount')) if items else None
+    except Exception:
+        unit = None
+    for coupon in _subscription_coupons(sub):
+        if coupon.get('percent_off') == 100:
+            return True
+        amt = coupon.get('amount_off')
+        if amt is not None and unit is not None and amt >= unit:
+            return True
+    return False
+
+
 def _klaviyo_sync(email, name='', properties=None, add_list=None, remove_list=None):
     """
     Upsert a Klaviyo profile and move it between lifecycle lists.
@@ -2934,6 +2980,12 @@ def _handle_trial_will_end(sub):
     # would send them a false charge notice.
     if sub.get('cancel_at_period_end') or sub.get('canceled_at') or row['status'] == 'cancelled':
         print(f'[Store API] {subscription_id} is cancelling; no pre-charge notice')
+        return
+
+    # A comped subscription (free — a 100%-off coupon or a $0 price) must not be
+    # warned that its card is about to be charged. It isn't. (2026-10-28.)
+    if _is_comped(sub):
+        print(f'[Store API] {subscription_id} is comped (free); no pre-charge notice')
         return
 
     # Refuse to send a billing notice that cannot name the amount or the date.
