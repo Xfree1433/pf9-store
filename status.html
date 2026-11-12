@@ -114,6 +114,28 @@
             font-size: 0.75rem;
             font-weight: 600;
         }
+        .badge-degraded { background: #fffbeb; color: #92400e; }
+        .badge-down { background: #fef2f2; color: #991b1b; }
+        .badge-unknown { background: #f3f4f6; color: #4b5563; }
+        .badge-degraded, .badge-down, .badge-unknown {
+            padding: 0.2rem 0.6rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .status-banner.is-degraded { background: #fffbeb; border-color: #fde68a; }
+        .status-banner.is-degraded .status-dot { background: #f59e0b; }
+        .status-banner.is-degraded strong { color: #92400e; }
+        .status-banner.is-degraded span { color: #b45309; }
+        .status-banner.is-down { background: #fef2f2; border-color: #fecaca; }
+        .status-banner.is-down .status-dot { background: #ef4444; }
+        .status-banner.is-down strong { color: #991b1b; }
+        .status-banner.is-down span { color: #b91c1c; }
+        .status-banner.is-unknown { background: #f3f4f6; border-color: #e5e7eb; }
+        .status-banner.is-unknown .status-dot { background: #9ca3af; }
+        .status-banner.is-unknown strong { color: #374151; }
+        .status-banner.is-unknown span { color: #6b7280; }
+        .note { color: #6b7280; font-size: 0.8rem; text-align: center; margin-top: 0.5rem; }
         .footer {
             text-align: center;
             padding: 2rem;
@@ -145,54 +167,95 @@
             <h1>System Status</h1>
             <p class="subtitle">Current operational status for all PF9 services.</p>
 
-            <div class="status-banner">
+            <div class="status-banner is-unknown" id="banner">
                 <div class="status-dot"></div>
                 <div>
-                    <strong>All Systems Operational</strong><br>
-                    <span>Last checked: <span id="last-check"></span></span>
+                    <strong id="banner-title">Checking status&hellip;</strong><br>
+                    <span id="banner-sub">Loading the latest check results.</span>
                 </div>
             </div>
-
-            <div class="card">
-                <div class="card-header">Manufacturing Suite</div>
-                <div class="service-row"><span class="service-name">FlowTrack</span><span class="badge-ok">Operational</span></div>
-                <div class="service-row"><span class="service-name">Qualifi</span><span class="badge-ok">Operational</span></div>
-                <div class="service-row"><span class="service-name">ShiftLog</span><span class="badge-ok">Operational</span></div>
-                <div class="service-row"><span class="service-name">Reportr</span><span class="badge-ok">Operational</span></div>
-                <div class="service-row"><span class="service-name">Inspectr</span><span class="badge-ok">Operational</span></div>
-            </div>
-
-            <div class="card">
-                <div class="card-header">Property Management</div>
-                <div class="service-row"><span class="service-name">LandlordR</span><span class="badge-ok">Operational</span></div>
-                <div class="service-row"><span class="service-name">TenantLink</span><span class="badge-ok">Operational</span></div>
-            </div>
-
-            <div class="card">
-                <div class="card-header">Operations & AI</div>
-                <div class="service-row"><span class="service-name">Permitr</span><span class="badge-ok">Operational</span></div>
-                <div class="service-row"><span class="service-name">TaskFlow</span><span class="badge-ok">Operational</span></div>
-                <div class="service-row"><span class="service-name">OpsIQ</span><span class="badge-ok">Operational</span></div>
-                <div class="service-row"><span class="service-name">Extractr</span><span class="badge-ok">Operational</span></div>
-                <div class="service-row"><span class="service-name">Supportr</span><span class="badge-ok">Operational</span></div>
-                <div class="service-row"><span class="service-name">Maintainr</span><span class="badge-ok">Operational</span></div>
-                <div class="service-row"><span class="service-name">Compli</span><span class="badge-ok">Operational</span></div>
-            </div>
-
-            <div class="card">
-                <div class="card-header">Infrastructure</div>
-                <div class="service-row"><span class="service-name">PF9 Store</span><span class="badge-ok">Operational</span></div>
-                <div class="service-row"><span class="service-name">Store API</span><span class="badge-ok">Operational</span></div>
-                <div class="service-row"><span class="service-name">Stripe Billing</span><span class="badge-ok">Operational</span></div>
-            </div>
+            <div id="groups"></div>
+            <noscript><p class="note">Live status needs JavaScript. Email support@plainspokenfoundrynine.com if you are having trouble with an app.</p></noscript>
+            <p class="note">Every service is checked automatically about every 5 minutes from outside our network.</p>
         </div>
     </div>
-
     <div class="footer">&copy; 2026 Plainspoken Foundry Nine. All rights reserved.</div>
 
     <script>
-        document.getElementById('last-check').textContent =
-            new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+    (function () {
+        // Written by .github/workflows/status.yml (tools/status_check.py).
+        var DATA_URL = 'https://raw.githubusercontent.com/Xfree1433/pf9-store/status-data/status.json';
+        var STALE_MINUTES = 30;   // checks run ~every 5 min; older than this = don't trust it
+        var LABEL = { operational: 'Operational', degraded: 'Degraded', down: 'Down', unknown: 'Unknown' };
+        var BADGE = { operational: 'badge-ok', degraded: 'badge-degraded', down: 'badge-down', unknown: 'badge-unknown' };
+
+        function el(tag, cls, text) {
+            var n = document.createElement(tag);
+            if (cls) n.className = cls;
+            if (text != null) n.textContent = text;
+            return n;
+        }
+        function banner(kind, title, sub) {
+            document.getElementById('banner').className = 'status-banner' + (kind ? ' is-' + kind : '');
+            document.getElementById('banner-title').textContent = title;
+            document.getElementById('banner-sub').textContent = sub;
+        }
+        function fmt(d) {
+            return d.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+        }
+        function render(doc) {
+            var checked = new Date(doc.generated_at);
+            var services = Array.isArray(doc.services) ? doc.services : [];
+            if (isNaN(checked.getTime()) || !services.length) throw new Error('malformed status data');
+            var ageMin = (Date.now() - checked.getTime()) / 60000;
+            var stale = ageMin > STALE_MINUTES;
+
+            var groups = document.getElementById('groups');
+            groups.textContent = '';
+            var cards = {}, counts = { operational: 0, degraded: 0, down: 0, unknown: 0 };
+            services.forEach(function (s) {
+                var st = LABEL.hasOwnProperty(s.status) ? s.status : 'unknown';
+                // Stale data can't vouch for anything: show the last known state as unknown.
+                if (stale) st = 'unknown';
+                counts[st]++;
+                var g = String(s.group || 'Other');
+                if (!cards[g]) {
+                    cards[g] = el('div', 'card');
+                    cards[g].appendChild(el('div', 'card-header', g));
+                    groups.appendChild(cards[g]);
+                }
+                var row = el('div', 'service-row');
+                row.appendChild(el('span', 'service-name', String(s.name || '')));
+                row.appendChild(el('span', BADGE[st], LABEL[st]));
+                cards[g].appendChild(row);
+            });
+
+            var when = 'Last checked: ' + fmt(checked);
+            if (stale) {
+                banner('unknown', 'Status checks are delayed',
+                    'The last successful check was ' + fmt(checked) + ', so current status is unknown.');
+            } else if (counts.down) {
+                banner('down', counts.down === 1 ? '1 service is down' : counts.down + ' services are down', when);
+            } else if (counts.degraded || counts.unknown) {
+                var n = counts.degraded + counts.unknown;
+                banner('degraded', n === 1 ? '1 service is degraded' : n + ' services are degraded', when);
+            } else {
+                banner('', 'All Systems Operational', when);
+            }
+        }
+        function load() {
+            fetch(DATA_URL + '?t=' + Math.floor(Date.now() / 60000), { cache: 'no-store' })
+                .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+                .then(render)
+                .catch(function () {
+                    document.getElementById('groups').textContent = '';
+                    banner('unknown', 'Status is unavailable right now',
+                        'We could not load the latest check results. Please try again in a few minutes.');
+                });
+        }
+        load();
+        setInterval(load, 60000);
+    })();
     </script>
 </body>
 </html>

@@ -1,0 +1,46 @@
+name: Status check
+
+# Probes every PF9 service from GitHub's network and publishes the result as
+# status.json on the `status-data` branch, which status.html reads. Nothing is
+# committed to main, so this never triggers a Pages deploy.
+#
+# NOTE: GitHub pauses scheduled workflows after 60 days without repository
+# activity. status.html shows "checks delayed" when the data goes stale, so a
+# paused schedule is visible on the page rather than silently green.
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: status-check
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Probe services
+        run: python3 tools/status_check.py "$RUNNER_TEMP/status.json"
+      - name: Publish status.json to the status-data branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -eu
+          work="$RUNNER_TEMP/status-data"
+          mkdir -p "$work"
+          cp "$RUNNER_TEMP/status.json" "$work/status.json"
+          cd "$work"
+          git init -q -b status-data
+          git config user.name  "pf9-status-bot"
+          git config user.email "status-bot@users.noreply.github.com"
+          git add status.json
+          git commit -q -m "status $(date -u +%Y-%m-%dT%H:%MZ)"
+          # One orphan commit, force-pushed: the branch never grows.
+          git push -q --force "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" status-data
