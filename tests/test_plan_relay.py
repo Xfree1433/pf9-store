@@ -34,6 +34,11 @@ class _FakeResp:
         self.text = text
 
 
+class _Boom:
+    def post(self, *a, **k):
+        raise RuntimeError('network down')
+
+
 class _Recorder:
     """Stand-in for http_requests: records the one POST and returns a canned resp."""
     def __init__(self, status_code=200):
@@ -45,10 +50,16 @@ class _Recorder:
         return _FakeResp(self.status_code)
 
 
-print('=== only tiered products expose a relay URL, and it mirrors /register ===')
-# SHOWJUDGR is the only app enforcing per-tier limits today, so it is the only
-# one that should receive lifecycle pushes. Deriving /plan from /register keeps
-# it behind the same PROVISION_SECRET and impossible to point at a stray host.
+print('=== every store product exposes a relay URL, and it mirrors /register ===')
+# Since 2026-11-14 every store app locks a lapsed customer (#1040), so every
+# product gets lifecycle pushes. Deriving /plan from /register keeps it behind
+# the same PROVISION_SECRET and impossible to point at a stray host.
+expect('every provisioned product is relayed', PLAN_RELAY_PRODUCTS == set(REGISTER_PATH),
+       repr(set(REGISTER_PATH) - PLAN_RELAY_PRODUCTS))
+expect('COMPLI keeps its versioned path', _plan_relay_url('COMPLI', ).endswith('/api/v1/auth/plan'),
+       repr(_plan_relay_url('COMPLI')))
+expect('MARKUPR keeps its short path', _plan_relay_url('MARKUPR').endswith('/api/plan'),
+       repr(_plan_relay_url('MARKUPR')))
 for product in sorted(PLAN_RELAY_PRODUCTS):
     url = _plan_relay_url(product)
     expect(f'{product} has a relay url', bool(url), repr(url))
@@ -59,8 +70,8 @@ for product in sorted(PLAN_RELAY_PRODUCTS):
            url == reg[:-len('/register')] + '/plan', repr(url))
 
 print()
-print('=== an untiered product gets no relay url (push is a no-op for it) ===')
-for product in ['FLOWTRACK', 'COMPLI', 'MARKUPR', '', None, 'NOPE']:
+print('=== an unknown product gets no relay url (push is a no-op for it) ===')
+for product in ['', None, 'NOPE', 'SHOWJUDGR (waitlist)']:
     expect(f'{str(product):<10} -> None', _plan_relay_url(product) is None,
            repr(_plan_relay_url(product)))
 
@@ -96,11 +107,38 @@ try:
            c2['json'].get('plan') == 'annual', repr(c2['json']))
 
     print()
-    print('=== an untiered product never touches the network ===')
+    print('=== an unknown product never touches the network ===')
     rec3 = _Recorder(200)
     store_api.http_requests = rec3
-    _notify_app_plan_change('FLOWTRACK', 'sub_abc', 'canceled')
-    expect('no POST for an untiered product', rec3.calls == [], str(rec3.calls))
+    _notify_app_plan_change('NOPE', 'sub_abc', 'canceled')
+    expect('no POST for an unknown product', rec3.calls == [], str(rec3.calls))
+
+    print()
+    print('=== #1040: the push carries the customer email so the app can find them ===')
+    rec6 = _Recorder(200)
+    store_api.http_requests = rec6
+    _notify_app_plan_change('FLOWTRACK', 'sub_abc', 'canceled', email='buyer@example.com')
+    c6 = rec6.calls[0] if rec6.calls else {'url': '', 'json': {}}
+    expect('FLOWTRACK cancel reaches its /api/auth/plan', c6['url'].endswith('/api/auth/plan'), c6['url'])
+    expect('payload carries the email', c6['json'].get('email') == 'buyer@example.com', repr(c6['json']))
+    expect('payload carries the product', c6['json'].get('product') == 'FLOWTRACK', repr(c6['json']))
+
+    print()
+    print('=== #1040: a switch-off that does not land alerts a human; unlocks only log ===')
+    alerts = []
+    orig_alert_send = store_api._send_email
+    store_api._send_email = lambda *a, **k: alerts.append(a)
+    try:
+        for code, status, product, want in [(500, 'canceled', 'TASKFLOW', 1), (500, 'unpaid', 'TASKFLOW', 1),
+                                            (404, 'canceled', 'COMPLI', 1), (404, 'canceled', 'SHOWJUDGR', 0),
+                                            (500, 'active', 'TASKFLOW', 0), (500, 'past_due', 'TASKFLOW', 0),
+                                            (200, 'canceled', 'TASKFLOW', 0)]:
+            alerts.clear()
+            store_api.http_requests = _Recorder(code)
+            _notify_app_plan_change(product, 'sub_x', status, email='buyer@example.com')
+            expect(f'{product} {status} HTTP {code} -> {want} alert(s)', len(alerts) == want, str(len(alerts)))
+    finally:
+        store_api._send_email = orig_alert_send
 
     print()
     print('=== a 404 (no org for that handle) is swallowed, not raised ===')
@@ -115,9 +153,6 @@ try:
 
     print()
     print('=== a transport error never breaks the caller ===')
-    class _Boom:
-        def post(self, *a, **k):
-            raise RuntimeError('network down')
     store_api.http_requests = _Boom()
     try:
         _notify_app_plan_change('SHOWJUDGR', 'sub_abc', 'canceled')

@@ -1661,12 +1661,24 @@ def _register_url(product):
 
 
 # Which products expose a lifecycle-relay endpoint (a sibling of /register that
-# accepts a subscription status change). Only SHOWJUDGR enforces per-tier limits
-# today, so it's the only app that needs the store to push cancel/renew/plan
-# changes; the rest gate access at the store layer and ignore lifecycle here.
-# The path mirrors the register path with the trailing segment swapped, so it
-# stays fail-closed behind the same PROVISION_SECRET.
-PLAN_RELAY_PRODUCTS = {'SHOWJUDGR'}
+# accepts a subscription status change). The path mirrors the register path with
+# the trailing segment swapped, so it stays fail-closed behind the same
+# PROVISION_SECRET.
+#
+# Until 2026-11-14 only SHOWJUDGR got these pushes (it drops a lapsed customer to
+# its free tier). No other app ever heard that a subscription had ended, and none
+# of them asked /subscription-status, so a trial cancelled on day one kept the
+# account forever (security audit 11-14, board #1040). Every store app now has a
+# /plan route that LOCKS the provisioned organization when Stripe ends the
+# subscription (canceled / unpaid / incomplete_expired) and unlocks it on
+# active / trialing; past_due changes nothing (Stripe is still retrying). The
+# app finds the account by the email it was provisioned under, so the push
+# carries that email.
+PLAN_RELAY_PRODUCTS = set(REGISTER_PATH)
+
+# Statuses on which the app locks the account. A relay of one of these that does
+# not land is money walking out of the door, so it alerts instead of only logging.
+LOCKING_STATUSES = {'canceled', 'cancelled', 'unpaid', 'incomplete_expired'}
 
 
 def _plan_relay_url(product):
@@ -1679,7 +1691,7 @@ def _plan_relay_url(product):
     return reg[:-len('/register')] + '/plan'
 
 
-def _notify_app_plan_change(product, subscription_id, status, plan=None):
+def _notify_app_plan_change(product, subscription_id, status, plan=None, email=None):
     """Push a subscription lifecycle change to a tiered app so its caps stay in
     sync with billing. Best-effort: a failure here must never break the store's
     own webhook handling, so it's logged and swallowed.
@@ -1691,7 +1703,9 @@ def _notify_app_plan_change(product, subscription_id, status, plan=None):
     url = _plan_relay_url(product)
     if not url or not subscription_id or not status:
         return
-    payload = {'stripeSubscriptionId': subscription_id, 'status': status}
+    payload = {'stripeSubscriptionId': subscription_id, 'status': status, 'product': product}
+    if email:
+        payload['email'] = email
     if plan:
         payload['plan'] = plan
     headers = {'User-Agent': 'PF9-Store/1.0'}
@@ -1702,14 +1716,40 @@ def _notify_app_plan_change(product, subscription_id, status, plan=None):
         if resp.status_code == 200:
             print(f'[Store API] {product} plan synced: {subscription_id} -> {status}')
         elif resp.status_code == 404:
-            # The app has no org carrying that handle (e.g. a subscription that
-            # predates handle-forwarding). Not an error worth alerting on.
+            # SHOWJUDGR answers 404 when it has no org carrying that handle (a
+            # subscription that predates handle-forwarding): not worth alerting.
+            # Every other app answers 200 "none" for an unknown account, so a 404
+            # there means the /plan route is missing or switched off.
             print(f'[Store API] {product} has no org for {subscription_id} (skip)')
+            if product != 'SHOWJUDGR':
+                _alert_lock_relay_failed(product, subscription_id, status, email, 'HTTP 404 from /plan')
         else:
             print(f'[Store API] {product} plan sync failed: '
                   f'HTTP {resp.status_code} {resp.text[:200]}')
+            _alert_lock_relay_failed(product, subscription_id, status, email,
+                                     f'HTTP {resp.status_code}')
     except Exception as e:
         print(f'[Store API] {product} plan sync error for {subscription_id}: {e}')
+        _alert_lock_relay_failed(product, subscription_id, status, email, str(e)[:200])
+
+
+def _alert_lock_relay_failed(product, subscription_id, status, email, why):
+    """A lock that did not reach the app means a lapsed customer keeps access.
+    Tell a human (best-effort, never raises). Unlock failures only log: the
+    customer will say so, and the safe default is the one that already applies."""
+    if str(status or '').strip().lower() not in LOCKING_STATUSES:
+        return
+    try:
+        body = (f'<p>The store could not tell <b>{html.escape(str(product))}</b> that a '
+                f'subscription ended, so that customer may still have access.</p>'
+                f'<p><b>Customer:</b> {html.escape(email or "(unknown)")}<br>'
+                f'<b>Subscription:</b> {html.escape(str(subscription_id))}<br>'
+                f'<b>Status:</b> {html.escape(str(status))}<br>'
+                f'<b>Error:</b> {html.escape(str(why))}</p>')
+        _send_email(EMAIL_FROM_INTERNAL, NOTIFY_EMAIL,
+                    f'[PF9 Store] Could not switch off {product} for {email or subscription_id}', body)
+    except Exception as e:
+        print(f'[Store API] lock-relay alert failed: {e}')
 
 
 # ── Database setup ──
@@ -2775,7 +2815,7 @@ def _handle_subscription_cancelled(sub):
 
     # Push the cancellation to a tiered app so it collapses that org back to its
     # free-tier caps. Best-effort; independent of the Klaviyo lifecycle below.
-    _notify_app_plan_change(cancelled_product, subscription_id, 'canceled')
+    _notify_app_plan_change(cancelled_product, subscription_id, 'canceled', email=email)
 
     # Recomputed AFTER the status update above, so this is what the customer
     # still pays for — the subscription just cancelled is already excluded.
@@ -2879,7 +2919,8 @@ def _handle_subscription_updated(sub):
     # restores paid). The app is idempotent, so the repeated 'active' updates on
     # each renewal cost nothing. Uses the product on the existing row.
     if previous and previous['product']:
-        _notify_app_plan_change(previous['product'], subscription_id, status)
+        _notify_app_plan_change(previous['product'], subscription_id, status,
+                                email=previous['email'])
 
     # trialing -> active is the day-30 conversion: hand them off from the trial
     # flow to paid onboarding. Guarded on the previous status so the repeated
