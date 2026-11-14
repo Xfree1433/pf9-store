@@ -38,6 +38,9 @@ fails = []
 
 def post(body, referer=None, label=''):
     del captured[:]
+    # This file checks what one request records, not the per-visitor throttle
+    # (5/hour, tested in test_audit_1114.py), so start each call with a clean slate.
+    store_api._VISITOR_HITS.clear()
     headers = {'Referer': referer} if referer else {}
     r = client.post('/store-api/demo-request', json=body, headers=headers)
     return r, (captured[0] if captured else None)

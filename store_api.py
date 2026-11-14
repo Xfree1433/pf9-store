@@ -821,15 +821,14 @@ CROSS_SELL_MAP = {
         "scheduled checks, photo evidence and sign-off that feed straight into QUALIFI."),
     'INSPECTR': ('COMPLI',
         "Inspection results are evidence. COMPLI maps them to the frameworks you're "
-        "audited against, so findings become proof instead of paperwork — free to start."),
+        "audited against, so findings become proof instead of paperwork."),
     'SHIFTLOG': ('PERMITR',
         "Handovers and permits cover the same shift change. PERMITR controls who is "
         "cleared to work on what, so your log matches what was actually authorised."),
-    # COMPLI is the free tier on the storefront ("Start Free"), so lead with that —
-    # an expansion email that implies a second invoice for a free app reads badly.
+    # COMPLI was free until 2026-11-14 ("free to start" copy); it is now $69/mo.
     'PERMITR': ('COMPLI',
         "Permits prove control on the day. COMPLI proves it across the year, mapping "
-        "your permit records to the frameworks auditors ask about — and it's free to start."),
+        "your permit records to the frameworks auditors ask about."),
     'COMPLI': ('PERMITR',
         "COMPLI tracks the frameworks; PERMITR enforces them at the sharp end — no one "
         "starts high-risk work without a signed permit."),
