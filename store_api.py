@@ -1859,6 +1859,8 @@ def _generate_password(length=12):
 def demo_request():
     if request.method == 'OPTIONS':
         return _cors_response(jsonify({}))
+    if _visitor_throttled('demo-request', 5, 3600):
+        return _cors_response(jsonify({'error': 'Too many requests. Please try again later.'}), 429)
 
     data = request.get_json(silent=True) or {}
     name    = (data.get('name') or '').strip()
@@ -2175,6 +2177,10 @@ def app_activity():
 def create_checkout_session():
     if request.method == 'OPTIONS':
         return _cors_response(jsonify({}))
+    # Generous: a real buyer starts checkout a handful of times at most. The
+    # status page's probe (2 per 5 min from GitHub) stays well inside it.
+    if _visitor_throttled('checkout', 20, 600):
+        return _cors_response(jsonify({'error': 'Too many requests. Please try again in a few minutes.'}), 429)
 
     if not stripe:
         return _cors_response(jsonify({'error': 'Stripe not configured'}), 500)
@@ -2324,12 +2330,17 @@ def subscription_status():
             candidates.add(bundle_name)
 
     placeholders = ','.join('?' for _ in candidates)
+    active_placeholders = ','.join('?' for _ in ACTIVE_STATUSES)
     with get_db() as conn:
+        # Any ACTIVE row wins over newer inactive ones. Taking only the newest row
+        # let a stranger start and cancel a trial under a paying customer's email
+        # and so make `allowed` false for the payer (audit 2026-11-14).
         row = conn.execute(
             f'''SELECT status, trial_end, product FROM subscriptions
                 WHERE lower(email) = ? AND upper(product) IN ({placeholders})
-                ORDER BY created_at DESC LIMIT 1''',
-            (email, *[c.upper() for c in candidates])
+                ORDER BY (lower(status) IN ({active_placeholders})) DESC, created_at DESC
+                LIMIT 1''',
+            (email, *[c.upper() for c in candidates], *sorted(ACTIVE_STATUSES))
         ).fetchone()
 
     if not row:
@@ -2395,6 +2406,35 @@ def stripe_webhook():
 
 # Per-address throttle for portal-link emails (per worker; resets on restart).
 _PORTAL_LINK_SENT = {}
+
+# Per-visitor throttle for the public, unauthenticated write endpoints
+# (checkout start, demo request). Before 2026-11-14 they had none, so a loop
+# could create Stripe sessions and flood NOTIFY_EMAIL / HubSpot / Klaviyo at will.
+# In memory, per worker (2 workers => up to 2x the limit); resets on restart.
+_VISITOR_HITS = {}
+
+
+def _visitor_ip():
+    """The visitor's address. Cloudflare's CF-Connecting-IP is trusted only when
+    the request reached us over loopback (the tunnel); otherwise use the socket."""
+    remote = request.remote_addr or ''
+    if remote in ('127.0.0.1', '::1'):
+        return (request.headers.get('CF-Connecting-IP') or '').strip() or remote
+    return remote
+
+
+def _visitor_throttled(bucket, limit, window_s):
+    """True once this visitor has made more than `limit` calls to `bucket` in
+    the last `window_s` seconds. Old entries are pruned as we go."""
+    now = time.time()
+    if len(_VISITOR_HITS) > 5000:
+        for k in [k for k, v in _VISITOR_HITS.items() if not v or v[-1] < now - 3600]:
+            _VISITOR_HITS.pop(k, None)
+    key = (bucket, _visitor_ip())
+    hits = [t for t in _VISITOR_HITS.get(key, []) if t > now - window_s]
+    hits.append(now)
+    _VISITOR_HITS[key] = hits
+    return len(hits) > limit
 
 
 @store_bp.route('/create-portal-session', methods=['POST', 'OPTIONS'])
@@ -2576,10 +2616,18 @@ def _handle_checkout_completed(session):
     # Idempotency check
     with get_db() as conn:
         existing = conn.execute(
-            'SELECT id FROM subscriptions WHERE stripe_subscription_id = ?', (subscription_id,)
+            'SELECT id, provisioned FROM subscriptions WHERE stripe_subscription_id = ?', (subscription_id,)
         ).fetchone()
         if existing:
             print(f'[Store API] Subscription {subscription_id} already processed')
+            # The row is written BEFORE provisioning, so a worker that died in
+            # between leaves a paid, unprovisioned customer, and Stripe's retry
+            # used to stop right here in silence. Tell a human (audit 2026-11-14).
+            if not existing['provisioned']:
+                try:
+                    _send_provisioning_alert(email, product, {'(replay)': 'not provisioned'}, subscription_id)
+                except Exception as e:
+                    print(f'[Store API] Provisioning alert error: {e}')
             return
 
     # Generate temp password
@@ -2590,17 +2638,37 @@ def _handle_checkout_completed(session):
     sub_status = 'active'
     trial_end_iso = None
     price_display = None
-    try:
-        sub = _plain(stripe.Subscription.retrieve(subscription_id))
-        sub_status = sub.get('status', 'active') or 'active'
-        te = sub.get('trial_end')
-        if te:
-            trial_end_iso = datetime.utcfromtimestamp(int(te)).isoformat()
-        # Read the amount actually being charged rather than a hardcoded figure,
-        # so the pre-charge email can never quote a price that differs from the bill.
-        price_display = _trial_price_display(sub)
-    except Exception as e:
-        print(f'[Store API] Could not retrieve subscription {subscription_id}: {e}')
+    retrieve_error = None
+    for attempt in (1, 2):   # one retry: a Stripe blip must not decide the status
+        try:
+            sub = _plain(stripe.Subscription.retrieve(subscription_id))
+            sub_status = sub.get('status', 'active') or 'active'
+            te = sub.get('trial_end')
+            if te:
+                trial_end_iso = datetime.utcfromtimestamp(int(te)).isoformat()
+            # Read the amount actually being charged rather than a hardcoded figure,
+            # so the pre-charge email can never quote a price that differs from the bill.
+            price_display = _trial_price_display(sub)
+            retrieve_error = None
+            break
+        except Exception as e:
+            retrieve_error = e
+            print(f'[Store API] Could not retrieve subscription {subscription_id} (attempt {attempt}): {e}')
+            if attempt == 1:
+                time.sleep(2)
+    if retrieve_error is not None:
+        # The event is signature-verified, so the checkout really completed; the
+        # customer is provisioned as 'active' as before, but a human is told the
+        # status was assumed rather than read from Stripe (audit 2026-11-14).
+        try:
+            _send_email(EMAIL_FROM_INTERNAL, NOTIFY_EMAIL,
+                        f'[PF9 Store] Subscription status assumed for {email}',
+                        f'<p>Stripe could not be asked for subscription '
+                        f'<b>{html.escape(str(subscription_id))}</b> ({html.escape(product)}, '
+                        f'{html.escape(email)}). It was recorded as <b>active</b>; '
+                        f'check it in Stripe.</p><p>Error: {html.escape(str(retrieve_error)[:200])}</p>')
+        except Exception as e:
+            print(f'[Store API] status-assumed alert error: {e}')
 
     # Save subscription
     with get_db() as conn:
