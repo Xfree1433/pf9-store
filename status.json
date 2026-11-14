@@ -1,0 +1,100 @@
+{
+ "generated_at": "2026-11-14T20:53:04Z",
+ "services": [
+  {
+   "group": "Manufacturing",
+   "name": "FLOWTRACK",
+   "status": "operational"
+  },
+  {
+   "group": "Manufacturing",
+   "name": "QUALIFI",
+   "status": "operational"
+  },
+  {
+   "group": "Manufacturing",
+   "name": "SHIFTLOG",
+   "status": "operational"
+  },
+  {
+   "group": "Manufacturing",
+   "name": "REPORTR",
+   "status": "operational"
+  },
+  {
+   "group": "Manufacturing",
+   "name": "INSPECTR",
+   "status": "operational"
+  },
+  {
+   "group": "Property Management",
+   "name": "LANDLORDR",
+   "status": "operational"
+  },
+  {
+   "group": "Property Management",
+   "name": "TENANTLINK",
+   "status": "operational"
+  },
+  {
+   "group": "Operations & AI",
+   "name": "PERMITR",
+   "status": "operational"
+  },
+  {
+   "group": "Operations & AI",
+   "name": "TASKFLOW",
+   "status": "operational"
+  },
+  {
+   "group": "Operations & AI",
+   "name": "OPSIQ",
+   "status": "operational"
+  },
+  {
+   "group": "Operations & AI",
+   "name": "EXTRACTR",
+   "status": "operational"
+  },
+  {
+   "group": "Operations & AI",
+   "name": "SUPPORTR",
+   "status": "operational"
+  },
+  {
+   "group": "Operations & AI",
+   "name": "MAINTAINR",
+   "status": "operational"
+  },
+  {
+   "group": "Operations & AI",
+   "name": "COMPLI",
+   "status": "operational"
+  },
+  {
+   "group": "Operations & AI",
+   "name": "MARKUPR",
+   "status": "operational"
+  },
+  {
+   "group": "Operations & AI",
+   "name": "FIELDVIEWR",
+   "status": "operational"
+  },
+  {
+   "group": "Events",
+   "name": "SHOWJUDGR",
+   "status": "operational"
+  },
+  {
+   "group": "Store",
+   "name": "Storefront",
+   "status": "operational"
+  },
+  {
+   "group": "Store",
+   "name": "Checkout & billing",
+   "status": "operational"
+  }
+ ]
+}
