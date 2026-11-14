@@ -4,43 +4,92 @@ name: Status check
 # status.json on the `status-data` branch, which status.html reads. Nothing is
 # committed to main, so this never triggers a Pages deploy.
 #
+# WHY ONE LONG JOB INSTEAD OF A 5-MINUTE SCHEDULE: GitHub does not honour
+# short cron intervals on a quiet repo. Measured 11-12..11-14: `*/5` fired 6
+# times in 32 hours (gaps of 4-8 h), while status.html distrusts anything older
+# than 30 minutes -- so the page said "checks delayed" ~90% of the time.
+# So one job loops (probe + publish every 5 min) for ~5.5 h, then starts its
+# own successor with workflow_dispatch. The hourly schedule is only a restart
+# in case the chain dies: a scheduled run exits in seconds when the published
+# data is fresh (someone else is looping) and takes over only when it is stale.
+# Successors are dispatched only after a clean loop, so a job that fails at
+# once cannot spin; the schedule picks it up instead.
+#
 # NOTE: GitHub pauses scheduled workflows after 60 days without repository
 # activity. status.html shows "checks delayed" when the data goes stale, so a
-# paused schedule is visible on the page rather than silently green.
+# dead loop is visible on the page rather than silently green.
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '17 * * * *'
   workflow_dispatch:
 
 permissions:
   contents: write
+  actions: write   # lets the job dispatch its own successor
 
+# Scheduled runs get their own group so they are never left queued (and then
+# cancelled) behind a 5.5 h loop; they decide for themselves below.
 concurrency:
-  group: status-check
+  group: status-check-${{ github.event_name }}
   cancel-in-progress: false
 
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 350
     steps:
       - uses: actions/checkout@v4
-      - name: Probe services
-        run: python3 tools/status_check.py "$RUNNER_TEMP/status.json"
-      - name: Publish status.json to the status-data branch
+      - name: Probe and publish every 5 minutes
+        id: loop
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set -eu
-          work="$RUNNER_TEMP/status-data"
-          mkdir -p "$work"
-          cp "$RUNNER_TEMP/status.json" "$work/status.json"
-          cd "$work"
-          git init -q -b status-data
-          git config user.name  "pf9-status-bot"
-          git config user.email "status-bot@users.noreply.github.com"
-          git add status.json
-          git commit -q -m "status $(date -u +%Y-%m-%dT%H:%MZ)"
-          # One orphan commit, force-pushed: the branch never grows.
-          git push -q --force "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" status-data
+          set -u
+          publish() {
+            work="$RUNNER_TEMP/status-data"
+            rm -rf "$work"; mkdir -p "$work"
+            cp "$RUNNER_TEMP/status.json" "$work/status.json"
+            ( cd "$work"
+              git init -q -b status-data
+              git config user.name  "pf9-status-bot"
+              git config user.email "status-bot@users.noreply.github.com"
+              git add status.json
+              git commit -q -m "status $(date -u +%Y-%m-%dT%H:%MZ)"
+              # One orphan commit, force-pushed: the branch never grows.
+              git push -q --force "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" status-data )
+          }
+          if [ "$GITHUB_EVENT_NAME" = "schedule" ]; then
+            last=$(gh api "repos/${GITHUB_REPOSITORY}/commits/status-data" -q .commit.committer.date 2>/dev/null || true)
+            if [ -n "$last" ]; then
+              age=$(( $(date +%s) - $(date -d "$last" +%s) ))
+              if [ "$age" -lt 900 ]; then
+                echo "status-data is ${age}s old: a loop is alive, nothing to do"
+                echo "looped=no" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
+              echo "status-data is ${age}s old: taking over"
+            fi
+          fi
+          end=$(( $(date +%s) + 330*60 ))
+          ok=0; bad=0
+          while [ "$(date +%s)" -lt "$end" ]; do
+            start=$(date +%s)
+            # A failed round publishes nothing: the page then ages into
+            # "checks delayed" by itself, which is the honest answer.
+            if python3 tools/status_check.py "$RUNNER_TEMP/status.json" && publish; then
+              ok=$((ok+1))
+            else
+              bad=$((bad+1)); echo "::warning::round failed ($bad so far)"
+            fi
+            spent=$(( $(date +%s) - start ))
+            [ "$spent" -lt 300 ] && sleep $(( 300 - spent ))
+          done
+          echo "rounds ok=$ok failed=$bad"
+          [ "$ok" -gt 0 ] && echo "looped=yes" >> "$GITHUB_OUTPUT"
+      - name: Start the next run
+        if: success() && steps.loop.outputs.looped == 'yes'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run status.yml --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME"
