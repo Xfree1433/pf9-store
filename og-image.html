@@ -1,92 +1,93 @@
-<!-- Screenshot this at 1200x630 to create og-image.png -->
+<!-- Screenshot this at 1200x630 to create og-image.png (the link-share preview).
+     2026-11-15: PF9 espresso/copper brand, all 17 apps. Wording is the store's own
+     headline and trust line from index.html — keep the app list in step with the store. -->
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=Inter:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     width: 1200px;
     height: 630px;
-    background: #111;
-    color: #fff;
-    font-family: system-ui, -apple-system, sans-serif;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     overflow: hidden;
+    color: #fff;
+    font-family: Inter, system-ui, -apple-system, sans-serif;
+    background-color: #211006;
+    background-image:
+      radial-gradient(60rem 34rem at 92% -18%, rgba(224,113,34,.38), transparent 60%),
+      radial-gradient(40rem 26rem at -12% 118%, rgba(224,113,34,.16), transparent 60%);
+    display: grid;
+    grid-template-columns: 1fr 420px;
+    gap: 40px;
+    padding: 60px 64px;
   }
-  .container {
-    text-align: center;
-    padding: 2rem;
-  }
+  .left { display: flex; flex-direction: column; justify-content: space-between; }
+  .mark { display: flex; align-items: center; gap: 14px; }
   .badge {
-    display: inline-block;
-    background: #fff;
-    color: #111;
-    padding: 0.5rem 1.5rem;
-    border-radius: 8px;
-    font-weight: 800;
-    font-size: 2.5rem;
-    letter-spacing: 0.05em;
-    margin-bottom: 2rem;
+    background: #e07122; color: #1a120d;
+    font-weight: 700; font-size: 22px; letter-spacing: .04em;
+    padding: 6px 12px; border-radius: 8px;
   }
+  .name { font-size: 24px; font-weight: 600; letter-spacing: -.01em; }
   h1 {
-    font-size: 3rem;
-    font-weight: 700;
-    margin-bottom: 1rem;
-    line-height: 1.2;
+    font-size: 60px; font-weight: 600; line-height: 1.04; letter-spacing: -.045em; white-space: nowrap;
   }
-  p {
-    font-size: 1.5rem;
-    color: #9ca3af;
-    max-width: 800px;
-    margin: 0 auto 2.5rem;
-    line-height: 1.5;
+  h1 span { color: #e5853f; }
+  .trust {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 14px; letter-spacing: .07em; text-transform: uppercase; color: #d1c6ba;
+    display: flex; gap: 22px; white-space: nowrap;
   }
-  .apps {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    justify-content: center;
-    max-width: 900px;
-    margin: 0 auto;
+  .trust b { color: #e5853f; font-weight: 500; margin-right: 6px; }
+  .right { display: flex; flex-direction: column; justify-content: center; }
+  .count {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 16px; letter-spacing: .1em; text-transform: uppercase; color: #a3978b;
+    margin-bottom: 18px;
   }
+  .count b { color: #e5853f; font-weight: 500; }
+  .apps { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
   .app {
-    background: rgba(255,255,255,0.1);
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
-    font-size: 0.95rem;
-    font-weight: 600;
-    letter-spacing: 0.03em;
+    background: rgba(255,255,255,.07);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 9999px;
+    padding: 9px 15px;
+    font-size: 15px; font-weight: 600; letter-spacing: .03em;
+    color: #efe9e3;
+    display: flex; align-items: center; gap: 9px;
   }
+  .app::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #e07122; flex: none; }
 </style>
-    <!-- PostHog product analytics (mirrors GA4 events) -->
-    <script>
-    !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug getPageViewId".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
-    posthog.init('phc_kqFGBkXKCodfJGJBFdZs3h9Qm43AQaqnyCiETDAwzgmw',{api_host:'https://us.i.posthog.com',defaults:'2025-05-24'});
-    </script>
-    <!-- Mirror every GA4 gtag('event', name, params) into PostHog automatically -->
-    <script>
-    (function(){var _g=window.gtag;window.gtag=function(){try{if(arguments[0]==='event'&&window.posthog&&posthog.capture){posthog.capture(arguments[1],arguments[2]||{});}}catch(e){}if(typeof _g==='function'){return _g.apply(this,arguments);}};})();
-    </script>
 </head>
 <body>
-<div class="container">
-  <div class="badge">PF9</div>
-  <h1>Plainspoken Foundry Nine</h1>
-  <p>Software That Works As Hard As You Do</p>
-  <div class="apps">
-    <span class="app">FLOWTRACK</span>
-    <span class="app">QUALIFI</span>
-    <span class="app">SHIFTLOG</span>
-    <span class="app">REPORTR</span>
-    <span class="app">INSPECTR</span>
-    <span class="app">LANDLORDR</span>
-    <span class="app">TENANTLINK</span>
-    <span class="app">PERMITR</span>
-    <span class="app">TASKFLOW</span>
+  <div class="left">
+    <div class="mark"><span class="badge">PF9</span><span class="name">Plainspoken Foundry Nine</span></div>
+    <h1>Software that works<br><span>as hard as you do</span></h1>
+    <div class="trust"><span><b>✓</b>No per-user fees</span><span><b>✓</b>30-day free trial</span><span><b>✓</b>From $29/mo</span></div>
   </div>
-</div>
+  <div class="right">
+    <div class="count"><b>17 apps</b> + a bundle · one platform</div>
+    <div class="apps">
+      <span class="app">FLOWTRACK</span>
+      <span class="app">QUALIFI</span>
+      <span class="app">SHIFTLOG</span>
+      <span class="app">REPORTR</span>
+      <span class="app">INSPECTR</span>
+      <span class="app">MARKUPR</span>
+      <span class="app">MAINTAINR</span>
+      <span class="app">FIELDVIEWR</span>
+      <span class="app">LANDLORDR</span>
+      <span class="app">TENANTLINK</span>
+      <span class="app">PERMITR</span>
+      <span class="app">TASKFLOW</span>
+      <span class="app">OPSIQ</span>
+      <span class="app">EXTRACTR</span>
+      <span class="app">SUPPORTR</span>
+      <span class="app">COMPLI</span>
+      <span class="app">SHOWJUDGR</span>
+    </div>
+  </div>
 </body>
 </html>
