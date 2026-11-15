@@ -1,3 +1,65 @@
+/* Brand fonts — Inter for everything, IBM Plex Mono for small uppercase labels. */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=Inter:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ------------------------------------------------------------------
+   PF9 brand layer — "cashmere counter, dark ledger" (after Mollie on
+   Refero Styles). Re-skins existing markup; no class names change.
+   ------------------------------------------------------------------ */
+@layer base {
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-feature-settings: 'cv11', 'ss01';
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2 { letter-spacing: -0.03em; }
+  h3, h4 { letter-spacing: -0.01em; }
+  ::selection { background: #f8e4d4; color: #1a120d; }
+  :focus-visible { outline: 2px solid #e07122; outline-offset: 2px; }
+}
+
+@layer components {
+  /* Display headings: lighter weight, tight tracking — set, not shouted. */
+  h1.font-bold, h1.font-extrabold { font-weight: 600; }
+  h2.font-bold { font-weight: 600; }
+
+  /* Every button-styled link/button becomes a pill. */
+  :is(a, button).rounded-lg { border-radius: 9999px; }
+
+  /* Filled dark buttons use Ledger Brown, not flat black. */
+  :is(a, button).bg-black { background-color: #3b281d; }
+  :is(a, button).bg-black:hover { background-color: #2a1c14; }
+
+  /* Small uppercase mono label, used above headings. */
+  .eyebrow {
+    font-family: theme('fontFamily.mono');
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* Cards: hairline border instead of a drop shadow. */
+  .rounded-xl.shadow-sm,
+  .rounded-xl.shadow,
+  .rounded-2xl.shadow-sm { box-shadow: 0 0 0 1px #e3dbd2; }
+  .card-hover { transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+  .card-hover:hover { transform: translateY(-2px); box-shadow: 0 0 0 1px #d1c6ba, 0 10px 24px -12px rgba(33, 24, 18, .25) !important; }
+
+  /* Top nav: never wrap a link onto two lines; tighten it at tablet width. */
+  nav a { white-space: nowrap; }
+  @media (min-width: 768px) and (max-width: 1279px) {
+    nav .md\:flex.gap-8 { gap: 1.25rem; }
+    nav a > span.sm\:inline { display: none; }
+  }
+  @media (min-width: 768px) and (max-width: 1023px) {
+    nav .md\:flex.gap-8 { gap: 0.875rem; font-size: 0.8125rem; }
+    nav a.sm\:inline-flex.bg-black { display: none; }
+  }
+
+  /* Form fields focus in copper, not black. */
+  input:focus, select:focus, textarea:focus { --tw-ring-color: #e07122 !important; }
+}

@@ -1,0 +1,80 @@
+/* PF9 brand layer for the hand-styled pages (contact, sign-in, legal, status,
+   SHOWJUDGR). Loaded AFTER each page's own <style>, so these rules win on
+   equal selectors. Matches the Tailwind theme in tailwind.config.js:
+   "cashmere counter, dark ledger" — oat paper, espresso ink, ledger-brown
+   pills, copper accent (after Mollie on Refero Styles). */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --pf9-paper: #ffffff;
+  --pf9-oat: #f7f4f1;
+  --pf9-line: #e3dbd2;
+  --pf9-line-strong: #d1c6ba;
+  --pf9-ink: #1a120d;
+  --pf9-body: #443931;
+  --pf9-muted: #76695e;
+  --pf9-faint: #a3978b;
+  --pf9-ledger: #3b281d;
+  --pf9-ledger-hover: #2a1c14;
+  --pf9-copper: #e07122;
+  --pf9-copper-text: #a14c14;
+  --pf9-font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --pf9-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+body {
+  font-family: var(--pf9-font);
+  background: var(--pf9-oat);
+  color: var(--pf9-ink);
+  -webkit-font-smoothing: antialiased;
+}
+::selection { background: #f8e4d4; color: var(--pf9-ink); }
+:focus-visible { outline: 2px solid var(--pf9-copper); outline-offset: 2px; }
+h1, h2 { letter-spacing: -0.03em; font-weight: 600; }
+
+/* Shared nav */
+.nav { background: var(--pf9-paper); border-bottom-color: var(--pf9-line); }
+.nav-brand .badge { background: var(--pf9-ink); border-radius: 6px; }
+.nav-back { color: var(--pf9-muted); }
+.nav-back:hover { color: var(--pf9-ink); }
+
+/* Body copy on legal pages */
+p, li { color: var(--pf9-body); }
+.updated, .subtitle, .header p { color: var(--pf9-muted); }
+.footer { color: var(--pf9-faint); }
+.footer a { color: var(--pf9-muted); }
+.footer a:hover { color: var(--pf9-ink); }
+.highlight { background: #fcf3ec; border-color: #f0c6a6; }
+
+/* Cards (contact, status, sign-in) */
+.card, .product-card {
+  border-color: var(--pf9-line);
+  border-radius: 16px;
+  box-shadow: none;
+}
+.card:hover { border-color: var(--pf9-line-strong); }
+.card a { color: var(--pf9-ink); }
+.product-card.active:hover { border-color: var(--pf9-ledger); box-shadow: 0 10px 24px -12px rgba(33, 24, 18, .25); }
+
+/* Forms */
+.form-grid input, .form-grid select, .form-grid textarea { border-color: var(--pf9-line-strong); border-radius: 10px; font-family: inherit; }
+.form-grid input:focus, .form-grid select:focus, .form-grid textarea:focus { border-color: var(--pf9-copper); box-shadow: 0 0 0 3px rgba(224, 113, 34, .15); outline: none; }
+.form-btn { background: var(--pf9-ledger); border-radius: 9999px; font-family: inherit; }
+.form-btn:hover { background: var(--pf9-ledger-hover); }
+
+/* SHOWJUDGR page runs on its own CSS variables — point them at the brand. */
+:root {
+  --ink: var(--pf9-ink);
+  --paper: var(--pf9-oat);
+  --accent: var(--pf9-copper-text);
+  --accent-dark: #7f3c12;
+  --muted: var(--pf9-muted);
+  --rule: var(--pf9-line);
+}
+.pill { background: var(--pf9-ledger); }
+.pill:hover { background: var(--pf9-ledger-hover); }
+.badge { background: var(--pf9-ink); }
+/* Nav "Start free trial" pill: the page's `.nav-links a` colour rule made its
+   text dark-on-dark (pre-existing bug) — force white. */
+.nav-links a.pill, .nav-links a.pill:hover { color: #fff; }
+table.price .season { background: #fcf3ec; }

@@ -73,15 +73,14 @@
     </script>
     <style>
         html { scroll-behavior: smooth; }
-        .card-hover { transition: transform 0.2s, box-shadow 0.2s; }
-        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.12); }
-        .accent-manufacturing { border-top: 4px solid #3b82f6; }
-        .accent-property { border-top: 4px solid #10b981; }
-        .accent-operations { border-top: 4px solid #8b5cf6; }
-        .accent-ai { border-top: 4px solid #f59e0b; }
-        .accent-free { border-top: 4px solid #6b7280; }
-        .accent-bundle { border-top: 4px solid #10b981; }
-        .filter-btn.active { background: #111; color: #fff; }
+        .accent-manufacturing { border-top: 3px solid #4c748b; }
+        .accent-property { border-top: 3px solid #1e681d; }
+        .accent-operations { border-top: 3px solid #7f5876; }
+        .accent-ai { border-top: 3px solid #e07122; }
+        .accent-free { border-top: 3px solid #a3978b; }
+        .accent-bundle { border-top: 3px solid #1e681d; }
+        .filter-btn { background: #fff; }
+        .filter-btn.active { background: #3b281d; border-color: #3b281d; color: #fff; }
         .product-card { display: block; }
         .product-card.hidden-card { display: none; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
@@ -164,8 +163,8 @@
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                     </a>
                 </div>
-                <div class="inline-flex items-center gap-2 bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1.5 rounded-full mb-6">
-                    <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                <div class="eyebrow inline-flex items-center gap-2 text-gray-600 mb-6">
+                    <span class="w-2 h-2 bg-amber-500 rounded-full"></span>
                     17 Apps + a Bundle. One Platform.
                 </div>
                 <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-tight mb-6">
