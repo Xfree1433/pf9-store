@@ -81,6 +81,11 @@
     h2.sm\:text-4xl { font-size: 3rem; line-height: 1.05; }
   }
 
+  /* Small uppercase labels site-wide read as mono "ledger" labels. */
+  .uppercase.tracking-wider, .uppercase.tracking-wide.text-xs { font-family: theme('fontFamily.mono'); letter-spacing: 0.08em; }
+  /* Content-page headers that sit in the dark band. */
+  .hero-band .max-w-2xl, .hero-band p.text-lg { color: #d1c6ba; }
+
   /* Top nav: never wrap a link onto two lines; tighten it at tablet width. */
   nav a { white-space: nowrap; }
   @media (min-width: 768px) and (max-width: 1279px) {

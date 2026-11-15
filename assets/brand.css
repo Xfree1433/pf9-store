@@ -78,3 +78,45 @@ p, li { color: var(--pf9-body); }
    text dark-on-dark (pre-existing bug) — force white. */
 .nav-links a.pill, .nav-links a.pill:hover { color: #fff; }
 table.price .season { background: #fcf3ec; }
+
+/* ---- Bold pass (2026-11-15): dark top bar + big headline, matching the
+   espresso/copper treatment on the Tailwind pages. ---- */
+.nav { background: #211006; border-bottom-color: rgba(255,255,255,.1); }
+.nav-brand, .nav .nav-brand { color: #fff; }
+.nav-brand .badge { background: #fff; color: var(--pf9-ink); }
+.nav-back { color: #d1c6ba; }
+.nav-back:hover { color: #fff; }
+.main h1, .header h1 {
+  font-size: clamp(2rem, 5vw, 3rem);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+}
+.main h1::after, .header h1::after {
+  content: ""; display: block; width: 56px; height: 4px; border-radius: 2px;
+  background: var(--pf9-copper); margin: 18px 0 0;
+}
+.container h1::after, .header h1::after { margin-left: auto; margin-right: auto; }
+.main h2 { letter-spacing: -0.02em; }
+
+/* SHOWJUDGR: hero becomes the dark espresso band. */
+.hero {
+  background-color: #211006;
+  background-image:
+    radial-gradient(56rem 32rem at 88% -12%, rgba(224,113,34,.30), transparent 62%),
+    radial-gradient(40rem 24rem at -10% 110%, rgba(224,113,34,.12), transparent 60%);
+  color: #fff;
+  padding: 88px 0 72px;
+}
+.hero h1 { color: #fff; font-size: clamp(2.2rem, 6vw, 4rem); letter-spacing: -0.045em; line-height: 1.04; }
+.hero p.sub { color: #d1c6ba; }
+.hero .trust { color: #d1c6ba; }
+.hero .trust b { color: #fff; }
+.hero .link-arrow { color: #e9a371; }
+.hero .pill { background: var(--pf9-copper); color: var(--pf9-ink); }
+.hero .pill:hover { background: #e9a371; color: var(--pf9-ink); }
+header.nav { background: #211006; }
+.nav-links a { color: #efe9e3; }
+.brand { color: #fff; }
+header.nav .badge { background: #fff; color: var(--pf9-ink); }
+header.nav .nav-links a.pill { background: var(--pf9-copper); color: var(--pf9-ink); }
+header.nav .nav-links a.pill:hover { background: #e9a371; color: var(--pf9-ink); }
