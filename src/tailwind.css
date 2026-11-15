@@ -1,3 +1,6 @@
+/* After changing this file or assets/brand.css: rebuild (npm run build) and bump
+   the ?v=YYYYMMDD tag on every /dist/tailwind.css and /assets/brand.css link,
+   or browsers keep the old stylesheet for up to 10 minutes. */
 /* Brand fonts — Inter for everything, IBM Plex Mono for small uppercase labels. */
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=Inter:wght@400;500;600;700&display=swap');
 
