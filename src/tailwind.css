@@ -52,6 +52,35 @@
   .card-hover { transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
   .card-hover:hover { transform: translateY(-2px); box-shadow: 0 0 0 1px #d1c6ba, 0 10px 24px -12px rgba(33, 24, 18, .25) !important; }
 
+  /* ---- Home page, bold pass ---- */
+  .hero-band {
+    background-image:
+      radial-gradient(56rem 32rem at 88% -12%, rgba(224, 113, 34, .30), transparent 62%),
+      radial-gradient(40rem 24rem at -10% 110%, rgba(224, 113, 34, .12), transparent 60%);
+  }
+  .hero-title { letter-spacing: -0.045em; line-height: 1.02; font-weight: 600; }
+  .hero-chip {
+    background: rgba(255, 255, 255, .07);
+    border: 1px solid rgba(255, 255, 255, .14);
+    color: #efe9e3;
+    transition: background-color .15s ease, border-color .15s ease;
+  }
+  .hero-chip:hover { background: rgba(255, 255, 255, .13); border-color: rgba(255, 255, 255, .26); }
+  .receipt { box-shadow: 0 30px 60px -20px rgba(0, 0, 0, .55); transform: rotate(1.5deg); }
+  .btn-copper { background-color: #e07122; color: #1a120d; }
+  .btn-copper:hover { background-color: #e9a371; }
+  .featured-plan { box-shadow: 0 24px 48px -20px rgba(33, 16, 6, .55); }
+
+  /* Product cards: price is the headline, buttons sit on a ruled line. */
+  .product-card .text-2xl.font-bold { font-size: 2.25rem; line-height: 1; letter-spacing: -0.035em; }
+  .product-card h3.text-lg { font-size: 1.25rem; letter-spacing: -0.02em; }
+  .product-card .flex.gap-2:last-child { border-top: 1px dashed #d1c6ba; padding-top: 1.25rem; }
+
+  /* Section headings across the site: one size bigger on tablet and up. */
+  @media (min-width: 640px) {
+    h2.sm\:text-4xl { font-size: 3rem; line-height: 1.05; }
+  }
+
   /* Top nav: never wrap a link onto two lines; tighten it at tablet width. */
   nav a { white-space: nowrap; }
   @media (min-width: 768px) and (max-width: 1279px) {

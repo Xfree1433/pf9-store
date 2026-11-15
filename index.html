@@ -31,7 +31,7 @@
     <script>
     (function(){var _g=window.gtag;window.gtag=function(){try{if(arguments[0]==='event'&&window.posthog&&posthog.capture){posthog.capture(arguments[1],arguments[2]||{});}}catch(e){}if(typeof _g==='function'){return _g.apply(this,arguments);}};})();
     </script>
-    <link rel="stylesheet" href="/dist/tailwind.css?v=20261115">
+    <link rel="stylesheet" href="/dist/tailwind.css?v=20261115b">
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -147,91 +147,106 @@
         </div>
     </nav>
 
-    <!-- Hero -->
-    <section class="relative overflow-hidden bg-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
-            <div class="max-w-3xl">
-                <div class="flex flex-wrap gap-2 mb-4">
-                    <a href="/for-manufacturers.html" class="inline-flex items-center gap-2 bg-amber-50 text-amber-800 text-sm font-medium px-3 py-1.5 rounded-full hover:bg-amber-100 transition-colors no-underline">
-                        <span class="bg-amber-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">New</span>
-                        Manufacturers: 5 apps from $29/mo flat — no per-seat fees
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                    </a>
-                    <a href="/for-landlords.html" class="inline-flex items-center gap-2 bg-green-50 text-green-800 text-sm font-medium px-3 py-1.5 rounded-full hover:bg-green-100 transition-colors no-underline">
-                        <span class="bg-green-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">New</span>
-                        Landlords: skip per-door fees — see flat pricing
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                    </a>
+    <!-- Hero — dark "ledger" band. Copy, links and CTAs unchanged from the pre-rebrand hero. -->
+    <section class="hero-band relative overflow-hidden bg-espresso text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 lg:py-28">
+            <div class="grid lg:grid-cols-12 gap-12 items-center">
+                <div class="lg:col-span-7">
+                    <div class="flex flex-wrap gap-2 mb-8">
+                        <a href="/for-manufacturers.html" class="hero-chip inline-flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-full no-underline">
+                            <span class="bg-amber-500 text-black text-[10px] font-bold px-1.5 py-0.5 rounded">New</span>
+                            Manufacturers: 5 apps from $29/mo flat — no per-seat fees
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                        </a>
+                        <a href="/for-landlords.html" class="hero-chip inline-flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-full no-underline">
+                            <span class="bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">New</span>
+                            Landlords: skip per-door fees — see flat pricing
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                        </a>
+                    </div>
+                    <div class="eyebrow inline-flex items-center gap-2 text-amber-300 mb-5">
+                        <span class="w-2 h-2 bg-amber-500 rounded-full"></span>
+                        17 Apps + a Bundle. One Platform.
+                    </div>
+                    <h1 class="hero-title text-[2.125rem] sm:text-6xl lg:text-7xl font-bold mb-6">
+                        Software that works<br><span class="text-amber-400">as hard as you do</span>
+                    </h1>
+                    <p class="text-lg sm:text-xl text-gray-300 mb-10 max-w-2xl">
+                        Practical tools for manufacturing, property management, and operations teams. Live the same day.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4 mb-10">
+                        <a href="#products" class="btn-copper inline-flex items-center justify-center font-semibold px-8 py-4 rounded-lg text-base transition-colors">
+                            Browse Products
+                            <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </a>
+                        <a href="/contact.html" class="inline-flex items-center justify-center border border-gray-600 text-white font-semibold px-8 py-4 rounded-lg text-base hover:border-gray-300 hover:bg-white/5 transition-colors">
+                            Contact Us
+                        </a>
+                    </div>
+                    <div class="flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-300">
+                        <span class="flex items-center gap-1.5">
+                            <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            No per-user fees
+                        </span>
+                        <span class="flex items-center gap-1.5">
+                            <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            30-day free trial
+                        </span>
+                        <span class="flex items-center gap-1.5">
+                            <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            From $29/mo
+                        </span>
+                    </div>
                 </div>
-                <div class="eyebrow inline-flex items-center gap-2 text-gray-600 mb-6">
-                    <span class="w-2 h-2 bg-amber-500 rounded-full"></span>
-                    17 Apps + a Bundle. One Platform.
-                </div>
-                <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-tight mb-6">
-                    Software that works<br>as hard as you do
-                </h1>
-                <p class="text-lg sm:text-xl text-gray-600 mb-8 max-w-2xl">
-                    Practical tools for manufacturing, property management, and operations teams. Live the same day.
-                </p>
-                <div class="flex flex-col sm:flex-row gap-4 mb-10">
-                    <a href="#products" class="inline-flex items-center justify-center bg-black text-white font-semibold px-8 py-3.5 rounded-lg text-base hover:bg-gray-800 transition-colors">
-                        Browse Products
-                        <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                    </a>
-                    <a href="/contact.html" class="inline-flex items-center justify-center border-2 border-gray-300 text-gray-700 font-semibold px-8 py-3.5 rounded-lg text-base hover:border-gray-400 hover:text-black transition-colors">
-                        Contact Us
-                    </a>
-                </div>
-                <div class="flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-500">
-                    <span class="flex items-center gap-1.5">
-                        <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                        No per-user fees
-                    </span>
-                    <span class="flex items-center gap-1.5">
-                        <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                        30-day free trial
-                    </span>
-                    <span class="flex items-center gap-1.5">
-                        <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                        From $29/mo
-                    </span>
+                <!-- "Receipt" — an honest example bill built from the live card prices
+                     (FLOWTRACK $69 + QUALIFI $59 + SHIFTLOG $29). If any of those
+                     prices change, change them here too. -->
+                <div class="lg:col-span-5 hidden md:block">
+                    <figure class="receipt bg-white text-black rounded-2xl p-7 max-w-md lg:ml-auto" aria-label="Example monthly bill for three PF9 apps">
+                        <div class="flex items-center justify-between mb-6">
+                            <span class="eyebrow text-gray-500">Example monthly bill</span>
+                            <span class="bg-black text-white px-2 py-0.5 rounded text-xs font-bold tracking-wide">PF9</span>
+                        </div>
+                        <dl class="font-mono text-sm divide-y divide-dashed divide-gray-300">
+                            <div class="flex justify-between py-3"><dt>FLOWTRACK</dt><dd>$69</dd></div>
+                            <div class="flex justify-between py-3"><dt>QUALIFI</dt><dd>$59</dd></div>
+                            <div class="flex justify-between py-3"><dt>SHIFTLOG</dt><dd>$29</dd></div>
+                            <div class="flex justify-between py-3 text-gray-500"><dt>Users</dt><dd>Unlimited</dd></div>
+                            <div class="flex justify-between py-3 text-gray-500"><dt>Per-seat fees</dt><dd>$0</dd></div>
+                        </dl>
+                        <div class="flex items-baseline justify-between border-t-2 border-black mt-2 pt-4">
+                            <span class="font-semibold">Total, whole team</span>
+                            <span class="text-4xl font-bold tracking-tight">$157<span class="text-base font-medium text-gray-500">/mo</span></span>
+                        </div>
+                    </figure>
                 </div>
             </div>
         </div>
-        <div class="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-gray-50 to-transparent hidden lg:block"></div>
     </section>
 
     <!-- Value Props -->
-    <section class="bg-gray-50 border-y border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                <div class="text-center">
-                    <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mx-auto mb-4">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                    </div>
-                    <h3 class="font-semibold mb-1">Live the Same Day</h3>
-                    <p class="text-sm text-gray-500">Cloud-hosted. No installs, no IT projects. Sign up and start working.</p>
+    <section class="bg-gray-50 border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-10 gap-y-10">
+                <div class="border-t-2 border-black pt-5">
+                    <div class="eyebrow text-amber-700 mb-3">01</div>
+                    <h3 class="text-xl font-semibold mb-2">Live the Same Day</h3>
+                    <p class="text-sm text-gray-600 leading-relaxed">Cloud-hosted. No installs, no IT projects. Sign up and start working.</p>
                 </div>
-                <div class="text-center">
-                    <div class="w-12 h-12 bg-green-100 text-green-600 rounded-xl flex items-center justify-center mx-auto mb-4">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    </div>
-                    <h3 class="font-semibold mb-1">Flat Monthly Pricing</h3>
-                    <p class="text-sm text-gray-500">No per-seat charges. One price, unlimited users, no surprises.</p>
+                <div class="border-t-2 border-black pt-5">
+                    <div class="eyebrow text-amber-700 mb-3">02</div>
+                    <h3 class="text-xl font-semibold mb-2">Flat Monthly Pricing</h3>
+                    <p class="text-sm text-gray-600 leading-relaxed">No per-seat charges. One price, unlimited users, no surprises.</p>
                 </div>
-                <div class="text-center">
-                    <div class="w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center mx-auto mb-4">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    </div>
-                    <h3 class="font-semibold mb-1">30-Day Free Trial</h3>
-                    <p class="text-sm text-gray-500">A full month with your real data. Cancel before day 30 and you're not charged.</p>
+                <div class="border-t-2 border-black pt-5">
+                    <div class="eyebrow text-amber-700 mb-3">03</div>
+                    <h3 class="text-xl font-semibold mb-2">30-Day Free Trial</h3>
+                    <p class="text-sm text-gray-600 leading-relaxed">A full month with your real data. Cancel before day 30 and you're not charged.</p>
                 </div>
-                <div class="text-center">
-                    <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center mx-auto mb-4">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>
-                    </div>
-                    <h3 class="font-semibold mb-1">No Lock-in</h3>
-                    <p class="text-sm text-gray-500">Cancel anytime. Export your data. No contracts, no penalties.</p>
+                <div class="border-t-2 border-black pt-5">
+                    <div class="eyebrow text-amber-700 mb-3">04</div>
+                    <h3 class="text-xl font-semibold mb-2">No Lock-in</h3>
+                    <p class="text-sm text-gray-600 leading-relaxed">Cancel anytime. Export your data. No contracts, no penalties.</p>
                 </div>
             </div>
         </div>
@@ -241,6 +256,7 @@
     <section id="products" class="py-20">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-12">
+                <div class="eyebrow text-amber-700 mb-3">The catalog</div>
                 <h2 class="text-3xl sm:text-4xl font-bold mb-4">All Products</h2>
                 <p class="text-gray-500 max-w-xl mx-auto">From shop floor to back office. Pick what you need, skip what you don't.</p>
             </div>
@@ -725,8 +741,8 @@
     </section>
 
     <!-- Stats -->
-    <section class="bg-black text-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <section class="bg-espresso text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center">
                 <!-- Invariant: this number equals the count of non-bundle .product-card
                      elements below, INCLUDING any "Coming Soon" card. That is not an
@@ -734,20 +750,20 @@
                      both still waitlist cards, and the commit before it (316ad2c) is this
                      exact stat going stale at 15 against 16 cards. 16 -> 17 for SHOWJUDGR. -->
                 <div>
-                    <div class="text-3xl sm:text-4xl font-bold mb-1">17</div>
-                    <div class="text-sm text-gray-400">Apps</div>
+                    <div class="text-5xl sm:text-6xl font-bold tracking-tight mb-2 text-amber-400">17</div>
+                    <div class="eyebrow text-gray-300">Apps</div>
                 </div>
                 <div>
-                    <div class="text-3xl sm:text-4xl font-bold mb-1">4</div>
-                    <div class="text-sm text-gray-400">Product Categories</div>
+                    <div class="text-5xl sm:text-6xl font-bold tracking-tight mb-2 text-amber-400">4</div>
+                    <div class="eyebrow text-gray-300">Product Categories</div>
                 </div>
                 <div>
-                    <div class="text-3xl sm:text-4xl font-bold mb-1">$29</div>
-                    <div class="text-sm text-gray-400">Starting Price</div>
+                    <div class="text-5xl sm:text-6xl font-bold tracking-tight mb-2 text-amber-400">$29</div>
+                    <div class="eyebrow text-gray-300">Starting Price</div>
                 </div>
                 <div>
-                    <div class="text-3xl sm:text-4xl font-bold mb-1">0</div>
-                    <div class="text-sm text-gray-400">Per-User Fees</div>
+                    <div class="text-5xl sm:text-6xl font-bold tracking-tight mb-2 text-amber-400">0</div>
+                    <div class="eyebrow text-gray-300">Per-User Fees</div>
                 </div>
             </div>
         </div>
@@ -865,82 +881,82 @@
                     <h3 class="text-lg font-bold mb-2">Single App</h3>
                     <p class="text-sm text-gray-500 mb-6">Any one app. Flat monthly price, unlimited users.</p>
                     <div class="flex items-baseline gap-1 mb-6">
-                        <span class="text-3xl font-bold">$29</span>
+                        <span class="text-5xl font-bold tracking-tight">$29</span>
                         <span class="text-sm text-gray-500">/mo per app</span>
                     </div>
                     <ul class="space-y-3 mb-8 text-sm">
                         <li class="flex items-start gap-2">
-                            <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <svg class="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                             Unlimited users
                         </li>
                         <li class="flex items-start gap-2">
-                            <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <svg class="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                             Full feature access
                         </li>
                         <li class="flex items-start gap-2">
-                            <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <svg class="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                             Email support
                         </li>
                         <li class="flex items-start gap-2">
-                            <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <svg class="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                             Cancel anytime
                         </li>
                     </ul>
                     <a href="#products" class="block text-center text-sm font-medium py-2.5 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Browse Apps</a>
                 </div>
                 <!-- Property Suite -->
-                <div class="bg-white rounded-xl shadow-md p-8 ring-2 ring-black relative">
-                    <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-black text-white text-xs font-medium px-3 py-1 rounded-full">Best Value</div>
+                <div class="featured-plan bg-espresso text-white rounded-xl p-8 relative md:-my-4 md:py-12">
+                    <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-500 text-black text-xs font-semibold px-3 py-1 rounded-full">Best Value</div>
                     <h3 class="text-lg font-bold mb-2">Property Suite</h3>
-                    <p class="text-sm text-gray-500 mb-6">LANDLORDR + TENANTLINK together — the full landlord and tenant toolkit.</p>
+                    <p class="text-sm text-gray-300 mb-6">LANDLORDR + TENANTLINK together — the full landlord and tenant toolkit.</p>
                     <div class="flex items-baseline gap-1 mb-6">
-                        <span class="text-3xl font-bold">$89</span>
-                        <span class="text-sm text-gray-500 line-through mr-1">$108</span>
-                        <span class="text-sm text-gray-500">/mo flat</span>
+                        <span class="text-5xl font-bold tracking-tight">$89</span>
+                        <span class="text-sm text-gray-300 line-through mr-1">$108</span>
+                        <span class="text-sm text-gray-300">/mo flat</span>
                     </div>
                     <ul class="space-y-3 mb-8 text-sm">
                         <li class="flex items-start gap-2">
-                            <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <svg class="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                             LANDLORDR + TENANTLINK included
                         </li>
                         <li class="flex items-start gap-2">
-                            <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <svg class="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                             Save $19/mo vs. buying separately
                         </li>
                         <li class="flex items-start gap-2">
-                            <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <svg class="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                             Unlimited users and tenants
                         </li>
                         <li class="flex items-start gap-2">
-                            <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <svg class="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                             Cancel anytime
                         </li>
                     </ul>
-                    <a href="#products" class="block text-center text-sm font-medium py-2.5 px-4 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors">Get the Suite</a>
+                    <a href="#products" class="block text-center text-sm font-medium py-2.5 px-4 btn-copper rounded-lg transition-colors">Get the Suite</a>
                 </div>
                 <!-- Self-hosted / custom -->
                 <div class="bg-white rounded-xl shadow-sm p-8">
                     <h3 class="text-lg font-bold mb-2">Self-hosted or custom</h3>
                     <p class="text-sm text-gray-500 mb-6">Run it on your own server, or have an app changed to fit how you actually work.</p>
                     <div class="flex items-baseline gap-1 mb-6">
-                        <span class="text-3xl font-bold">$125</span>
+                        <span class="text-5xl font-bold tracking-tight">$125</span>
                         <span class="text-sm text-gray-500">/hr &middot; quoted per project</span>
                     </div>
                     <ul class="space-y-3 mb-8 text-sm">
                         <li class="flex items-start gap-2">
-                            <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <svg class="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                             Your infrastructure, your data
                         </li>
                         <li class="flex items-start gap-2">
-                            <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <svg class="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                             Custom integrations and changes
                         </li>
                         <li class="flex items-start gap-2">
-                            <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <svg class="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                             Support agreement sized to the project
                         </li>
                         <li class="flex items-start gap-2">
-                            <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <svg class="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                             Volume and multi-app discounts
                         </li>
                     </ul>
@@ -951,15 +967,15 @@
     </section>
 
     <!-- Contact -->
-    <section class="bg-white py-20 border-t border-gray-200">
+    <section class="bg-amber-500 text-black py-20 sm:py-28">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 class="text-3xl sm:text-4xl font-bold mb-4">Ready to get started?</h2>
-            <p class="text-gray-500 max-w-xl mx-auto mb-8">Start in minutes with a 30-day free trial — card up front, first charge on day 30, cancel any time before then and you're not charged. Want to see it first? Watch the product videos on our <a href="https://www.youtube.com/@plainspokenfoundrynine" target="_blank" rel="noopener" class="text-black underline">YouTube channel</a>.</p>
+            <h2 class="text-4xl sm:text-6xl font-bold mb-6">Ready to get started?</h2>
+            <p class="text-black/80 text-lg max-w-2xl mx-auto mb-10">Start in minutes with a 30-day free trial — card up front, first charge on day 30, cancel any time before then and you're not charged. Want to see it first? Watch the product videos on our <a href="https://www.youtube.com/@plainspokenfoundrynine" target="_blank" rel="noopener" class="text-black underline">YouTube channel</a>.</p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center mb-8">
                 <a href="#products" class="inline-flex items-center justify-center bg-black text-white font-semibold px-8 py-3.5 rounded-lg text-base hover:bg-gray-800 transition-colors">Browse Products</a>
-                <a href="/contact.html" class="inline-flex items-center justify-center border-2 border-gray-300 text-gray-700 font-semibold px-8 py-3.5 rounded-lg text-base hover:border-gray-400 hover:text-black transition-colors">Contact Us</a>
+                <a href="/contact.html" class="inline-flex items-center justify-center border-2 border-black text-black font-semibold px-8 py-3.5 rounded-lg text-base hover:bg-black/10 transition-colors">Contact Us</a>
             </div>
-            <p class="text-sm text-gray-400">Questions? Email <a href="mailto:support@plainspokenfoundrynine.com" class="text-gray-600 hover:text-black underline">support@plainspokenfoundrynine.com</a></p>
+            <p class="text-sm text-black/70">Questions? Email <a href="mailto:support@plainspokenfoundrynine.com" class="text-black font-medium underline">support@plainspokenfoundrynine.com</a></p>
         </div>
     </section>
 
